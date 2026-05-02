@@ -12,7 +12,31 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;     -- fuzzy text search
 CREATE EXTENSION IF NOT EXISTS postgis;     -- geospatial: geometry, geography, spatial indexes
 
 -- ============================================================
--- PRIVACY TIER
+-- ⚠ DEPRECATED — APRIL 2026
+--
+-- The privacy_tier ENUM and the five-tier sharing model defined
+-- below are being replaced by the ACCESS CARDS framework. See:
+--
+--   documentation/access_cards_requirements.md   (canonical spec)
+--   documentation/DB_Architecture_Design_v1.md   (Part X summary;
+--                                                 Part VIII retained
+--                                                 as migration "from")
+--
+-- Do NOT add new fields, indexes, triggers, RLS policies, or
+-- application logic that depends on this ENUM. New privacy work
+-- should target the cards / contacts / card_holders /
+-- record_card_grants / synthesis_visibility_cache / card_audit_log /
+-- access_log tables specified in the requirements doc.
+--
+-- The block below is retained as the schema's "from" specification
+-- until the Access Cards migration ships (lossless migration plan
+-- in access_cards_requirements.md §9). It will be removed at the
+-- end of that migration. The five tier names live on as the
+-- system_code values of the five system cards pre-seeded for every
+-- user; the UI in the MVP still surfaces them as named "tiers"
+-- while the schema underneath is card-based.
+-- ============================================================
+-- PRIVACY TIER (legacy)
 -- Five-level visibility model applied consistently across all
 -- content-bearing tables. Default is always 'private'.
 --
@@ -1703,12 +1727,640 @@ $$;
 
 
 -- ============================================================
+-- THE STROLL — REMINISCENCE FEATURE ADDITIONS
+-- April 2026 | See: documentation/feature_reminiscence_mode.md
+--
+-- Adds three new tables and three new columns on memories:
+--
+--   stroll_sessions      — each Stroll engagement session
+--   reflections          — present-tense insights (Pathway B)
+--   memory_revisions     — non-destructive corrections (Pathway C)
+--
+--   memories.triggered_by_memory_id      — if stub was triggered during a Stroll
+--   memories.triggered_in_stroll_session — which Stroll session triggered it
+--   memories.capture_mode                — how the memory was created
+-- ============================================================
+
+CREATE TABLE stroll_sessions (
+    id                          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id                     UUID NOT NULL,
+
+    -- The memory The Stroll started from (the "origin" memory)
+    origin_memory_id            UUID NOT NULL REFERENCES memories(id),
+
+    -- Temporal bounds
+    started_at                  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    ended_at                    TIMESTAMPTZ,
+
+    -- Ordered list of memory IDs visited in this session
+    -- (origin first, then each adjacent memory navigated to)
+    adjacency_trace             UUID[],
+
+    -- Counts of outputs produced in this session
+    stubs_created               INTEGER DEFAULT 0,      -- Pathway A: triggered memory stubs
+    reflections_created         INTEGER DEFAULT 0,      -- Pathway B: wisdom/reflection entries
+    revisions_created           INTEGER DEFAULT 0,      -- Pathway C: corrections to existing records
+
+    -- Engagement signals (feed back into curation engine)
+    had_spontaneous_response    BOOLEAN DEFAULT false,  -- user responded before fallback prompt
+    required_fallback_prompt    BOOLEAN DEFAULT false,  -- agent had to deliver the fallback question
+    session_ended_gracefully    BOOLEAN DEFAULT true,   -- false = user closed without engaging
+
+    created_at                  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_stroll_sessions_user    ON stroll_sessions(user_id);
+CREATE INDEX idx_stroll_sessions_origin  ON stroll_sessions(origin_memory_id);
+CREATE INDEX idx_stroll_sessions_started ON stroll_sessions(user_id, started_at DESC);
+
+
+-- Columns added to memories for Stroll-triggered stubs (Pathway A)
+ALTER TABLE memories
+    ADD COLUMN triggered_by_memory_id       UUID REFERENCES memories(id),
+    ADD COLUMN triggered_in_stroll_session  UUID REFERENCES stroll_sessions(id),
+    ADD COLUMN capture_mode                 TEXT CHECK (capture_mode IN (
+                                                'stroll',     -- captured during The Stroll
+                                                'interview',  -- captured in an interview session
+                                                'freeform'    -- user-initiated, no structured session
+                                            ));
+
+CREATE INDEX idx_memories_triggered ON memories(triggered_by_memory_id)
+    WHERE triggered_by_memory_id IS NOT NULL;
+
+
+-- ============================================================
+-- REFLECTIONS
+-- Present-tense insights and wisdom statements surfaced from
+-- memories during Stroll sessions (Pathway B response type).
+--
+-- A reflection is NOT a memory event — it lives in the present
+-- tense and has its source in the past. It is the primary raw
+-- material for the wisdom_distillation synthesis type.
+--
+-- The temporality field records a critical distinction:
+--   contemporaneous = user understood this at the time of the event
+--   retrospective   = user only understands it in hindsight
+-- This distinction shapes how Wisdom Distillation renders the insight.
+-- ============================================================
+
+CREATE TABLE reflections (
+    id                      UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id                 UUID NOT NULL,
+
+    -- Provenance
+    source_memory_id        UUID REFERENCES memories(id),           -- memory that surfaced it
+    stroll_session_id       UUID REFERENCES stroll_sessions(id),
+
+    -- Content
+    content                 TEXT NOT NULL,  -- verbatim or lightly cleaned user utterance
+
+    reflection_type         TEXT CHECK (reflection_type IN (
+                                'lesson_learned',
+                                'belief_formed',
+                                'belief_revised',
+                                'regret',
+                                'gratitude',
+                                'unresolved_question',
+                                'other'
+                            )),
+
+    -- Was this wisdom understood at the time of the event, or only in hindsight?
+    -- Agent sets this from a single follow-up question ("at the time, or looking back?")
+    temporality             TEXT CHECK (temporality IN (
+                                'contemporaneous',   -- understood at the time of the event
+                                'retrospective',     -- understood only in hindsight
+                                'uncertain'          -- user couldn't say
+                            )),
+
+    -- Optional: emotional resonance tags from unclassifiable or affect-heavy responses
+    emotional_resonance     TEXT[],
+
+    -- Lifecycle
+    synthesis_ready         BOOLEAN DEFAULT false,  -- flagged when ready for Wisdom Distillation
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_reflections_user            ON reflections(user_id);
+CREATE INDEX idx_reflections_source_memory   ON reflections(source_memory_id);
+CREATE INDEX idx_reflections_stroll          ON reflections(stroll_session_id);
+CREATE INDEX idx_reflections_type            ON reflections(user_id, reflection_type);
+CREATE INDEX idx_reflections_synthesis_ready ON reflections(user_id)
+    WHERE synthesis_ready = true;
+
+
+-- ============================================================
+-- MEMORY REVISIONS
+-- Non-destructive correction layer over memory records (Pathway C).
+--
+-- CORE PRINCIPLE: The original memory record is NEVER overwritten
+-- or deleted. It represents who the user was and what they
+-- understood when they first told this story. The revision sits
+-- alongside it as a dated correction — the arc of changing
+-- understanding is itself meaningful.
+--
+-- Synthesis agents MUST check for revisions before rendering any
+-- memory: if revisions exist, the most recent non-retracted
+-- revision represents the user's current understanding of the event.
+-- The original is still accessible and should be preserved in the
+-- detailed record view.
+--
+-- The self-distancing mechanism: hearing one's own memory narrated
+-- back by the agent (in a different voice, in prose the user didn't
+-- write) creates cognitive distance that enables more accurate
+-- self-evaluation. Pathway C captures what that distance reveals.
+-- ============================================================
+
+CREATE TABLE memory_revisions (
+    id                      UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id                 UUID NOT NULL,
+    source_memory_id        UUID NOT NULL REFERENCES memories(id),
+
+    -- Context of the revision
+    stroll_session_id       UUID REFERENCES stroll_sessions(id),
+    triggered_by_reflection UUID REFERENCES reflections(id),  -- if a reflection catalyzed this
+
+    -- Classification of what kind of revision this is
+    revision_type           TEXT CHECK (revision_type IN (
+                                'factual_correction',   -- a detail was simply wrong (date, name, sequence)
+                                'emotional_reframe',    -- facts stand; the felt meaning has changed
+                                'context_update',       -- new information acquired since original recording
+                                'narrative_revision'    -- user recognizes their version as a construction
+                            )),
+
+    -- Content
+    original_excerpt        TEXT,       -- the specific portion being revised (NULL = whole-record revision)
+    revised_content         TEXT NOT NULL,   -- the corrected or updated account
+    user_note               TEXT,       -- why the revision is being made, in the user's own words
+
+    -- Lifecycle (revisions can be retracted, but the retraction is itself recorded)
+    is_retracted            BOOLEAN DEFAULT false,
+    retracted_at            TIMESTAMPTZ,
+
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_memory_revisions_user         ON memory_revisions(user_id);
+CREATE INDEX idx_memory_revisions_source       ON memory_revisions(source_memory_id);
+CREATE INDEX idx_memory_revisions_stroll       ON memory_revisions(stroll_session_id);
+CREATE INDEX idx_memory_revisions_type         ON memory_revisions(user_id, revision_type);
+CREATE INDEX idx_memory_revisions_active       ON memory_revisions(source_memory_id)
+    WHERE is_retracted = false;
+
+
+-- ============================================================
 -- END OF SCHEMA v1.0
--- Next migration targets:
+-- Next migration targets (remaining after v1.1 additions below):
 --   1. Seed dimensions table (WisdomTopicSort + Gemini Taxonomy)
 --   2. Seed questions table (interview questions → dimension IDs)
---   3. Add user_close_friends / user_family_members /
---      user_professional_connections tables + RLS activation
---   4. Privacy dashboard view: per-user tier distribution counts
---   5. CEF v1 export format support (ZIP manifest schema)
+--   3. CEF v1 export format support (ZIP manifest schema)
+--   4. Add assumption_log table for agent inference traceability
+--   5. Add soft-delete / redaction fields to memories
+--      (redacted_at, redaction_reason, redacted_by)
+--   6. Seed five system cards per user on account creation
+--      (Private, Close Friends, Family, Professional, Public)
+--   7. Implement viewer_can_access() SQL function and activate RLS policies
+-- ============================================================
+
+
+-- ============================================================
+-- SCHEMA v1.1 — APRIL 2026
+--
+-- Additions from the April 2026 architecture decisions:
+--
+--   A. synthesis_type enum extension:  lifes_cast
+--   B. interview_sessions: session_type column
+--   C. memories: contributor_id column
+--   D. USER PERIODS (Phase 0 Stage 2 — chapter naming)
+--   E. ACCESS CARDS framework
+--      (cards, contacts, card_holders, record_card_grants,
+--       synthesis_visibility_cache, card_audit_log, access_log)
+--   F. SOCIAL SHARING & COMMENT CAPTURE
+--      (memory_shares, share_comments)
+--   G. CONTRIBUTION ATTACHMENTS stub (Phase 2+)
+--
+-- Design authority:
+--   Access Cards:         documentation/access_cards_requirements.md
+--   Social sharing:       PRD_MVP_v1.md §8 (Decision 7, April 2026)
+--   Life's Players:       PRD_MVP_v1.md §9 (Decision 4, April 2026)
+--   Phase 0 chapter naming: PRD_MVP_v1.md §3
+-- ============================================================
+
+
+-- ============================================================
+-- A. SYNTHESIS TYPE EXTENSION
+-- Add lifes_cast to capture the "Life's Players" MVP artifact —
+-- a time-series progression of the significant people who played
+-- roles in the user's life from earliest remembered relationships
+-- through present central figures.
+--
+-- Named for Shakespeare's As You Like It (Act II Scene VII):
+--   "All the world's a stage, and all the men and women merely
+--    players; they have their exits and their entrances."
+--
+-- Differs from relationship_portrait (deep on one relationship)
+-- in that it is broader and temporal — the ensemble view across
+-- all life stages, not a solo portrait.
+-- ============================================================
+
+ALTER TYPE synthesis_type ADD VALUE IF NOT EXISTS 'lifes_cast';
+
+
+-- ============================================================
+-- B. SESSION TYPE ON INTERVIEW SESSIONS
+-- Classifies the purpose of each interview session.
+-- The Planner Agent uses session_type to schedule and track
+-- session coverage across the different session modalities.
+-- ============================================================
+
+ALTER TABLE interview_sessions
+    ADD COLUMN IF NOT EXISTS session_type TEXT
+        CHECK (session_type IN (
+            'ontology_bootstrap',   -- Phase 0: any of the four bootstrap stages
+            'memory_collection',    -- Regular collection: exploring a dimension/entity
+            'temporal_resolution',  -- Dedicated temporal clarification session
+            'entity_resolution',    -- Confirming/correcting entity relationships
+            'stroll',               -- Phase 2: The Stroll reminiscence session
+            'review_and_correction' -- User reviewing and correcting existing records
+        )),
+    ADD COLUMN IF NOT EXISTS phase0_stage SMALLINT
+        CHECK (phase0_stage BETWEEN 1 AND 4);
+        -- 1 = Temporal Skeleton, 2 = Chapter Naming,
+        -- 3 = Entity Seed, 4 = Topic Map
+        -- NULL for all non-ontology_bootstrap sessions
+
+
+-- ============================================================
+-- C. CONTRIBUTOR ID ON MEMORIES
+-- Records the identity of a card holder who contributed a
+-- memory entry via the contribute permission (Phase 2).
+-- Contributed memories arrive in the review_queue and must
+-- be accepted by the owner before they enter the canon.
+-- NULL for all owner-authored memories.
+-- ============================================================
+
+ALTER TABLE memories
+    ADD COLUMN IF NOT EXISTS contributor_id UUID,
+        -- UUID of the contributing contact (references contacts.id)
+        -- NULL = owner-authored; non-NULL = contribution awaiting or past review
+    ADD COLUMN IF NOT EXISTS contribution_status TEXT
+        CHECK (contribution_status IN (
+            'pending',    -- in review queue, not yet accepted
+            'accepted',   -- owner accepted; now part of the canon
+            'modified',   -- owner modified and accepted
+            'rejected'    -- owner rejected; record retained for audit, invisible to owner
+        ));
+        -- NULL for all owner-authored memories
+
+
+-- ============================================================
+-- D. USER PERIODS
+-- Named life chapters defined by the chronicle owner during
+-- Phase 0 Stage 2 (Chapter Naming). Examples: "The Madrid Years",
+-- "After my father died", "The startup decade".
+--
+-- user_periods are:
+--   • Referenced in Access Cards scope_rules as period_ids
+--   • Used to scope life_period_narrative syntheses
+--   • The organizing unit for memoir chapter presentation
+--
+-- A memory may belong to zero or more periods (via memory_periods).
+-- Periods may overlap — a period named "when I was raising kids"
+-- and "my years at IBM" may share years without contradiction.
+-- ============================================================
+
+CREATE TABLE user_periods (
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id         UUID NOT NULL,
+    name            TEXT NOT NULL,              -- user-supplied chapter name
+    description     TEXT,                       -- optional: user's own framing of this period
+    time_range_start DATE,                      -- approximate start date (may be fuzzy)
+    time_range_end   DATE,                      -- approximate end date (NULL if ongoing)
+    is_ongoing       BOOLEAN DEFAULT false,     -- true if this period includes the present
+    sort_order       SMALLINT,                  -- user-defined display order
+    confirmed_by_user BOOLEAN DEFAULT false,    -- true once user has reviewed and confirmed
+    confirmed_at     TIMESTAMPTZ,
+    created_by       TEXT DEFAULT 'system'
+        CHECK (created_by IN ('system', 'user', 'agent')),
+                                                -- system = proposed in Phase 0; user = manually created
+    metadata         JSONB DEFAULT '{}',
+    created_at       TIMESTAMPTZ DEFAULT NOW(),
+    updated_at       TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (user_id, name)
+);
+
+CREATE INDEX idx_user_periods_user       ON user_periods(user_id);
+CREATE INDEX idx_user_periods_time       ON user_periods(user_id, time_range_start, time_range_end);
+CREATE INDEX idx_user_periods_confirmed  ON user_periods(user_id) WHERE confirmed_by_user;
+
+
+-- Junction: which memories belong to which user periods
+-- A memory may belong to multiple periods; a period may contain many memories.
+CREATE TABLE memory_periods (
+    memory_id       UUID NOT NULL REFERENCES memories(id) ON DELETE CASCADE,
+    period_id       UUID NOT NULL REFERENCES user_periods(id) ON DELETE CASCADE,
+    assigned_by     TEXT DEFAULT 'agent'
+        CHECK (assigned_by IN ('agent', 'user')),
+    assigned_at     TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (memory_id, period_id)
+);
+
+CREATE INDEX idx_memory_periods_period ON memory_periods(period_id);
+
+
+-- ============================================================
+-- E. ACCESS CARDS FRAMEWORK
+-- Replaces the privacy_tier ENUM model.
+-- Full requirements: documentation/access_cards_requirements.md
+--
+-- Migration note: The privacy_tier ENUM columns on memories,
+-- entities, relationships, media, and syntheses are retained
+-- during the transition (the schema v1.0 deprecation notice
+-- above documents this). RLS activation and privacy_tier column
+-- removal are the final steps of this migration.
+-- ============================================================
+
+-- E.1 cards — Card definitions (permission grants)
+CREATE TABLE cards (
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    owner_user_id   UUID NOT NULL,
+    name            TEXT NOT NULL,
+    description     TEXT,
+    is_system       BOOLEAN NOT NULL DEFAULT false,
+    system_code     TEXT,
+        -- 'private' | 'close_friends' | 'family' | 'professional' | 'public'
+        -- NULL for custom (user-created) cards
+    is_active       BOOLEAN NOT NULL DEFAULT true,
+    is_public       BOOLEAN NOT NULL DEFAULT false,  -- true only for the Public system card
+    validity_start  TIMESTAMPTZ,    -- card active from this date/time (NULL = always active)
+    validity_end    TIMESTAMPTZ,    -- card expires at this date/time (NULL = no expiry)
+    scope_rules     JSONB NOT NULL DEFAULT '{}',
+        -- Structured scope rules. Empty object = grants all owner content.
+        -- Shape (all fields optional):
+        -- {
+        --   "time_band":        { "start": "YYYY-MM-DD", "end": "YYYY-MM-DD" },
+        --   "period_ids":       ["uuid", ...],
+        --   "life_stage_ids":   ["uuid", ...],
+        --   "dimension_ids":    ["uuid", ...],
+        --   "entity_ids":       ["uuid", ...],
+        --   "place_ids":        ["uuid", ...],
+        --   "include_memory_ids": ["uuid", ...],
+        --   "exclude_memory_ids": ["uuid", ...]
+        -- }
+        -- Within an axis: OR. Across axes: AND. Excludes always win.
+    metadata        JSONB DEFAULT '{}',
+    created_at      TIMESTAMPTZ DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (owner_user_id, name)
+);
+
+CREATE INDEX idx_cards_owner        ON cards(owner_user_id);
+CREATE INDEX idx_cards_active       ON cards(owner_user_id) WHERE is_active;
+CREATE INDEX idx_cards_system       ON cards(owner_user_id, system_code) WHERE is_system;
+
+
+-- E.2 contacts — Potential and actual card holders
+CREATE TABLE contacts (
+    id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    owner_user_id       UUID NOT NULL,
+    contact_user_id     UUID,               -- NULL until invitation accepted
+    email               TEXT NOT NULL,      -- citext behavior enforced at app layer
+    display_name        TEXT,
+    person_entity_id    UUID REFERENCES entities(id),
+        -- Optional link to a person entity in the chronicle's entity graph.
+        -- Enables "Beth Lyons (contact) is the same as Beth Lyons (entity)" without forcing it.
+    invitation_status   TEXT NOT NULL DEFAULT 'pending'
+        CHECK (invitation_status IN ('pending', 'accepted', 'declined', 'revoked')),
+    invited_at          TIMESTAMPTZ DEFAULT NOW(),
+    accepted_at         TIMESTAMPTZ,
+    created_at          TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (owner_user_id, email)
+);
+
+CREATE INDEX idx_contacts_owner     ON contacts(owner_user_id);
+CREATE INDEX idx_contacts_user      ON contacts(contact_user_id) WHERE contact_user_id IS NOT NULL;
+CREATE INDEX idx_contacts_entity    ON contacts(person_entity_id) WHERE person_entity_id IS NOT NULL;
+
+
+-- E.3 card_holders — Which contacts hold which cards
+CREATE TABLE card_holders (
+    card_id             UUID NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+    contact_id          UUID NOT NULL REFERENCES contacts(id) ON DELETE CASCADE,
+    granted_at          TIMESTAMPTZ DEFAULT NOW(),
+    granted_by          UUID NOT NULL,  -- user_id of the granter (typically the owner)
+    last_accessed_at    TIMESTAMPTZ,
+    -- Contribution permission (Decision 6, April 2026):
+    -- Whether this holder can contribute embellishments and additional memories
+    -- to the owner's chronicle via the review queue. View-only in MVP;
+    -- can_contribute is Phase 2 when contribute UI is built.
+    can_contribute      BOOLEAN NOT NULL DEFAULT false,
+    PRIMARY KEY (card_id, contact_id)
+);
+
+CREATE INDEX idx_card_holders_contact ON card_holders(contact_id);
+CREATE INDEX idx_card_holders_card    ON card_holders(card_id);
+
+
+-- E.4 record_card_grants — Explicit per-record overrides
+-- Handles three cases:
+--   'include'       — explicitly grant this record to this card (overrides scope)
+--   'exclude'       — explicitly exclude this record from this card (always wins)
+--   'auto_isolate'  — system-applied exclusion for sensitive-dimension memories
+--                     (applied to ALL cards; user must remove to share)
+CREATE TABLE record_card_grants (
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    card_id         UUID NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+    record_type     TEXT NOT NULL
+        CHECK (record_type IN ('memory', 'entity', 'relationship', 'media', 'synthesis')),
+    record_id       UUID NOT NULL,
+    grant_type      TEXT NOT NULL
+        CHECK (grant_type IN ('include', 'exclude', 'auto_isolate')),
+    reason          TEXT,
+        -- e.g., 'sensitive_dimension', 'user_explicit', 'owner_promoted'
+    created_at      TIMESTAMPTZ DEFAULT NOW(),
+    created_by      UUID NOT NULL,
+    UNIQUE (card_id, record_type, record_id, grant_type)
+);
+
+CREATE INDEX idx_rcg_card_record ON record_card_grants(card_id, record_type, record_id);
+CREATE INDEX idx_rcg_record      ON record_card_grants(record_type, record_id);
+CREATE INDEX idx_rcg_isolate     ON record_card_grants(record_id)
+    WHERE grant_type = 'auto_isolate';
+
+
+-- E.5 synthesis_visibility_cache — Pre-computed synthesis access
+-- One row per (synthesis, card) pair where the card grants full access
+-- to all source memories of the synthesis. Recomputed by the Synthesis
+-- Agent when source memory sets change or when card scopes change.
+CREATE TABLE synthesis_visibility_cache (
+    synthesis_id    UUID NOT NULL REFERENCES syntheses(id) ON DELETE CASCADE,
+    card_id         UUID NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+    computed_at     TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (synthesis_id, card_id)
+);
+
+CREATE INDEX idx_svc_card ON synthesis_visibility_cache(card_id);
+
+
+-- E.6 card_audit_log — Immutable audit trail of all card operations
+CREATE TABLE card_audit_log (
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    owner_user_id   UUID NOT NULL,
+    actor_user_id   UUID NOT NULL,
+    action          TEXT NOT NULL
+        CHECK (action IN (
+            'card_created', 'card_modified', 'card_deleted',
+            'card_deactivated', 'card_reactivated',
+            'holder_added', 'holder_removed',
+            'scope_changed',
+            'record_granted', 'record_excluded',
+            'contribute_granted', 'contribute_revoked'
+        )),
+    card_id         UUID,
+    contact_id      UUID,
+    record_type     TEXT,
+    record_id       UUID,
+    before_state    JSONB,
+    after_state     JSONB,
+    occurred_at     TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_cal_owner      ON card_audit_log(owner_user_id, occurred_at DESC);
+CREATE INDEX idx_cal_card       ON card_audit_log(card_id, occurred_at DESC);
+
+
+-- E.7 access_log — Holder content access events
+-- Records every successful access by a card holder.
+-- Partitioned conceptually by month; sampling acceptable at scale.
+CREATE TABLE access_log (
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    owner_user_id   UUID NOT NULL,
+    viewer_user_id  UUID NOT NULL,
+    card_id         UUID NOT NULL REFERENCES cards(id),
+    record_type     TEXT NOT NULL,
+    record_id       UUID NOT NULL,
+    accessed_at     TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_access_log_owner  ON access_log(owner_user_id, accessed_at DESC);
+CREATE INDEX idx_access_log_viewer ON access_log(viewer_user_id, accessed_at DESC);
+CREATE INDEX idx_access_log_card   ON access_log(card_id, accessed_at DESC);
+
+
+-- ============================================================
+-- F. SOCIAL SHARING & COMMENT CAPTURE
+-- Decision 7, April 2026:
+--
+-- Sharing a memory to social media is the primary distribution
+-- mechanism. The share card controls who can access the chronicle;
+-- a social post (or direct link) is the notification. Recipients
+-- may leave comments; the owner sees them in a dedicated view.
+-- Comments do not enter the chronicle automatically.
+--
+-- memory_shares — records each share event
+-- share_comments — captures recipient comments on a share
+-- ============================================================
+
+CREATE TYPE share_channel AS ENUM (
+    'social_media',     -- shared via external social media post (Twitter/X, Facebook, etc.)
+    'direct_link',      -- a shareable URL sent directly (email, messaging app, etc.)
+    'sms'               -- shared via the system's SMS channel
+);
+
+CREATE TABLE memory_shares (
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id         UUID NOT NULL,              -- the chronicle owner who shared
+    memory_id       UUID REFERENCES memories(id),
+        -- NULL if the share is of a synthesis or artifact rather than a raw memory
+    synthesis_id    UUID REFERENCES syntheses(id),
+        -- NULL if the share is of a raw memory. Exactly one of memory_id /
+        -- synthesis_id should be non-null for a well-formed share record.
+    card_id         UUID REFERENCES cards(id),  -- which card governs access; NULL = public
+    channel         share_channel NOT NULL,
+    share_url       TEXT,                       -- the URL shared (if captured)
+    platform_post_id TEXT,                      -- external post ID (if captured, e.g. tweet ID)
+    shared_at       TIMESTAMPTZ DEFAULT NOW(),
+    metadata        JSONB DEFAULT '{}'
+);
+
+CREATE INDEX idx_memory_shares_user    ON memory_shares(user_id, shared_at DESC);
+CREATE INDEX idx_memory_shares_memory  ON memory_shares(memory_id) WHERE memory_id IS NOT NULL;
+CREATE INDEX idx_memory_shares_synth   ON memory_shares(synthesis_id) WHERE synthesis_id IS NOT NULL;
+
+
+-- Comments from recipients on a shared memory or artifact
+CREATE TABLE share_comments (
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    share_id        UUID NOT NULL REFERENCES memory_shares(id) ON DELETE CASCADE,
+    user_id         UUID NOT NULL,              -- chronicle owner (for RLS scoping)
+    -- Recipient identity (all nullable — anonymous comments are valid)
+    recipient_email TEXT,
+    recipient_name  TEXT,
+    recipient_handle TEXT,                      -- social media handle if captured
+    recipient_user_id UUID,                     -- if the recipient is a registered LC user
+    -- Content
+    comment_text    TEXT NOT NULL,
+    -- Moderation
+    is_hidden       BOOLEAN DEFAULT false,      -- owner can hide without deleting
+    hidden_at       TIMESTAMPTZ,
+    -- Lifecycle
+    created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_share_comments_share ON share_comments(share_id);
+CREATE INDEX idx_share_comments_user  ON share_comments(user_id, created_at DESC);
+CREATE INDEX idx_share_comments_unhidden ON share_comments(user_id)
+    WHERE is_hidden = false;
+
+
+-- ============================================================
+-- G. CONTRIBUTION ATTACHMENTS (Phase 2+ stub)
+-- Card holders with can_contribute = true (Phase 2) will be
+-- able to attach images or files to their contributions.
+-- Table defined here for schema completeness; no UI or agent
+-- logic is required at MVP.
+-- ============================================================
+
+CREATE TABLE contribution_attachments (
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id         UUID NOT NULL,              -- chronicle owner
+    memory_id       UUID REFERENCES memories(id),
+        -- The contributed memory this attachment belongs to.
+        -- Set once the contribution is accepted by the owner.
+    contributor_id  UUID,
+        -- contacts.id of the contributing holder (NOT the owner's user_id)
+    blob_key        TEXT NOT NULL,              -- Supabase Storage object path
+    mime_type       TEXT,
+    file_size_bytes BIGINT,
+    filename        TEXT,
+    caption         TEXT,
+    review_status   TEXT NOT NULL DEFAULT 'pending'
+        CHECK (review_status IN ('pending', 'accepted', 'rejected')),
+    reviewed_at     TIMESTAMPTZ,
+    created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_contrib_attach_user   ON contribution_attachments(user_id);
+CREATE INDEX idx_contrib_attach_memory ON contribution_attachments(memory_id)
+    WHERE memory_id IS NOT NULL;
+CREATE INDEX idx_contrib_attach_review ON contribution_attachments(user_id, review_status)
+    WHERE review_status = 'pending';
+
+
+-- ============================================================
+-- END OF SCHEMA v1.1
+-- Remaining migration targets:
+--   1. Seed dimensions table (WisdomTopicSort + Gemini Taxonomy)
+--   2. Seed questions table (interview questions → dimension IDs)
+--   3. CEF v1 export format support (ZIP manifest schema)
+--   4. Add assumption_log table for agent inference traceability
+--   5. Add soft-delete / redaction fields to memories
+--      (redacted_at, redaction_reason, redacted_by)
+--   6. Seed five system cards per new user account
+--      (Private, Close Friends, Family, Professional, Public)
+--      with system_code values and default holder lists
+--   7. Implement viewer_can_access() SQL function
+--   8. Activate RLS policies on content tables using viewer_can_access()
+--      and synthesis_visibility_cache for syntheses
+--   9. Remove privacy_tier ENUM columns after RLS activation
+--      (or retain as _legacy_ columns through one release for safety)
 -- ============================================================

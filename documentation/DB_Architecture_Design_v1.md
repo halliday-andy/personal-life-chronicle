@@ -481,6 +481,8 @@ This cluster reasoning is also the basis for the agent's sequencing strategy acr
 
 ## Part VIII: Privacy Architecture — The Five-Tier Model
 
+> **⚠ Superseded April 2026.** The five-tier `privacy_tier` ENUM model documented in this section is being replaced by the **Access Cards framework** (see **Part X** below and the canonical specification at `documentation/access_cards_requirements.md`). The five tiers map to five system-defined cards under the new model and remain visible in the MVP UI; the schema underneath becomes card-based. This Part is retained as the migration's "from" specification and for historical context. Do not extend the tier model further; new privacy work should target the Access Cards tables.
+
 ### The Problem Privacy Solves
 
 A life chronicle is among the most intimate datasets that can exist. It contains memories of grief, addiction, estrangement, illness, professional failure, and relationship wreckage alongside celebration and joy. A person builds this collection for their own benefit — and potentially, selectively, to share with people they trust. The system must make the risk of accidental exposure as close to zero as possible, while not making selective sharing so cumbersome that it goes unused.
@@ -638,23 +640,302 @@ The schema additions required to support this architecture are: a `session_type`
 
 ---
 
+## Part X: Access Cards — Replacing the Privacy Tier ENUM
+
+*Added April 2026. Supersedes Part VIII (Privacy Architecture — The Five-Tier Model). The canonical specification is `documentation/access_cards_requirements.md` (47 numbered functional requirements, schema sketch, access-evaluation algorithm, RLS policy outline, migration plan, and ten open questions). This Part is a summary; resolve to the requirements doc for any implementation work.*
+
+### Why the Tier Model Was Replaced
+
+The five-tier `privacy_tier` ENUM (Part VIII) imposed a strict hierarchy — Private → Close Friends → Family → Professional → Public — under which each tier was a strict superset of the one below. Real-life sharing does not honor that hierarchy. *My old Air Force buddies*, *my book club*, *the kids only*, *my advisory board*, *my therapist and my wife* are not points on a single line, and they are not contained inside any of the five pre-defined bands. The tier model also fought the schema's own extensibility principle: every other axis (dimensions, entities, relationships) was designed for unbounded extension, but privacy was capped at five values picked at design time. Three roadmap items — the **Executor role** (Part VIII Next Steps item 31), the **training-consent layer** for AI-corpus contribution, and **reciprocal sharing patterns** — could not be expressed cleanly as additional ENUM values without violating the model's logic.
+
+### The New Model in One Paragraph
+
+A **card** is a named permission grant created by the chronicle owner. It defines a **scope** (which records it unlocks, expressible across time band, user-named periods, life stages, dimensions, entities, places, and explicit memory IDs — with include and exclude lists) and is held by zero or more **contacts**. Possession of the card by a contact governs that contact's visibility into the owner's content. Cards may be **time-banded** (a 30-day reunion card, an executor card with a posthumous trigger). A holder's effective access is the **union** of the scopes of all cards they hold from a given owner. Synthesis visibility is the **intersection** of the per-source-memory access checks: a synthesis is visible to a card holder if and only if every source memory is also visible to that holder. Five **system cards** (Private, Close Friends, Family, Professional, Public) are pre-seeded for every user and emulate the legacy tier model. Custom cards are user-created and unbounded by schema.
+
+### What This Replaces in Part VIII
+
+| Part VIII concept | Access Cards replacement |
+|---|---|
+| `privacy_tier` ENUM column | Dropped. Records carry no tier; visibility is computed from card scope rules and explicit grants. |
+| `compute_synthesis_tier()` MIN-of-sources trigger | Replaced by `synthesis_visibility_cache` materialization; visibility is intersection-of-sources. |
+| Cascade trigger on memory tier changes | Replaced by recompute of the visibility cache when card scopes or memory grants change. |
+| Sensitive-dimension auto-lock to `'private'` | Renamed *auto-isolation*; implemented as `record_card_grants(grant_type='auto_isolate')` against every active card. |
+| Connection group tables (`user_close_friends`, `user_family_members`, `user_professional_connections`) | Replaced by `contacts` + `card_holders`. Connection-group plurality emerges from card holder lists. |
+| JWT `role_tier` claim | Replaced by JWT carrying the set of card IDs the viewer holds for a given owner. |
+
+### What This Unlocks (Beyond Tier Parity)
+
+**Executor card** — Part VIII Next Steps item 31 sketched an "Executor role" as a possible sixth tier; it never fit the hierarchy. As a card, it is a designated holder with a posthumous-trigger validity window and a configurable scope. No new ENUM value, no new privacy primitive.
+
+**Training/research consent** — Today's gap review identified the absence of a training-consent layer as a missed opportunity for the "AI legacy" mission claim. Under cards, training consent is one or more cards held by special "research corpus" contacts with terms-of-use metadata in the card's `metadata` JSONB. The same evaluation engine governs research access as governs every other access.
+
+**Reciprocal sharing** — Two users who chronicle each other's stories simply hold cards from each other. No special bidirectional primitive needed.
+
+**Time-banded sharing** — Reunion access, professional engagement windows, conditional access during a mediation — all naturally expressed as a card's `validity_start`/`validity_end`.
+
+### New Schema Footprint
+
+Seven new tables (sketched in `access_cards_requirements.md` §4):
+
+- `cards` — Card definition with name, owner, validity bounds, scope rules JSONB.
+- `contacts` — Potential card holders, registered LC users or email-only invitees.
+- `card_holders` — Many-to-many between cards and contacts.
+- `record_card_grants` — Explicit per-record include/exclude/auto-isolate overrides.
+- `synthesis_visibility_cache` — Materialized synthesis-to-card visibility.
+- `card_audit_log` — Immutable audit trail for all card-related actions.
+- `access_log` — Holder access events (sampled at scale).
+
+Five tables lose the `privacy_tier` column: `memories`, `entities`, `relationships`, `media`, `syntheses`. Four functions/triggers are retired: `compute_synthesis_tier()`, `trg_syntheses_privacy_tier`, `trg_cascade_synthesis_tier`, and the RLS scaffold that read `privacy_tier`.
+
+### MVP Behavior
+
+The schema is fully card-based from MVP day one — no `privacy_tier` ENUM, no tier-based triggers. The MVP UI exposes only the five system cards as named "tiers," preserving the simple mental model. Users can add holders and adjust scope on each system card. Custom-card creation is a Phase 2 unlock that requires zero further schema work — only the rule-builder UI and a scope-preview affordance.
+
+### Migration
+
+The migration from the ENUM to the card model is lossless and is specified step-by-step in `access_cards_requirements.md` §9. Every existing record's `privacy_tier` value maps to a `record_card_grants(grant_type='include')` row referencing the appropriate system card. Every `tier_locked = true` record maps to an `auto_isolate` exclusion. The ENUM column is dropped at the end of the migration.
+
+### Open Questions
+
+Ten open questions are tracked in `access_cards_requirements.md` §11 — terminology ("card" vs. "audience"), max card count and holder count limits, holder notification policy, link-based shares (URL-bearer access without identifying the viewer), view-as-holder UI, granular permissions beyond view (comment, suggest correction, download), conflict resolution between scope rules and explicit grants, anonymized-research access modeling, and others. These resolve into the PRD before implementation begins.
+
+---
+
+---
+
+## Part XI: The Stroll — Reminiscence Feature Architecture
+
+*Added April 2026. Canonical feature spec: `documentation/feature_reminiscence_mode.md`.*
+
+### Purpose and Position in the Architecture
+
+The Stroll is a re-engagement and memory rehearsal mode that is architecturally distinct from both the interview pipeline and the synthesis layer. It does not collect new structured memories through probing questions. It does not produce pre-built narratives. It presents a single existing memory from the chronicle as a compact narrative, listens for the user's response, and routes what it hears into one or more of three capture pathways.
+
+Its outputs are three new entry types — memory stubs, reflections, and revisions — that feed directly into the existing pipeline: stubs enter the interview intake queue, reflections seed the `wisdom_distillation` synthesis type, and revisions layer non-destructively over existing memory records.
+
+### The Curation Engine
+
+Memory selection for each Stroll session is probabilistic, weighted by: anniversary proximity (temporal resonance), relational density (memories tagged with multiple entities), emotional valence calibrated for cadence, recording recency (older-recorded memories benefit more from rehearsal), synthesis gap (not yet surfaced in any synthesis output), and explicit user signals (starred or previously revisited memories). The curation engine is updated after every session from the engagement signals logged in `stroll_sessions`.
+
+### The Listening Pause
+
+After presenting the reminiscence passage, the agent goes quiet. This silence is the primary interaction design decision: it creates space for spontaneous response before any question is asked. If no response arrives within a configurable threshold, the agent delivers a single fallback prompt designed to open both backward and forward response directions simultaneously:
+
+> *"What does thinking about this past event make you recall or think about now as we're talking about it?"*
+
+If still no response, the agent releases gracefully. The `stroll_sessions` table records `had_spontaneous_response`, `required_fallback_prompt`, and `session_ended_gracefully` as engagement signals for the curation engine.
+
+### Three Response Pathways
+
+**Pathway A — Adjacent Memory Expansion**
+
+The user recalls a connected event, person, or earlier version of the situation. Linguistic signals: *"That reminds me of..."*, *"I forgot that..."*, *"Before that, there was..."* The agent captures a **memory stub** (a `memories` record with `is_draft = true`, `capture_mode = 'stroll'`, and `triggered_by_memory_id` set to the origin memory). Stubs enter the interview intake queue for development in a future session. The relationship between the triggering memory and the triggered stub is preserved as a narrative link via `triggered_by_memory_id`.
+
+**Pathway B — Wisdom Distillation**
+
+The user articulates a present-tense understanding that the memory produced: a lesson, a belief formed or revised, a regret, a gratitude, or an unresolved question. Linguistic signals: *"That's when I realized..."*, *"Looking back, what I understand now is..."*, *"I never did figure out why..."* The agent captures this as a **reflection** record linked to the source memory. A single follow-up question — *"Did you understand that at the time, or more in hindsight?"* — provides the `temporality` tag, which distinguishes contemporaneous insight from retrospective wisdom in the Wisdom Distillation synthesis. Reflections are the **primary and exclusive** input source for `wisdom_distillation` synthesis records; no other feature in the current architecture produces this data type.
+
+**Pathway C — Correction and Revision (The Self-Distancing Effect)**
+
+Hearing one's own memory narrated back in a different voice, in prose the user did not write, creates *cognitive self-distancing* — a well-documented psychological phenomenon in which third-person perspective enables more accurate self-evaluation than first-person recollection. Details that felt settled may suddenly seem wrong. Framings that felt accurate may reveal themselves as constructed. Linguistic signals: *"That's not quite right"*, *"Actually..."*, *"I think I've always told it that way but..."* The agent captures a **memory revision** record linked to the source memory. The agent confirms: *"Got it — the original stays, this sits alongside it."*
+
+**Non-destructive versioning is a foundational principle.** The original memory record is immutable once written. It represents who the user was and what they understood when they first recorded this story. The revision is a new layer, dated to the present, with the relationship between them preserved. Synthesis agents must check `memory_revisions` before rendering any memory; the most recent non-retracted revision represents current understanding, but both the original and the revision history are exposed in the detailed record view. The *arc* of how a person has understood their own experience over time is itself meaningful data.
+
+Revisions are classified by type: `factual_correction` (a detail was simply wrong), `emotional_reframe` (facts stand; the felt meaning has changed), `context_update` (new information acquired since the original recording changes its meaning), and `narrative_revision` (the user recognizes their version as a construction rather than a record). The `narrative_revision` type is the most significant: it is one of the only mechanisms by which a person can observe, directly and with a timestamp, that they have been carrying a constructed version of their own past.
+
+**Compound responses (A+B+C)** are common. Hearing the narration often produces a triggered memory, a distilled insight, and a correction all at once. The agent captures all three as linked records — stub, reflection, and revision — each linked to the origin memory and to each other where the causal chain is direct.
+
+### Schema Additions
+
+Three new tables (`stroll_sessions`, `reflections`, `memory_revisions`) and three new columns on `memories` (`triggered_by_memory_id`, `triggered_in_stroll_session`, `capture_mode`). See the full schema at the end of `schema_v1.sql`.
+
+**`stroll_sessions`** tracks each Stroll engagement as a session-level record with the origin memory, adjacency trace (ordered array of memory IDs visited), output counts, and engagement signals. The adjacency trace is itself a form of data about the user's subjective memory clustering — which associations they follow and in which order — and feeds back into the curation engine over time.
+
+**`reflections`** is the first-class home for present-tense wisdom. It carries `source_memory_id`, `stroll_session_id`, `content`, `reflection_type`, `temporality`, and `synthesis_ready`. The `synthesis_ready` flag is set by the Synthesis Agent when a reflection has enough content to contribute to a `wisdom_distillation` synthesis.
+
+**`memory_revisions`** carries `source_memory_id`, `stroll_session_id`, `triggered_by_reflection` (for A+B+C compounds), `revision_type`, `original_excerpt` (optional surgical patch), `revised_content`, and `user_note`. The `is_retracted` flag allows a user to withdraw a revision while preserving the record that it was made and then retracted.
+
+### Relationship to the Synthesis Layer
+
+The Stroll is the primary feeder for the `wisdom_distillation` synthesis type that has been present in the `synthesis_type` enum since v1.0 but has had no defined input source until now. The pipeline is:
+
+```
+Stroll session
+    ↓
+User articulates reflection (Pathway B)
+    ↓
+reflections table (synthesis_ready = false initially)
+    ↓
+Synthesis Agent flags synthesis_ready when content is sufficient
+    ↓
+wisdom_distillation synthesis record generated
+    ↓
+Wisdom Distillation shareable artifact
+```
+
+The Stroll also feeds the `contradiction_flag` synthesis type indirectly: a `narrative_revision` type correction, if it conflicts with other memories in the chronicle, should trigger contradiction detection.
+
+### Open Questions
+
+Four open questions are tracked in `feature_reminiscence_mode.md`: whether to surface incomplete memories in Stroll curation (OQ-1), voice delivery opt-in default (OQ-2), full vs. light format for adjacent memories (OQ-3), and whether to mirror Pathway B responses back as a paraphrase (OQ-4). Two additional questions bear on architecture: whether patterns of `narrative_revision` corrections on the same event over years should be surfaced as a signal to the user (OQ-6), and whether a Pathway C revision should trigger a check for downstream entries that reference the same event and may need updating (OQ-5).
+
+---
+
+## Part XII: Phase 0 — Multi-Session Onboarding with Artifact Delivery
+
+*April 2026 decision (Decision 3 of the PRD readiness session), amended same day. Expands Part IX's Phase 0 protocol description with the confirmed session model and artifact delivery sequence.*
+
+### The Session Model Decision
+
+Phase 0 is delivered across three discrete sessions, not as a single upfront interview. Each stage is self-contained; the user receives a visible artifact immediately on completing each one before the next session is scheduled.
+
+A single-session approach — one 60–90 minute interview before any artifact appears — was explicitly evaluated and rejected. The target MVP user (technically comfortable adults, likely 40+) will not complete a session of that length without a reward before it ends. Three sessions of 15–30 minutes each, each closing with something to look at, is both more completable and more trust-building. The system demonstrates value before asking for more time.
+
+### Why Chapter Naming Was Removed from Phase 0
+
+The original four-stage model included a Stage 2 dedicated to eliciting user-defined life chapter names ("The Madrid Years," "After my father died") as an ontological scaffolding step before collection begins. This was removed.
+
+The core problem is practical: a person with a rich life — say, a 72-year-old with multiple professional careers, extensive family history, and many distinct personal chapters — cannot usefully compress their story into broad segments on demand, before any collection has occurred. There are too many chapters, and the natural vocabulary for naming them only emerges as the person begins to articulate their memories. Asking for chapter names upfront forces premature closure on a structure that should emerge from the material itself.
+
+The residential arc and the relationship arc together provide sufficient organizational framing without requiring the user to impose chapter vocabulary early. Every home in the residential sequence corresponds generally to a period of professional engagement, family configuration, and personal circumstances — the chapter structure is latent in the places and relationships already being collected in Stages 1 and 2. Making it explicit is a later analytical act, not an onboarding step.
+
+`user_periods` remain in the schema for post-collection use. Chapter naming becomes a Phase 2 interaction: once the collection is rich enough — enough memories across life stages and dimensions to reveal recurring patterns and period boundaries — the system can propose candidate chapter structures derived from the data, which the user then reviews, names, and confirms. This is a fundamentally better experience than asking someone to define chapters in the abstract at session one.
+
+### Artifact Delivery Sequence
+
+Each stage produces a deliverable. This is not a nice-to-have — it is the principal mechanism for establishing trust and motivating continuation.
+
+**Stage 1 complete → Life Globe.** The residential history gathered in the first session renders an initial Life Globe: a 3D navigable globe with the user's geographic life path marked, weighted by the density of memories already associated with each place, with a temporal transit animation tracing the path chronologically. The globe is sparse at this point but unmistakably personal. The `life_journey_geojson()` function drives the rendering from whatever `lived_at` relationships have been captured. Even a five-stop residential history is visually compelling as an animated path through a life. Hovering on a stop surfaces the place's `entity_biography` synthesis — a prose portrait of that period and setting.
+
+**Stage 2 complete → Entity portrait.** An `entity_biography` synthesis is generated for one key person named during the entity seed — typically the most significant relationship surfaced or the one with the most supporting context from Stage 1 data. This is the first prose synthesis the user receives. It demonstrates what the synthesis layer does: it writes about a real person from the user's life in language the user will recognize as capturing something true. Even with only Phase 0 data, an entity portrait is compelling when it reflects the kind of person someone was and the role they played. It makes the collection feel inhabited.
+
+**Stage 3 complete → Life's Players.** The `lifes_cast` synthesis is generated across all entities named in the entity seed, organized as a time-series progression: who was significant at which life stages, how the cast of central figures evolved from earliest remembered relationships through to the present. This closes the onboarding loop. The user entered Phase 0 with a residential map and a handful of named people; they exit with their first view of the relational arc of their life — the ensemble of people who made it. It is the artifact that makes the chronicle feel like a portrait of a life rather than a database of facts.
+
+### Why the Globe and Life's Players Form the Right MVP Opening
+
+The two non-portrait artifacts — Globe and Life's Players — occupy complementary dimensions. The Globe is spatial and temporal: where were you, in what order, for how long. Life's Players is relational and temporal: who was with you, in what capacity, at which stages. Together they provide a two-axis orientation to the life that is simultaneously objective (places are verifiable, relationships are named) and deeply personal. They do not require the user to have articulated anything abstract about the shape of their life — only to have named the places they lived and the people who mattered.
+
+Chapter structure, which requires a more interpretive act, emerges later when the system has material to interpret.
+
+### Implications for the Planner Agent
+
+The Planner Agent must treat Phase 0 as a structured, sequenced protocol. Stages proceed in order; the artifact delivery for each stage is a trigger condition for scheduling the next. The validation gate — the user reviewing and confirming the entity seed and their initial Life's Players view before memory collection begins — is a prerequisite for transitioning to the collection phase.
+
+The `interview_sessions.session_type = 'ontology_bootstrap'` and `interview_sessions.phase0_stage` columns (added in schema v1.1) allow the Planner Agent to query current Phase 0 state without relying on application-layer state: the highest completed `phase0_stage` with `session_type = 'ontology_bootstrap'` determines where the user is in the sequence. Stage values 1–3 map to the three stages above; the value 4 is now unused and reserved.
+
+---
+
+## Part XIII: MVP Synthesis Artifacts — Life Globe and Life's Players
+
+*April 2026 decision (Decision 4 of the PRD readiness session). Specifies the two MVP synthesis artifacts, their rationale, and the architectural implications of the Life's Players choice.*
+
+### Selection Rationale
+
+The MVP produces two user-facing synthesis artifacts. The selection criteria were: (a) works with MVP-level data (Phase 0 + early collection), (b) is emotionally resonant at low density, (c) is shareable as a standalone artifact, and (d) demonstrates a distinct capability. The pairing of globe and people satisfies all four.
+
+The previously proposed pairing was place portrait + chapter narrative. Chapter narrative was replaced because it requires a richer collection to avoid feeling thin. With only Phase 0 data and a handful of collection sessions, a chapter narrative risks generating prose that the user will find generic. Life's Players works at lower data density because it is organized around the names and faces the user already gave the system in Phase 0 Stage 3.
+
+### Artifact 1: The Life Globe
+
+**Internal synthesis type:** `entity_biography` (for place entities), no new synthesis type needed.
+**Visualization layer:** Cesium.js (3D globe with terrain) or Mapbox GL JS (2D/2.5D map). Both consume GeoJSON natively.
+
+The Life Globe has two layers:
+
+**Place portraits layer.** Each significant place the user has lived at, worked at, or visited is a weighted stop on the globe. Visual weight (size, glow, prominence) is proportional to `memory_count` from the `life_journey` view. Pausing on a stop surfaces the `entity_biography` synthesis for that place — a prose portrait of the period the user spent there. This synthesis is what the user reads when they hover over London or hover over a childhood home. It is generated by the Synthesis Agent from all memories tagged to that place entity.
+
+**Temporal transit layer (new, April 2026).** A chronological animation traces the user's geographic path through life — camera moving between significant places in sequence, dwelling proportionally to `days_at_place`. This turns the globe from a map into an autobiography of movement. The animation is implemented entirely within the visualization layer consuming `life_journey_geojson()` — no new synthesis type, no new database function. The `days_at_place` field in the view already provides the duration weighting. The camera path is the ordered sequence of leg centroids (`centroid_geojson`) with `started_at` as the temporal sequencing key.
+
+The transit layer animation is the primary first-time engagement: the camera moves through a life, pausing where years were spent, moving quickly through brief stays. It delivers the emotional impact of a life trajectory before the user interacts with individual stops.
+
+### Artifact 2: Life's Players (lifes_cast)
+
+**Internal synthesis type:** `lifes_cast` (new enum value added in schema v1.1).
+**User-facing names:** Life's Players, Life's Cast, Life's Cast and Characters.
+
+Named for Shakespeare's *As You Like It*, Act II Scene VII:
+
+> *"All the world's a stage, and all the men and women merely players; they have their exits and their entrances."*
+
+**What it is.** A time-series progression of the significant people who played roles in the user's life — from the earliest remembered relationships through the present central figures. It shows how the cast of central figures evolved across life stages: who was present at each chapter, who entered and who exited, who remained central across decades.
+
+**What it is not.** This is categorically distinct from `relationship_portrait`, which goes deep on a single relationship — the arc of one person across the whole life. Life's Players is the ensemble view: all significant people, arranged temporally, showing the composition of the cast at each life stage. The synthesis type `relationship_portrait` remains in the enum for Phase 2 use; it is not being removed, only not prioritized for MVP.
+
+**Why it works at low data density.** The entity seed in Phase 0 Stage 3 collects the ten to fifteen most significant people in the user's life, with rough temporal placement (when they were significant, what relationship type they held). That data is sufficient to render an initial Life's Players view. It does not require dense memory collection about each person — it requires temporal placement and relational classification, which Stage 3 provides. As memory collection deepens, the synthesis enriches; at MVP data levels, it is already personal and recognizable.
+
+**Duration is not the criterion; significance is.** A lifelong spouse and a three-year mentor who changed the user's career are equally valid players. The Synthesis Agent weights by `role_significance` and memory density within a life stage, not by relationship length. A relationship that lasted three years but produced twenty vivid memories should feature prominently in that life stage.
+
+**Architectural note.** The `lifes_cast` synthesis type uses the following scope fields on the `syntheses` record: `user_id` (the owner), `time_range_start` / `time_range_end` (the full life span covered), and `source_memory_ids` (all contributing entity mentions). It does not use `entity_id` or `relationship_id` as scope fields — it is inherently a cross-entity synthesis. The generated `content` JSONB or text represents the time-ordered cast, structured for rendering by the client.
+
+---
+
+## Part XIV: Social Sharing, Comment Capture, and Contribution Model
+
+*April 2026 decision (Decision 7 of the PRD readiness session, extended). Specifies the social distribution mechanism, comment capture pattern, and the contribution model for Share Card holders.*
+
+### Social Media as Primary Distribution Channel
+
+Sharing in Life Chronicle is not a platform-to-holder notification. The primary distribution mechanism is the user sharing a memory or artifact to social media — a post that may include a preview image, a short excerpt, and a link. The share card controls who can access the underlying chronicle content; the social post is both the distribution act and the notification.
+
+This design choice has several architectural implications:
+
+**No in-platform "you have been added" notification required at MVP.** When a card holder arrives via a shared link, they authenticate and see what their card grants on login. Scope is revealed on arrival, not before. The social post — or a direct link sent via messaging — is the implicit invitation.
+
+**`memory_shares` records the share event.** Each time the user shares a memory or synthesis, a `memory_shares` row is written with the channel (social_media, direct_link, sms), the card used to govern access (if any), the sharing timestamp, and optionally the platform post ID if captured. This allows the owner to see a history of what they have shared and where, and allows comment capture to be linked back to specific share instances.
+
+**Share channels are typed.** The `share_channel` enum (`social_media`, `direct_link`, `sms`) is extensible but starts with these three because they cover the realistic distribution mechanisms for MVP: a public social post, a privately shared URL, and an SMS. Future channels (email, within-app share) can be added to the enum.
+
+### Comment Capture
+
+When someone receives a shared memory — whether via social media post or direct link — they may leave a comment. The system captures these comments in `share_comments`, linked to the specific `memory_shares` instance.
+
+Comments are attributed where possible: by email, social handle, display name, or Life Chronicle user ID if the recipient is a registered user. Anonymous comments (where the recipient provides neither identity nor handle) are valid — the comment text is still worth preserving.
+
+**Comments do not enter the chronicle automatically.** They live in `share_comments` and are visible to the owner in a dedicated notification/comments view. They are not memories; they are external responses to shared memories. The owner may choose to manually capture a comment as a memory stub if they find it significant, but no automatic ingestion occurs.
+
+The owner can hide individual comments (`is_hidden = true`) without deleting them. Deletion is not exposed in the MVP UI — the audit principle applies here as elsewhere: what happened remains in the record.
+
+### The Contribution Model (Phase 2)
+
+The `can_contribute` field on `card_holders` (boolean, default false) enables a second permission level for Share Card holders. A contributor can add content to the owner's chronicle — embellishments, additional memories of shared events, details the owner did not have — without that content auto-ingesting into the Raw Vault.
+
+**Contribution flow:**
+1. The contributor (a card holder with `can_contribute = true`) submits a memory contribution linked to a specific existing memory or as a new stub.
+2. The contribution arrives in the owner's review queue as a `memories` record with `contributor_id` set (identifying the contributing contact) and `contribution_status = 'pending'`.
+3. The owner reviews, accepts, modifies, or rejects. Acceptance sets `contribution_status = 'accepted'` and integrates the memory into the canon. Rejection sets `contribution_status = 'rejected'`; the record is retained for audit but hidden from the owner's view.
+4. Attribution is preserved: `contributor_id` on the accepted memory record ensures the source of the contribution is always traceable.
+
+The `triggered_by_memory_id` pattern from The Stroll applies: contributions link to the memory they are enriching via `triggered_by_memory_id` where a specific memory prompted the contribution.
+
+**Contribution permission is Phase 2.** The schema supports it from MVP (the `can_contribute` column exists on `card_holders`; the `contributor_id` and `contribution_status` columns exist on `memories`). The UI for granting contribute access, submitting contributions, and managing the review queue is a Phase 2 deliverable.
+
+**Future: file attachments on contributions (Phase 2+).** The `contribution_attachments` table is added as a schema stub in v1.1. Contributors with contribute access will eventually be able to attach images or files to their contributions. Review status mirrors the memory contribution review model.
+
+### Architectural Implications for the Review Queue
+
+The review queue — already planned as an MVP table — now serves two overlapping purposes: synthesis review (the user reviewing AI-generated synthesis content) and contribution review (the user reviewing external contributions). These are structurally similar workflows — a staged item awaiting owner approval — and should share a review queue model where practical. The `contribution_status` field on `memories` is the primary state machine for contributions; the synthesis lifecycle fields on `syntheses` serve the synthesis review path.
+
+---
+
 ## Appendix: Key Files
 
 - `documentation/schema_v1.sql` — Full PostgreSQL schema with indexes, seed data, and search functions
 - `documentation/DB_Architecture_Design_v1.md` — This document
+- `documentation/access_cards_requirements.md` — Canonical specification for the Access Cards framework that replaces the Part VIII privacy tier model (added April 2026; see Part X for summary)
 
 ## Next Steps
 
-**Privacy Model (completed April 2026):**
-- ✅ 5-tier `privacy_tier` enum created and applied to: `memories`, `entities`, `relationships`, `media`, `syntheses`
-- ✅ `is_sensitive` flag on `dimensions` table for auto-Private enforcement
-- ✅ `compute_synthesis_tier()` function + trigger for most-restrictive-source inheritance
-- ✅ Cascade trigger on `memories.privacy_tier` changes to recompute downstream syntheses
+**Privacy Model — superseded April 2026 by Access Cards (see Part X):**
+- ⚠️ The five-tier `privacy_tier` ENUM and its associated triggers/RLS scaffolding are deprecated. The check-marked items below describe the implementation of the now-superseded model and are retained as the migration's "from" specification.
+- ✅ 5-tier `privacy_tier` enum created and applied to: `memories`, `entities`, `relationships`, `media`, `syntheses` *(to be dropped in cards migration)*
+- ✅ `is_sensitive` flag on `dimensions` table for auto-Private enforcement *(retained; semantics shift from "auto-lock to private" to "auto-isolate from all cards")*
+- ✅ `compute_synthesis_tier()` function + trigger for most-restrictive-source inheritance *(to be dropped; replaced by `synthesis_visibility_cache` mechanism)*
+- ✅ Cascade trigger on `memories.privacy_tier` changes to recompute downstream syntheses *(to be dropped; replaced by visibility-cache recompute)*
 - ✅ RLS policy scaffold documented with commented-out activation stubs
 
 **Pending:**
 
-1. **Add connection group tables** — `user_close_friends`, `user_family_members`, `user_professional_connections`; define membership management UX; activate the commented-out RLS policies once these exist
+1. ~~**Add connection group tables**~~ — **Superseded by Access Cards (Part X).** The `contacts` + `card_holders` tables in the cards model replace `user_close_friends`/`user_family_members`/`user_professional_connections`. Connection-group plurality emerges from card holder lists rather than from per-tier tables.
 2. **Seed the dimension taxonomy** — Populate the `dimensions` table with the full WisdomTopicSort category tree + Gemini Taxonomy additions, marking `is_sensitive = true` on Health/Wellness and Financial series leaf nodes that carry personal risk
 3. **Seed the question bank** — Import interview questions into the `questions` table, linked to dimension IDs
 4. **Define the Capture Agent prompt** — The agent that conducts interviews and writes to `memories`
@@ -667,8 +948,8 @@ The schema additions required to support this architecture are: a `session_type`
 11. **Implement the Temporal Agent** — Build the work cycle (inventory → anchor discovery → question generation → constraint ingestion → propagation); the `temporal_resolution_queue` and `temporal_constraints` tables are ready
 12. **Design the temporal resolution UX** — The "timeline band narrowing" interaction; how temporal Q&A sessions are surfaced to the user (push notification, scheduled session, in-app prompt)
 13. **Seed anchor vocabulary** — Compile a reference list of world events, cultural moments, and historical anchors (elections, moon landings, major cultural events) that the Temporal Agent can use to anchor memories when no personal event is available
-14. **Design the full Phase 0 Ontology Bootstrap Protocol** — Now understood as four stages (Temporal/Geographic Skeleton → Chapter Naming → Entity Seed → Topic Map), not just the residential history interview. Requires designing the validation gate interaction before memory collection begins. Supersedes the narrower "residential history onboarding interview" item.
-15. **Add `session_type` to `interview_sessions`** — Distinguish `ontology_bootstrap`, `memory_collection`, `temporal_resolution`, `entity_resolution`, `review_and_correction`; agent prompts and downstream processing differ substantially by type
+14. ✅ **Phase 0 Ontology Bootstrap Protocol** — Four stages confirmed (Temporal/Geographic Skeleton → Chapter Naming → Entity Seed → Topic Map). Session model decided: multi-session with artifact delivery after each stage (not single long onboarding). Validation gate before memory collection is required. Artifact delivery sequence documented in Part XII.
+15. ✅ **Add `session_type` to `interview_sessions`** — Added in schema v1.1 with `phase0_stage` column. Types: `ontology_bootstrap`, `memory_collection`, `temporal_resolution`, `entity_resolution`, `stroll`, `review_and_correction`.
 16. **Design the assumption log table** — First-class record of every agent inference and disambiguation decision (Tagger classifications, Entity Agent resolutions, Temporal Agent constraint inferences); required for synthesis traceability and user correction path
 17. **Design constraint rules table for synthesis completeness** — Ontological rules specifying what a synthesis of a given type requires (e.g. a `career_narrative` requires ≥2 confirmed employment relationships with non-null start dates); enables dependency-aware gap detection rather than coverage scoring alone
 18. **Implement `generate_residency_constraints()` triggering** — Hook the function to fire automatically when a `lived_at` relationship is inserted or its `started_at`/`ended_at` are updated, so the cascade is immediate
@@ -679,8 +960,8 @@ The schema additions required to support this architecture are: a `session_type`
 20. **Expand taxonomy tables** — The checklist specifies a more granular taxonomy layer than our current `dimensions` tree: `taxonomy_i18n` (internationalization of dimension names and prompts), `taxonomy_versions` (versioned taxonomy management so evolving the category tree doesn't break existing entries), `taxonomy_prompts` (prompt templates stored per taxonomy node, with primary and follow-up variants). Evaluate whether to extend `dimensions` or introduce these as sibling tables.
 21. **Add `sources`, `flags`, `audits` tables** — Moderation and provenance layer currently absent from the schema. `sources` tracks origin of imported content (LinkedIn, email, document, social) with citation metadata, supporting the Raw Vault provenance principle. `flags` supports content moderation and user-reported issues. `audits` is a general access and action log, required for HIPAA readiness (Phase 2 goal) and for the assumption log pattern.
 22. **Define CEF v1 export folder structure formally** — The checklist specifies the exact ZIP layout: `/manifest.json`, `/users/<id>/profile.json`, `/users/<id>/entities.json`, `/users/<id>/taxonomy.json`, `/users/<id>/events.json`, per-entry folders containing `entry.json` + `transcript.vtt` + `transcript.srt` + `transcript.json` + `media/*` + optional `embeddings.json`. SHA-256 checksums in both `manifest.json` and each `entry.json`. Delta exports ("since last backup") required. Locate the companion `cef-schema.json` (referenced but not yet found) for formal validation schema.
-23. **Document the privacy-safe RAG retrieval ordering** — Enforce in all vector search implementations: (1) permissions filter in SQL/RLS first, (2) metadata filters (time, entities, taxonomy), (3) pgvector similarity on allowed rows only, (4) app-level rerank and deduplicate. Running vector similarity before the permissions filter is a privacy vulnerability. This ordering must be documented as an architectural constraint, not left to individual implementation decisions.
-24. **Define JWT `role_tier` claim for RLS performance** — Rather than joining connection-group tables on every query, encode the viewer's privacy tier as a JWT claim (`role_tier`: public | professional | family | close_friends). The RLS policies read this claim directly, making tier-filtered queries fast. Design claim issuance, refresh, and revocation logic alongside the connection group tables (item 1 above).
+23. **Document the privacy-safe RAG retrieval ordering** — Enforce in all vector search implementations: (1) permissions filter in SQL/RLS first, (2) metadata filters (time, entities, taxonomy), (3) pgvector similarity on allowed rows only, (4) app-level rerank and deduplicate. Running vector similarity before the permissions filter is a privacy vulnerability. This ordering must be documented as an architectural constraint, not left to individual implementation decisions. *(Still required under Access Cards; the permissions filter now calls `viewer_can_access()` per Part X §5.)*
+24. **Define JWT `role_tier` claim for RLS performance** — *Modified by Access Cards (Part X):* the JWT no longer carries a single ordered `role_tier` value. Instead it carries the **set of card IDs the viewer holds for the queried owner**, plus a recency timestamp for cache validation. RLS policies read this claim to short-circuit the `card_holders` join on every query. Design claim issuance, refresh, and revocation logic as part of the cards migration (Part X §9).
 25. **Authentication: Passkeys (WebAuthn) as primary, magic link as fallback** — Earlier documents led with magic link as primary auth. The checklist recommends Passkeys (WebAuthn) as primary with magic link fallback. Passkeys are now broadly supported on iOS Safari 16+ and Android Chrome 111+ and are significantly more secure. Confirm this as the auth strategy in the final PRD.
 26. **Define analytics funnel and observability stack** — Instrument the full capture funnel: `sms_sent` → `deeplink_opened` → `tts_played` → `record_started` → `record_uploaded` → `asr_success` → `entry_completed`, plus error events: `mic_denied`, `media_recorder_unsupported`, `upload_failed`, `asr_failed`. Recommended stack: PostHog (product analytics) + OpenTelemetry (distributed tracing). Tie analytics events to OTEL traces for drop-off diagnosis.
 27. **Capture cost guardrails as operational constraints** — TTS capped at 20 seconds per prompt, cached by template-hash + variables. Client-side silence trim before upload (−40 dB threshold, head/tail). Recordings over 3 minutes dropped at client, not truncated. ASR batched with capped retries and exponential backoff. These are not UX decisions — they are cost-control architecture that must be enforced at the API and client layers.
@@ -692,7 +973,7 @@ The schema additions required to support this architecture are: a `session_type`
 
 30. **Add `fuzzy` text field to temporal model** — The CEF v1 `Event` definition includes a `fuzzy` free-text field alongside `start`, `end`, and `confidence`. This is the human-readable description of temporal uncertainty ("sometime in the late 1980s", "before my sister was born") that accompanies the structured uncertainty envelope. Maps naturally to our `time_precision` model but adds an explicit natural-language companion that the Temporal Agent can use as evidence and that exports can carry. Add `time_fuzzy_description TEXT` to the `memories` table.
 
-31. **Design the Executor role as a future 6th privacy tier** — `Revised_PRD_v2.md` lists "Executor role" in post-MVP scope. This is a posthumous/estate access role: a designated person who gains access to some or all of a user's chronicle after death or incapacitation. It is not simply another sharing tier — it requires a separate identity, a triggering condition, and potentially granular access rules. The 5-tier enum should be designed to accommodate a future `executor` value without schema migration, or the Executor role should be managed as a separate access control layer. Flag this as an architectural decision to make before finalizing the RLS design.
+31. ~~**Design the Executor role as a future 6th privacy tier**~~ — **Resolved by Access Cards (Part X).** Under the cards model the Executor is a card with a posthumous-trigger validity window and a configurable scope, held by one or more designated contacts. No new ENUM value, no separate access-control layer. Detailed design (trigger conditions, scope defaults, holder-confirmation flow) deferred to Phase 3 per the access cards requirements doc.
 
 32. **Support user-defined custom taxonomy nodes** — `Revised_PRD_v2.md` specifies: "User-defined custom nodes; agent suggests merges and generates 3–5 starter prompts." Our current `dimensions` table supports hierarchy and custom entries structurally, but the application layer has no defined workflow for user-created nodes, no merge suggestion capability, and no auto-generated prompt seeding for custom nodes. The Planner Agent needs a `createCustomNode` capability and a `mergeSuggestion` operation (both named in the tRPC API surface in `lovable-build-spec.v2.md`).
 
@@ -700,4 +981,58 @@ The schema additions required to support this architecture are: a `session_type`
 
 34. **Adopt SLOs from the build spec as PRD performance requirements** — `lovable-build-spec.v2.md` specifies: deep-link open ≤2s TTFB; TTS tap-to-play ≤300ms (cached); 2-minute audio upload ≤10s on LTE. These are the only formal performance targets across all reviewed documents and should be carried into the PRD as acceptance criteria baselines.
 
-35. **Define the tRPC API surface as the canonical agent-facing interface** — `lovable-build-spec.v2.md` names the API namespaces: `entries` (createFromUpload, getTimeline, searchHybrid, markTier, markIncomplete), `taxonomy` (getPlan, getCoverage, createCustomNode, mergeSuggestion), `flags` (create, resolve), `export` (createFull, createDelta, status, download), plus REST webhooks for SMS, recordings, ingest, and billing. The `markIncomplete` operation is notable — it is the explicit API for returning an entry to the Incomplete Queue for follow-up, which the agent uses after ASR to flag entries needing clarification. This should be in the design doc as the planned API surface before implementation begins.
+35. **Define the tRPC API surface as the canonical agent-facing interface** — `lovable-build-spec.v2.md` names the API namespaces: `entries` (createFromUpload, getTimeline, searchHybrid, markTier, markIncomplete), `taxonomy` (getPlan, getCoverage, createCustomNode, mergeSuggestion), `flags` (create, resolve), `export` (createFull, createDelta, status, download), plus REST webhooks for SMS, recordings, ingest, and billing. The `markIncomplete` operation is notable — it is the explicit API for returning an entry to the Incomplete Queue for follow-up, which the agent uses after ASR to flag entries needing clarification. This should be in the design doc as the planned API surface before implementation begins. *(Note: under Access Cards, `entries.markTier` becomes `entries.attachToCard` / `entries.detachFromCard`.)*
+
+**From April 2026 schema v1.1 additions:**
+
+36. **Seed five system cards per new user account** — On account creation, insert five `cards` rows with `is_system = true` and `system_code` values (private, close_friends, family, professional, public). Scopes and holder lists start empty; the user populates them. This is a required application-layer bootstrap step, not a schema migration item. Must run before any content is created for the user.
+
+37. **Implement `viewer_can_access()` SQL function** — The access evaluation algorithm in `access_cards_requirements.md §5` must be implemented as a PostgreSQL function before RLS policies can be activated. The function takes `(viewer_id UUID, owner_id UUID, record_type TEXT, record_id UUID)` and returns `BOOLEAN`. Its performance profile (single-digit ms for 1–5 cards with 1–3 populated scope axes) must be verified before RLS activation.
+
+38. **Activate RLS policies on content tables** — Once `viewer_can_access()` is implemented and `synthesis_visibility_cache` is being maintained, activate RLS on `memories`, `entities`, `relationships`, `media`, and `syntheses`. The synthesis policy reads from `synthesis_visibility_cache` rather than calling `viewer_can_access()` per row. The scaffold is already documented in the schema file.
+
+39. **Design the Life Globe temporal transit animation** — The transit layer (camera moving between geographic stops chronologically, dwelling proportional to `days_at_place`) is specified in Part XIII. Implementation requires: computing a camera path from the ordered sequence of `centroid_geojson` values from `life_journey_geojson()`, implementing easing and dwell-time logic in Cesium.js, and defining the interaction model (play/pause, scrubbing, jumping to a specific stop). No new database work is needed — the data contract is fully served by the existing `life_journey` view.
+
+40. **Build the Life's Players synthesis pipeline** — The `lifes_cast` synthesis type (added to the enum in v1.1) needs a Synthesis Agent prompt and output structure. Key design decisions for the prompt: how to weight entity significance across life stages (memory density × role significance), how to handle relationships of short duration but high significance, and what the output structure looks like (time-ordered cast list with per-entity summaries, or prose narrative, or hybrid). The client rendering must accommodate the ensemble-view format, which is different from the prose-narrative format of `life_period_narrative` and `entity_biography`.
+
+41. **Design the social sharing UX and `memory_shares` integration** — The share flow in the web application must write a `memory_shares` row for every share act. Design decisions: how the owner selects which card to use (if any) when sharing, how the share URL is constructed (should it carry the card ID, or resolve via the user's card holdings on the recipient's auth), how the `share_comments` view is surfaced to the owner (notification badge, inbox-style view, or per-memory comment thread), and how anonymous vs. attributed comments are handled in the UI.
+
+42. **Design the contribution review queue UX** — Phase 2 deliverable, but architecture must anticipate it. The review queue holds: contributions from card holders with `can_contribute = true` (pending memories with `contributor_id` set), contribution attachments from `contribution_attachments` with `review_status = 'pending'`, and optionally synthesis review items. The owner accepts, modifies, or rejects each item. Design the notification mechanism (how does the owner know contributions have arrived?) and the review interaction (accept-as-is, edit-then-accept, reject-with-note).
+
+43. **Define `user_periods` population flow** — The `user_periods` table (added in v1.1) is populated during Phase 0 Stage 2 (chapter naming). The system proposes periods derived from the residential spine (e.g., one period per home, named after the place); the user renames, merges, splits, and confirms them. Design the interaction: does the agent present all proposed periods at once for review, or propose them one by one? How does the Capture Agent decide when the chapter naming session is "complete"? What is the validation that triggers `confirmed_by_user = true` on each period?
+
+44. **Implement `memory_periods` assignment pipeline** — Once `user_periods` are confirmed, existing memories need to be assigned to periods (via `memory_periods`). This is an automated Tagger Agent task: for each memory, evaluate its `time_estimate` against each period's `time_range_start` / `time_range_end`, and insert `memory_periods` rows for matches. Memories may belong to multiple periods if their dates overlap with more than one. The assignment must be re-run when period date ranges change (user edits a chapter's bounds).
+
+**From April 2026 gap review (Opus 4.7) — newly identified items:**
+
+36. **Design agent orchestration / job queue / dispatch model** — The schema's claim that agents can run concurrently is structurally true but operationally underspecified. There is no event/queue/dispatcher table or external scheduler choice documented. Decide between an in-DB queue table (e.g. `agent_jobs` with status, kind, priority, lease) versus an external orchestrator (Inngest, Trigger.dev, Supabase Edge cron). Document failure modes, retries, and observability. Without this, "Synthesis Agent regenerates when `is_current = false`" is a database flag, not a working scheduler.
+
+37. **Add unified user review inbox (`review_queue` table)** — Pending entity merges, contradiction flags, sensitive-promotion confirmations, agent-inferred temporal constraints awaiting confirmation, suggested syntheses for review, and custom-dimension merge proposals all need a single user-facing surface. Without it, these signals are scattered across views and ignored. Generic table holding (item_type, item_id, surfaced_at, resolved_at, resolution).
+
+38. **Add `user_periods` and `memory_periods` for chapter naming** — Phase 0 Stage 2 elicits the user's own vocabulary for life chapters ("the Philly years," "after my father died"). The current schema has no first-class home for these; `life_stage` is universal (Early Childhood, Young Adult, …), not personal. New tables: `user_periods` (id, user_id, name, description, started_at, ended_at, anchor_relationship_ids, anchor_entity_ids) and `memory_periods` junction. Memories link to user-named chapters in addition to life_stage. Required for the Period Narrative shareable artifact.
+
+39. **Design soft-delete / redaction for memories** — The append-only Raw Vault principle conflicts with right-to-erasure (GDPR) and with reconsidered memories. Add `redacted_at`, `redaction_reason`, `redacted_by` on `memories`; redacted rows are invisible to all reads except an explicit owner-controlled audit view. Distinct from physical delete — preserves audit trail of the redaction event.
+
+40. **Convert ENUMs to controlled-vocabulary tables where extension is foreseeable** — The schema claims migration-free extensibility but several ENUMs (`memory_source`, `entity_type`, `synthesis_type`, `media_type`, `place_type`, `relationship_role`) require an `ALTER TYPE` migration to add a new value. Convert these to lookup tables (`memory_source_types`, `synthesis_types`, etc.) with foreign-key references on the dependent columns. Retain ENUMs only where the value set is genuinely bounded by design (none in this list qualifies; all are foreseeable to grow). The `privacy_tier` ENUM is dropped entirely under Access Cards (Part X).
+
+41. **Add second-person memory mode** — A daughter interviewing her father about his childhood produces memories whose subject is the father but whose narrator is the daughter. Today's schema's `memory_entities.role` allows witness/participant/etc. but does not cleanly distinguish "told by" from "experienced by." Add `subject_user_id` to `memories` (defaults to `user_id`; differs when capture is on behalf of another). Update Capture Agent to support the on-behalf-of flow. Unlocks family-to-elder capture as the primary growth wedge for the secondary market.
+
+42. **Add forward-looking content schema** — The product brief promises "progressive history as they experience it in real time" but the schema models only retrospective memories. Goals, anticipated events, in-progress projects, and aspirations have no home. Decide between extending `memories` with a `tense` field (past/present/future) or introducing a parallel `intentions` / `aspirations` table. The latter is cleaner because the temporal-uncertainty model is calibrated for retrospective memory; forward-looking content has different epistemic structure.
+
+43. **Define the synthesis regeneration cost model** — Real-time cascade regeneration on every memory insert is expensive and slow at scale. Adopt a pull-based, batched policy: invalidation marks records stale; regeneration runs on a schedule (nightly per user) and on-demand when the user opens a synthesis view. Add `synthesis_refresh_policy` per user (immediate / batched / on-demand). UI shows "updated 3 hours ago" or "refresh available" rather than blocking on regeneration. Define per-user monthly $ ceilings as architectural constraint, not deployment concern.
+
+44. **Build an evaluation framework from day one** — No mechanism today to know whether the Capture Agent is asking good questions or whether a synthesis is accurate. Add: thumbs up/down on every synthesis the user reads, a `prompt_versions` table tracking deployed prompt strings with rolling quality scores, a periodic "is this still right?" review prompt against a sample of memories, and an automated weekly summary of low-rated outputs paired with the prompts that produced them. Without this loop, agent quality decays silently.
+
+45. **Sketch subscription / billing / tenancy model** — Connection-group sharing (now Access Cards) implies multi-user, which implies tenancy and billing. Define plans, billing events, usage metering tables before card holders begin viewing each other's content. Usage metering is also vital for cost guardrails (item 27, item 43).
+
+46. **Enforce raw-vault sanctity as a Postgres role** — The principle "AI never edits raw memories" should be a database-permissions fact, not application discipline. Create a `capture_agent` role with `INSERT` (no `UPDATE`, no `DELETE`) on `memories` and `interview_sessions`. The Synthesis, Tagger, and Entity Agents get their own roles with appropriate per-table grants. The Service Role retains full access for migrations and admin operations. This survives a buggy agent prompt that tries to UPDATE a memory: the database refuses, rather than silently corrupting the vault.
+
+**From April 2026 — The Stroll feature additions (Part XI):**
+
+48. **Implement the Stroll curation engine** — Probabilistic memory selection weighted by: anniversary proximity, relational density, recording recency (favor older-recorded), synthesis gap, and explicit user signals. Update weights after each session from `stroll_sessions` engagement signals. Define the silence threshold for voice (suggested 6–10s) and the UI state for text (open input, no prompt text).
+
+49. **Implement the Synthesis Agent path from reflections → wisdom_distillation** — Define the `synthesis_ready` flagging criteria (minimum content length? reflection_type must not be 'other'? at least one temporality tag?). The Synthesis Agent must query the `reflections` table filtered by `synthesis_ready = true` and `user_id` before generating a `wisdom_distillation` synthesis. Note: `wisdom_distillation` is already in the `synthesis_type` enum — the synthesis table requires no schema change, only a new agent prompt.
+
+50. **Enforce non-destructive versioning in all synthesis reads** — Synthesis agents and the Search Agent must `LEFT JOIN memory_revisions` on `source_memory_id` and apply the most recent non-retracted revision before rendering any memory record. This is an **architectural constraint**, not an optional enhancement: a synthesis that renders a memory the user has corrected misrepresents their chronicle. Document the JOIN pattern as a required step in the Synthesis Agent prompt template.
+
+47. **Resolve the video / Thread-2 architectural split** — The local `Personal-Life-Chronicle-PRD.docx` (Feb 2026) describes a video-first system and is still active in the project root. Memory notes record the decision to defer video and lead with voice/interview, but the canonical PRD on disk has not been retired. Move the document to an archive folder; add a one-line note at the project root stating that voice/interview is the primary capture path and media-intelligence (video atomization, facial recognition) is a Phase 3 input modality.
