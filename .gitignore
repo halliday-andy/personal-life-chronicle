@@ -2,3 +2,16 @@
 **/.DS_Store
 *.swp
 *.swo
+
+# Next.js
+.next/
+out/
+node_modules/
+
+# Environment — never commit secrets
+.env.local
+.env.*.local
+
+# Supabase local state
+supabase/.branches
+supabase/.temp
