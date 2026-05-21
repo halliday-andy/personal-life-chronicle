@@ -1,0 +1,95 @@
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+// Five system cards seeded for every new user.
+// system_code values are the legacy tier names — they live on as card names
+// while the schema underneath is Access Cards-only.
+const SYSTEM_CARDS = [
+  {
+    name: 'Private',
+    description: 'Only you can see this content.',
+    system_code: 'private',
+    is_public: false,
+    scope_rules: {},
+  },
+  {
+    name: 'Close Friends',
+    description: 'People you share your innermost experiences with.',
+    system_code: 'close_friends',
+    is_public: false,
+    scope_rules: {},
+  },
+  {
+    name: 'Family',
+    description: 'Your family members.',
+    system_code: 'family',
+    is_public: false,
+    scope_rules: {},
+  },
+  {
+    name: 'Professional',
+    description: 'Colleagues and professional connections.',
+    system_code: 'professional',
+    is_public: false,
+    scope_rules: {},
+  },
+  {
+    name: 'Public',
+    description: 'Anyone with a link can view this content.',
+    system_code: 'public',
+    is_public: true,
+    scope_rules: {},
+  },
+] as const
+
+serve(async (req) => {
+  try {
+    const payload = await req.json()
+    const userId: string | undefined = payload?.record?.id
+
+    if (!userId) {
+      return new Response(JSON.stringify({ error: 'No user ID in payload' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Service role client — bypasses RLS for this privileged seeding operation.
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    )
+
+    const rows = SYSTEM_CARDS.map((card) => ({
+      owner_user_id: userId,
+      name: card.name,
+      description: card.description,
+      is_system: true,
+      system_code: card.system_code,
+      is_active: true,
+      is_public: card.is_public,
+      scope_rules: card.scope_rules,
+    }))
+
+    const { error } = await supabase.from('cards').insert(rows)
+
+    if (error) {
+      console.error('Failed to seed system cards:', error)
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
+    return new Response(
+      JSON.stringify({ seeded: SYSTEM_CARDS.length, user_id: userId }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    )
+  } catch (err) {
+    console.error('Unexpected error in on-user-created:', err)
+    return new Response(JSON.stringify({ error: String(err) }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+})
