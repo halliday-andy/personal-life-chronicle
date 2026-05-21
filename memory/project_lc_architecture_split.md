@@ -1,36 +1,26 @@
 ---
-name: Life Chronicle architectural split — open question
-description: Two distinct codebases represent diverging input modalities; strategic direction now leaning toward interview-first unified approach
+name: Life Chronicle architectural split — resolved
+description: Two diverging product threads (voice-first capture vs. video-first media intelligence) were reconciled April 2026. Voice/interview is the primary entry point; video is a Phase 2/3 input modality. This file is retained for the resolution and the durable schema-extensibility constraint that emerged.
 type: project
 originSessionId: 07968d59-e854-49c3-bbf3-2ce8d72c13e0
 ---
-There are two separately developed product threads that both belong to the Life Chronicle vision but came from different coding efforts and have meaningfully different architectures:
 
-**Thread 1 — Voice/Narrative Capture (Google Drive, 2024–Oct 2025)**
-- AI agent prompts user via SMS with taxonomy-driven questions
-- User records async voice responses; Whisper ASR transcribes
-- Planner tracks coverage across life taxonomy (career, relationships, childhood, etc.)
-- Stack: Supabase + pgvector, React, Twilio, Lovable.dev build target
-- Product name explored: MemRec
-- Key docs: Revised_PRD_v2.md, Codex Strategy Doc, Gemini Taxonomy
+## Resolution (April 2026)
 
-**Thread 2 — Video Media Intelligence (Local working folder, Feb 2026 PRD.docx)**
-- User uploads existing home video files
-- Facial recognition + entity extraction builds knowledge graph
-- People tracked across decades (aging), relationships mapped
-- Stack: Supabase + pgvector, React, Gemini AI, face-api.js/InsightFace
-- Built as extension of a separate "Creative Edit Suite" project already in development
-- Key doc: Personal-Life-Chronicle-PRD.docx
+The conversational interview is the primary capture path. The interview-driven extraction of the personal schema (places, careers, relationships, interests, milestones) produces a unique per-user graph that becomes the organizing framework. All other media types — video, photos, documents, audio files — attach to nodes that already exist in that graph as evidence and enrichment.
 
-**Strategic direction established (April 2026):**
-Andy's instinct — confirmed — is that the conversational interview is the correct primary entry point. The interview-driven extraction of the personal schema (places lived, careers, relationships, interests, milestones, etc.) produces a unique per-user graph that becomes the organizing framework. All other media types — video, photos, documents, audio files — attach to nodes that already exist in that graph as evidence and enrichment, rather than requiring entity inference from raw media.
+**Video atomization / facial recognition is deferred to Phase 2–3** (see prd_readiness Decision 1). Not abandonment — it becomes a rich input modality once the schema exists to receive it.
 
-Video atomization/facial recognition work is **deferred** until the core interview system, timeline, and database schema are established. This is not abandonment of the video thread — it becomes a rich input modality once the schema exists to receive it.
+The two prior product threads:
+- **Voice/Narrative Capture** (Google Drive, 2024 – Oct 2025): SMS-based AI agent, async voice responses, Whisper transcription, taxonomy-driven planner. → This is the architecture the MVP builds on.
+- **Video Media Intelligence** (Feb 2026 PRD.docx): Video upload, facial recognition, knowledge graph from media. → Archived to `documentation/archive/`. Phase 2/3 modality.
 
-**Database design constraint:**
-The schema must be flexible/extensible by design. New dimensions not anticipated at outset must be addable without migration. New timeline entries must be insertable retroactively. Relationships between entities must be revisable as user understanding deepens. This argues for graph-ready relational structure (taxonomy nodes as first-class entities, not hardcoded columns).
+## Durable schema-extensibility constraint
 
-**The open question (still unresolved):**
-Whether the two threads ultimately become one product or two products that share a data layer. Deferred for deliberate conversation.
+This was the architectural lesson that survived the merge of threads: **the schema must be flexible/extensible by design.** New dimensions not anticipated at outset must be addable without migration. New timeline entries must be insertable retroactively. Relationships between entities must be revisable as user understanding deepens.
 
-**How to apply:** When advising on architecture, prioritize the interview/voice capture system first. Frame video and other media as input modalities that enrich an existing schema. Always design for schema extensibility — new dimensions must be addable at any time.
+This is why dimensions are a self-referencing tree (rows, not ENUM values), why entities have a parent chain for geographic hierarchy, and why ENUMs are being converted to controlled-vocabulary tables wherever extension is foreseeable. New life dimensions are a row insert, never a schema migration.
+
+## How to apply
+
+When advising on architecture, prioritize the interview/voice capture system. Frame video and other media as input modalities that enrich an existing schema. Always design for schema extensibility — new dimensions, new entity types, new relationship types must be addable at any time without DDL.

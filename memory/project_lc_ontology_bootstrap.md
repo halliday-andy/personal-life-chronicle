@@ -1,6 +1,6 @@
 ---
 name: Life Chronicle — Ontology Bootstrapping Theory and Interview Design
-description: Dependency-ordered theory of personal ontology elicitation; four-stage Phase 0 protocol; distinction between ontology elicitation and memory collection as separate interview modes
+description: Dependency-ordered theory of personal ontology elicitation; three-strand Phase 0 protocol (amended 2026-04-30 to remove chapter naming; further amended 2026-05-17 to remove sequential stages — strands run in parallel under capture assistant orchestration); distinction between ontology elicitation and memory collection as separate interview modes
 type: project
 originSessionId: b93109c0-5f80-46b4-9917-1ba2344df045
 ---
@@ -90,35 +90,37 @@ These are **different modes** with different agent behaviors, different question
 
 ---
 
-## Phase 0 Redefinition
+## Phase 0 Protocol (current — three parallel strands)
 
-Phase 0 is broader than "residential history." It is the full **Ontology Bootstrap Protocol** — a structured, staged interview that must be completed (or substantially complete) before memory collection begins. Residential history is Stage 1 of Phase 0, not the entirety of it.
+Phase 0 is the **Ontology Bootstrap Protocol** — the structured elicitation that must be substantially complete before memory collection enters its mature phase. Residential history is one strand, not the entirety.
 
-Proposed Phase 0 stages:
+**Amendment history:**
 
-**Stage 1 — Temporal/Geographic Skeleton** (~15–20 min)
-- Birth year and location
-- Complete residential history in order (place, household, approximate dates, reason for move)
-- Major life transitions (marriages, divorces, career pivots, deaths of close family)
+- **2026-04-30 (Decision 3, original):** Reduced four stages to three by removing chapter naming. Reason: asking a user to pre-define broad life chapter labels before any collection has occurred is impractical and artificial. `user_periods` remains in the schema for post-collection use; not populated in Phase 0.
+- **2026-05-17 (parallel-strands amendment):** Eliminated explicit user-declared stage completion entirely. The three remaining strands run in parallel under the capture assistant's orchestration. No "Stage 1 → Stage 2 → Stage 3" gating; no "I'm done with Stage 1" button. The user engages with whichever strand the orchestrator prompts next based on chronicle state; the system internally tracks data accumulation and ships artifacts when thresholds are met.
 
-**Stage 2 — Chapter Naming** (~10–15 min)
-- "How do you think about the major chapters of your life?"
-- Elicit the person's own vocabulary for their life periods
-- Confirm the system's inferred periodization and correct it
-- This vocabulary becomes the canonical period naming used in all subsequent sessions
+**The three strands (canonical 2026-05-17):**
 
-**Stage 3 — Entity Seed** (~20–30 min)
-- Key family members (name, relationship type, period of significance)
-- Key professional figures (mentors, managers, collaborators, adversaries)
-- Key institutions (schools, employers, organizations joined)
-- Note: aim for completeness on the most significant; long tail can be filled in during memory collection
+| Strand | What it builds | Primary surface | Threshold artifact |
+|---|---|---|---|
+| Residential (was Stage 1) | Temporal/geographic spine — places lived, in sequence, with available date precision | Life Globe pinning UI (`feature_residential_globe_onboarding.md`) + Timeline UI | Life Globe (delivered when ≥3 main-residence pins with ≥1 date hint) |
+| Entity (was Stage 2) | Seed of key people, institutions, organisations | Capture assistant conversation + entity-confirmation cards in Review Queue | Entity Portrait of a key person (≥3 person entities with non-trivial context) |
+| Topic (was Stage 3) | Confirmation of active life dimensions; recurring themes | Capture assistant conversation + dimension confirmation UI | Life's Players (lifes_cast) synthesis (≥5 person entities across multiple life stages + ≥3 residential pins) |
 
-**Stage 4 — Topic Map** (~10–15 min)
-- Main areas of interest, passion, professional domain
-- Recurring life themes or preoccupations
-- What this person considers the "spine" of their story (if they have a sense of it)
+**Threshold events** fire as `chronicle/threshold.reached` (replacing the obsolete `phase0/stage.completed`) and trigger downstream synthesis.
 
-**Validation gate before memory collection:** After Stage 4, the system presents its understanding of the person's ontology scaffold — the periods, major entities, and topic domains — and asks the person to confirm, correct, or expand. Memory collection does not begin until this is confirmed.
+**Dependency theory unchanged:** Tier 1 structural scaffold (residential) is conceptually prior to Tier 2 entity seed, which is conceptually prior to Tier 3 topic map. The orchestrator enforces this internally — it prompts toward the residential strand first when the user is new, weaves in entity prompts once enough residential structure exists, and starts surfacing topic-mapping prompts once entity content is dense enough for theme inference.
+
+**No validation gate before memory collection.** The earlier model had an explicit "Phase 0 complete?" gate. That's gone. Memory collection and Phase 0 strand-building interleave naturally — every memory the user enters also populates entity stubs, dimension hints, and (if location is mentioned) place-resolution candidates against the residential spine.
+
+**Canonical sources:**
+
+- `documentation/feature_residential_globe_onboarding.md` v1.1 — residential strand UX
+- `documentation/feature_capture_assistant.md` v1.1 — orchestrator + strand prompting strategy
+- `memory/project_lc_prd_readiness.md` Decision 3 (amended 2026-05-17) — the decision record
+- `CLAUDE.md` item 4 — the architectural invariant (updated 2026-05-17 to reflect parallel strands)
+
+**Earlier sections of this file (the four-tier dependency theory, ontology vs. memory-collection modes, gap-aware reasoning implications) remain valid as theory and are unchanged. Only the user-facing protocol manifestation changed from sequential stages to parallel strands.**
 
 ---
 

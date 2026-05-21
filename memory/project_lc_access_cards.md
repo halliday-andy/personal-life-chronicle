@@ -36,4 +36,14 @@ cards, contacts, card_holders, record_card_grants, synthesis_visibility_cache, c
 - Treat `privacy_tier` as deprecated in any future schema work
 - The card model unblocks Executor role (item 31), training-consent layer, and reciprocal sharing patterns — all express as cards rather than as new ENUM values
 - Working draft requirements: `/Personal-Life-Chronicle/documentation/access_cards_requirements.md`
-- 10 open questions still pending Andy's resolution (term "card" vs. "audience", max card count, holder notification policy, link-based shares, view-as-holder UI, granular permissions beyond view, scope-vs-explicit conflict resolution, anonymized research access, etc.)
+- Several open questions resolved 2026-04-30; see `memory/project_lc_prd_readiness.md` Decisions 6 and 7
+
+## Private notes — a separate visibility layer below Access Cards (added 2026-05-17)
+
+Every memory has a `private_notes` column that is **owner-only regardless of any Access Card grants on the memory**. This is not another card tier — it's a separate content layer within each card. The Access Card governs *which* memories a holder can see; private notes are a layer *within* each memory that holders never see, even when the memory is granted to them.
+
+Example: a memory of a workplace event is on the Professional card (visible to colleagues with that card). The owner's frank assessment of a colleague's behaviour during the event sits in `private_notes` and is never exposed to anyone but the owner — even though the memory itself is shared.
+
+**Schema/RLS implication:** `viewer_can_access()` (when fully implemented in Step 13) must project all memory columns except `private_notes` when the viewer is not the owner. Column-level filter, not row-level.
+
+Canonical: `documentation/feature_capture_assistant.md` v1.1 §10.3 and `memory/project_lc_capture_assistant.md`.
