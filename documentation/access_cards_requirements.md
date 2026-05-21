@@ -450,7 +450,7 @@ The migration is lossless — every prior tier value maps to a system card inclu
 
 **OQ-4.** Does a holder receive a notification when a card they hold has its scope changed? (Default: yes, but they only see what they're allowed to see.)
 
-**OQ-5.** Should we model "share with anyone who has this URL" (link-based access without identifying the viewer) as a separate primitive from cards, or as a card variant? Recommend: link-based shares are tokens scoped to a single record-set; not cards. Defer to Phase 2.
+**OQ-5.** ✅ RESOLVED (May 2026) — Link-based shares are a separate primitive from cards, not a card variant. Implemented as **Single Post Share** in MVP. Token (`share_token UUID`) embedded in URL `/share/{token}` is the sole credential; no login required; anyone with the URL can view the shared item. The `card_id` on `memory_shares` records the privacy context at time of share (defaults to the Private system card) for audit purposes only — it is not a permission gate. Owner can set optional expiry and revoke at any time. Schema: new columns on `memory_shares` — `share_token`, `expires_at`, `is_revoked`, `revoked_at`, `view_count`, `last_viewed_at`. This is entirely independent of the Access Cards permission stack; the two systems coexist without interference.
 
 **OQ-6.** Holder-side experience: when Beth holds a Family card from Andy and a Family card from her cousin Joe, does she see one merged feed of accessible content, or two separate views? Recommend separate (preserves context); revisit after user testing.
 

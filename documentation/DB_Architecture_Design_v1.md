@@ -993,7 +993,7 @@ The review queue — already planned as an MVP table — now serves two overlapp
 
 39. **Design the Life Globe temporal transit animation** — The transit layer (camera moving between geographic stops chronologically, dwelling proportional to `days_at_place`) is specified in Part XIII. Implementation requires: computing a camera path from the ordered sequence of `centroid_geojson` values from `life_journey_geojson()`, implementing easing and dwell-time logic in Cesium.js, and defining the interaction model (play/pause, scrubbing, jumping to a specific stop). No new database work is needed — the data contract is fully served by the existing `life_journey` view.
 
-40. **Build the Life's Players synthesis pipeline** — The `lifes_cast` synthesis type (added to the enum in v1.1) needs a Synthesis Agent prompt and output structure. Key design decisions for the prompt: how to weight entity significance across life stages (memory density × role significance), how to handle relationships of short duration but high significance, and what the output structure looks like (time-ordered cast list with per-entity summaries, or prose narrative, or hybrid). The client rendering must accommodate the ensemble-view format, which is different from the prose-narrative format of `life_period_narrative` and `entity_biography`.
+40. ✅ **Build the Life's Players synthesis pipeline** — Fully specified in **Part XV** (May 2026): entity significance weighting model, output JSON schema, Synthesis Agent prompt design, client rendering requirements, and synthesis lifecycle. Resolves this item.
 
 41. **Design the social sharing UX and `memory_shares` integration** — The share flow in the web application must write a `memory_shares` row for every share act. Design decisions: how the owner selects which card to use (if any) when sharing, how the share URL is constructed (should it carry the card ID, or resolve via the user's card holdings on the recipient's auth), how the `share_comments` view is surfaced to the owner (notification badge, inbox-style view, or per-memory comment thread), and how anonymous vs. attributed comments are handled in the UI.
 
@@ -1005,7 +1005,7 @@ The review queue — already planned as an MVP table — now serves two overlapp
 
 **From April 2026 gap review (Opus 4.7) — newly identified items:**
 
-36. **Design agent orchestration / job queue / dispatch model** — The schema's claim that agents can run concurrently is structurally true but operationally underspecified. There is no event/queue/dispatcher table or external scheduler choice documented. Decide between an in-DB queue table (e.g. `agent_jobs` with status, kind, priority, lease) versus an external orchestrator (Inngest, Trigger.dev, Supabase Edge cron). Document failure modes, retries, and observability. Without this, "Synthesis Agent regenerates when `is_current = false`" is a database flag, not a working scheduler.
+36. ✅ **Design agent orchestration / job queue / dispatch model** — The schema's claim that agents can run concurrently is structurally true but operationally underspecified. There is no event/queue/dispatcher table or external scheduler choice documented. Decide between an in-DB queue table (e.g. `agent_jobs` with status, kind, priority, lease) versus an external orchestrator (Inngest, Trigger.dev, Supabase Edge cron). Document failure modes, retries, and observability. Without this, "Synthesis Agent regenerates when `is_current = false`" is a database flag, not a working scheduler.
 
 37. **Add unified user review inbox (`review_queue` table)** — Pending entity merges, contradiction flags, sensitive-promotion confirmations, agent-inferred temporal constraints awaiting confirmation, suggested syntheses for review, and custom-dimension merge proposals all need a single user-facing surface. Without it, these signals are scattered across views and ignored. Generic table holding (item_type, item_id, surfaced_at, resolved_at, resolution).
 
@@ -1036,3 +1036,411 @@ The review queue — already planned as an MVP table — now serves two overlapp
 50. **Enforce non-destructive versioning in all synthesis reads** — Synthesis agents and the Search Agent must `LEFT JOIN memory_revisions` on `source_memory_id` and apply the most recent non-retracted revision before rendering any memory record. This is an **architectural constraint**, not an optional enhancement: a synthesis that renders a memory the user has corrected misrepresents their chronicle. Document the JOIN pattern as a required step in the Synthesis Agent prompt template.
 
 47. **Resolve the video / Thread-2 architectural split** — The local `Personal-Life-Chronicle-PRD.docx` (Feb 2026) describes a video-first system and is still active in the project root. Memory notes record the decision to defer video and lead with voice/interview, but the canonical PRD on disk has not been retired. Move the document to an archive folder; add a one-line note at the project root stating that voice/interview is the primary capture path and media-intelligence (video atomization, facial recognition) is a Phase 3 input modality.
+
+
+---
+
+## Part XV: Life's Players — Synthesis Agent Design
+
+*May 2026. Resolves Next Step #40 (Build the Life's Players synthesis pipeline). This section specifies the Synthesis Agent prompt design, entity significance weighting model, output structure, and client rendering requirements for the `lifes_cast` synthesis type.*
+
+---
+
+### Overview
+
+Life's Players is one of two MVP synthesis artifacts (alongside the Life Globe). It is a time-series progression of the significant people who played roles in the user's life — from the earliest remembered relationships through the present central figures. It shows how the cast evolved across life stages: who was present, who entered and who exited, who remained central across decades.
+
+It is categorically distinct from `relationship_portrait` (which goes deep on a single relationship) and from `life_period_narrative` (which narrates a time period rather than its cast). Life's Players is the ensemble view — all significant people, arranged temporally.
+
+---
+
+### Input Data Requirements
+
+The Synthesis Agent reads the following data to produce a `lifes_cast` synthesis:
+
+**Primary inputs:**
+- All entity records of `type = 'person'` linked to the user via `memory_entities.role IN ('subject', 'participant')` (or linked via `relationships` with the owner as one party)
+- For each person entity: the relationships table records that link them to the owner, including `relationship_role` type and `started_at` / `ended_at` temporal bounds
+- For each person entity: the count of `memory_entities` rows where that entity appears, grouped by `life_stage_id` of the associated memory — this is the **memory density signal**
+- Phase 0 Stage 3 entity seed data: `role_significance` metadata stored in `relationships.metadata` JSONB at the time of the entity seed interview (set by the Capture Agent during ontology bootstrapping)
+
+**Secondary inputs (enrich where available):**
+- `entity_biography` syntheses for the person entities (if already generated) — their prose summaries are reused as the per-player summary rather than regenerated
+- `memory_revisions` — applied before rendering any memory content (see Part XI Pathway C); the most recent non-retracted revision represents current understanding
+- `user_periods` — if confirmed, the life stage labels in the output use the user's own period vocabulary rather than the generic WisdomTopicSort stage names
+
+---
+
+### Entity Significance Weighting Model
+
+Each person entity is scored on two axes:
+
+**1. Role significance** (set during Phase 0 entity seed, range 1–5):
+The Capture Agent asks "How central was this person to your life?" during the entity seed interview. The response (or the agent's inference from the user's language) sets `role_significance` in `relationships.metadata`. If not set, it defaults to 3 (moderate).
+
+**2. Memory density** (computed, range 0–∞):
+The count of memories in which this entity appears, grouped by life stage. A relationship that produced twenty memories across two life stages has higher density than one that produced two memories across six stages.
+
+**Composite significance score per entity per life stage:**
+```
+stage_score(entity, stage) = role_significance × log1p(memory_density(entity, stage))
+```
+
+The `log1p` transform prevents a very long relationship with many routine memories from swamping a short but intensely documented formative one. Duration is not in the formula; a three-year mentor who generated fifteen vivid memories outscores a thirty-year acquaintance who appears in two.
+
+**Inclusion threshold:** Entities with a composite score below 1.0 across all life stages are omitted from the synthesis. This typically excludes very peripheral mentions. The threshold is configurable per prompt version.
+
+**Cast ordering within each life stage:**
+Entities are sorted by `stage_score` descending. The top five entities per life stage are rendered in full; additional entities above the threshold appear as a supporting cast list (name + relationship type only, no prose summary).
+
+---
+
+### Output Structure
+
+The `lifes_cast` synthesis content is stored as structured JSON in `syntheses.content` (JSONB). This is a deliberate departure from the prose-only format of `life_period_narrative` and `entity_biography` — the ensemble view requires structured data for client rendering, but also carries a prose summary per life stage for text-sharing and accessibility.
+
+```json
+{
+  "synthesis_type": "lifes_cast",
+  "generated_at": "2026-05-02T...",
+  "life_stages_covered": ["Early Childhood", "Youth", "Teen", "Young Adult", "Adult"],
+  "total_players": 14,
+  "stages": [
+    {
+      "stage_id": "uuid-young-adult",
+      "stage_label": "Young Adult",
+      "stage_label_personal": "My New York Years",
+      "date_range": { "start": "1978", "end": "1985" },
+      "prose_summary": "These were the years of Beth, Marcus, and the advertising world ...",
+      "cast": [
+        {
+          "entity_id": "uuid-beth",
+          "name": "Beth Lyons",
+          "relationship_type": "colleague_mentor",
+          "period_label": "1979–1984",
+          "stage_score": 4.2,
+          "entry": "entered",
+          "exit": "remained",
+          "summary": "Beth was the creative director who took a chance on Andy at ...",
+          "supporting_memory_ids": ["uuid-m1", "uuid-m2"],
+          "entity_biography_id": "uuid-eb-beth"
+        }
+      ],
+      "supporting_cast": [
+        { "entity_id": "uuid-x", "name": "...", "relationship_type": "..." }
+      ]
+    }
+  ],
+  "narrative_arc": "From the close family world of early childhood through the dense social fabric of a New York career ...",
+  "confidence_notes": "Entity seed data only — synthesis will enrich as collection deepens."
+}
+```
+
+**Key design decisions in the structure:**
+
+- `stage_label_personal` uses the user's `user_periods` vocabulary if available; falls back to the WisdomTopicSort stage name
+- `entry` / `exit` values are: `"entered"` (first appearance in this stage), `"remained"` (also present in prior stage), `"exited"` (last appearance), `"lifelong"` (present across all stages to date)
+- `summary` is a 50–100 word prose passage for the main cast members; generated by the Synthesis Agent from memory content and the entity_biography if available; omitted for supporting cast
+- `narrative_arc` is a 100–150 word synthesis-level prose passage describing the overall trajectory of the cast across the life — the opening paragraph of a text-share version of the artifact
+- `confidence_notes` is surfaced in the UI when data density is Phase-0-only, setting honest expectations
+
+---
+
+### Synthesis Agent Prompt Design
+
+The Synthesis Agent prompt for `lifes_cast` must communicate:
+
+1. **The ensemble framing:** The output is about the *cast of people* across a life, not a deep dive into any single relationship. Resist the urge to write a relationship portrait for each person. The goal is the temporal view of who was there and when.
+
+2. **The significance principle:** Duration is not significance. A three-year relationship that changed the person's trajectory belongs in the main cast. A forty-year acquaintance with sparse memories is supporting cast at best.
+
+3. **The non-destructive versioning requirement:** Before writing any prose that references a memory, check `memory_revisions` for that memory. Use the most recent non-retracted revision if one exists. Never render a memory the user has corrected.
+
+4. **The personal vocabulary requirement:** If `user_periods` data is available and confirmed, use the user's period names (e.g., "My New York Years") rather than the generic stage labels. The output should sound as if it was written by someone who knows this specific person, not a template.
+
+5. **The low-density grace:** When the synthesis is being generated from Phase 0 data only (entity seed + residential history, no deep memory collection), the prose should reflect what is known with confidence and signal what will enrich over time. Do not fill gaps with speculation. A short, confident summary is better than a long uncertain one.
+
+**Prompt structure (high level):**
+```
+System: You are a synthesis agent for a personal life chronicle. Your task is to 
+generate a Life's Players synthesis — a time-series view of the significant people 
+in [user]'s life, organized by life stage...
+
+[Contextual data block: entity list with role_significance, memory density by stage,
+entity_biography excerpts, user_periods if available]
+
+Generate the JSON output following the lifes_cast schema. For each life stage:
+1. Identify the top cast members by composite score
+2. Write a 50-100 word prose summary for each main cast member
+3. Write a 100-150 word prose_summary for the stage as a whole
+4. Classify entry/exit for each cast member
+5. Write a 100-150 word narrative_arc for the synthesis as a whole
+
+Rules:
+- Do not speculate about relationships not documented in the source data
+- Check memory_revisions before referencing any memory content
+- Use the user's own period vocabulary if user_periods are confirmed
+- A relationship of short duration but high memory density should feature
+  prominently in its life stage(s)
+- If this is Phase-0-only data, add a confidence_notes field explaining the
+  synthesis will enrich as collection deepens
+```
+
+---
+
+### Client Rendering Requirements
+
+The `lifes_cast` output format requires a rendering approach different from the prose-only syntheses. The client must:
+
+**1. Life-stage accordion or timeline-scroll view:**
+The primary navigation model is chronological — the user moves forward or backward through life stages. Each stage expands to show the cast. The current "active" stage is visually prominent; adjacent stages are visible but compressed.
+
+**2. Entry and exit visualization:**
+Cast members should have a visual representation of their lifecycle in the user's story — a timeline bar or fade-in/fade-out treatment that shows which stages they span. A person present in eight life stages gets a longer bar than one present in two. Entry and exit events are marked.
+
+**3. Player cards:**
+Each main cast member is a tappable card. The card shows name, relationship type, period label, and the 50–100 word prose summary. Tapping the card opens a detail view showing the supporting memories.
+
+**4. Supporting cast:**
+Supporting cast members below the main five per stage are listed as a compact row of name + relationship type chips. They are not individually expandable in the MVP; tapping them navigates to the entity graph view for that person.
+
+**5. Text-share rendering:**
+The `narrative_arc` field plus a simplified stage-by-stage cast list produces a text-shareable version of the artifact suitable for social sharing or inclusion in an email. The client should render a "Share" action that generates this text representation.
+
+**6. Enrichment signal:**
+When `confidence_notes` is non-null, the artifact header displays a gentle signal: "This view will deepen as you add more memories." This manages expectations without undermining the artifact's current value.
+
+---
+
+### Synthesis Lifecycle
+
+The `lifes_cast` synthesis follows the same invalidation pattern as all synthesis types:
+
+- Generated at the end of Phase 0 Stage 3 (the first version, from entity seed data)
+- `is_current = false` / `invalidated_at = NOW()` set whenever:
+  - A new entity is added or merged that would affect the cast
+  - A memory is added whose entity tags affect the memory density score for an entity
+  - A memory_revision changes content referenced in any cast member summary
+  - A `user_periods` record is confirmed, modifying the stage vocabulary
+- The Synthesis Agent detects invalidated `lifes_cast` syntheses in its batch cycle and regenerates
+
+The first version (Phase 0 only) is expected to be thin but accurate. Subsequent versions enrich automatically as the collection grows. The user should see the synthesis improve visibly over the first few months of collection — this is part of the product's core retention loop.
+
+---
+
+### Relationship to Next Steps
+
+This section resolves **Next Step #40** in the architecture doc. The remaining open design items related to Life's Players:
+
+- **Next Step #39 (Globe transit animation):** Independent of Life's Players; no dependency.
+- **Synthesis Agent orchestration:** Blocked by the agent orchestration decision (Next Step #36). Life's Players cannot be regenerated on a schedule until the scheduler is implemented.
+- **User periods vocabulary:** The `user_periods` table is in the schema but is populated only when the user confirms chapter naming (Phase 2 for the elicitation UI). MVP syntheses use WisdomTopicSort stage labels as the fallback; the vocabulary upgrade is automatic when `user_periods` are confirmed.
+
+---
+
+## Part XVI: Agent Orchestration — Inngest Decision
+
+*May 2026. Resolves Next Step #36 (Design agent orchestration / job queue / dispatch model). This section documents the selected orchestration approach, rationale, pricing strategy, event taxonomy, and integration pattern for all Life Chronicle agents.*
+
+---
+
+### Decision: Inngest as the Agent Orchestration Layer
+
+After evaluating in-DB queue tables and external orchestrators (pg_cron, Inngest, Trigger.dev), **Inngest** is the selected agent orchestration layer for Life Chronicle.
+
+**What Inngest provides:**
+
+- **Event-driven triggering:** Agents fire on named events emitted from the application (e.g., `memory.ingested`, `synthesis.invalidated`). This maps cleanly to Life Chronicle's append-only model — writes to the Raw Vault naturally produce the events that trigger downstream processing.
+- **Durable multi-step flows:** Inngest steps are individually retried; a failed step does not restart the whole function. This is important for the Temporal Agent (Phase 2), which iterates a constraint graph over many turns — each constraint resolution can be its own step.
+- **Exactly-once semantics:** Inngest deduplicates on event ID, preventing double-processing if the same event is emitted twice (e.g., on network retry from the application).
+- **Built-in retry with backoff:** Configurable per-function retry policies with exponential backoff. No custom lease management code required.
+- **Observability dashboard:** Step-level traces, execution history, and failure inspection out of the box. This is critical for debugging synthesis pipelines that touch multiple agents and tables.
+- **No infra to manage:** No worker process to deploy, no Redis queue to operate. Functions run as serverless handlers; Inngest delivers events.
+
+**What was not chosen and why:**
+
+- **In-DB queue table (e.g., `agent_jobs`):** Would require polling workers, custom lease management, dead-letter handling, and a monitoring dashboard — all from scratch. Adds operational complexity without benefit at this scale.
+- **pg_cron:** Supports scheduled jobs only, not event-driven triggering. Cannot react to `memory.ingested` without polling. Also Supabase-managed; limited observability.
+- **Trigger.dev:** Viable alternative with similar capabilities. Inngest selected on the basis of established pricing transparency, larger community, and tighter Supabase integration patterns documented in the ecosystem.
+
+---
+
+### Pricing and Tier Strategy
+
+Inngest's pricing structure maps well to Life Chronicle's growth trajectory:
+
+**Hobby tier ($0/month):**
+- 50,000 step executions included
+- 5 concurrent steps
+- 3 users (sufficient for solo build phase)
+
+**Estimated execution volume for a single active user:**
+- Phase 0 completion: ~200–400 steps (one-time ontology bootstrap)
+- Ongoing daily use: 15–30 events/day × ~4–6 steps per event = 60–180 steps/day
+- Monthly steady state: ~1,800–5,400 steps/month
+- Plus nightly batch jobs: ~30 steps/night = ~900 steps/month
+- **Total estimate: 2,700–6,300 steps/month for one active user**
+
+The Hobby tier comfortably accommodates Andy's personal build phase (likely 12–18 months of solo use before beta).
+
+**Pro tier ($75/month + usage):**
+- 50,000 step executions included in base price; additional steps billed at tiered rates
+- Triggers at approximately 400–500 active beta users engaging daily (est. 1.1M–2.0M steps/month)
+- Additional usage charge at Pro scale estimated at $25–35/month (using Inngest's published rates for the 1M–5M step range)
+- **Effective Pro cost at 500 active users: ~$100–110/month** before any user-side cost recovery
+
+Migration from Hobby to Pro requires no code changes — upgrade in Inngest dashboard.
+
+---
+
+### Event Taxonomy
+
+The following named events constitute the primary interface between the Life Chronicle application and Inngest:
+
+| Event Name | Emitted By | Consumed By | Trigger Condition |
+|---|---|---|---|
+| `memory.ingested` | Capture Agent (after INSERT to `memories`) | Tagger Agent, Entity Agent | New memory row confirmed in Raw Vault |
+| `synthesis.invalidated` | Any agent that sets `is_current = false` on a `syntheses` row | Synthesis Agent | Synthesis record marked stale |
+| `phase0.stage_completed` | Planner Agent | Synthesis Agent, Planner Agent | A Phase 0 stage milestone is reached (triggers stage-appropriate synthesis) |
+| `entity.merged` | Entity Agent | Synthesis Agent, Tagger Agent | Two entity records merged; downstream syntheses using either must be invalidated |
+| `review_queue.item_added` | Any agent inserting to `review_queue` | (notification layer; no agent auto-response) | High-priority review item needs user attention |
+| `user.period_confirmed` | Application (user action) | Synthesis Agent | User confirms a life stage label; `lifes_cast` synthesis vocabulary must update |
+
+---
+
+### Scheduled Jobs
+
+The following jobs run on a time-based schedule (Inngest cron syntax):
+
+| Job | Schedule | Agent | Purpose |
+|---|---|---|---|
+| `planner.daily_review` | Daily, 03:00 UTC | Planner Agent | Review review_queue items, identify memory density gaps, generate suggested interview topics |
+| `synthesis.nightly_batch` | Daily, 02:00 UTC | Synthesis Agent | Sweep `syntheses` WHERE `is_current = false`; regenerate stale synthesis records |
+| `assumption.review_prompt` | Weekly, Sunday 08:00 UTC | (notification) | Surface assumption_log items with `is_confirmed = false` older than 7 days for user review |
+
+---
+
+### Integration Pattern
+
+**Application → Inngest:**
+Events are sent via the Inngest SDK from within Supabase Edge Functions or the application backend. The pattern is:
+
+```
+// After Capture Agent confirms INSERT to memories:
+await inngest.send({
+  name: "memory.ingested",
+  data: { memory_id: newMemory.id, user_id: session.userId }
+});
+```
+
+**Inngest → Agent functions:**
+Each agent is implemented as one or more Inngest functions. Functions receive the event payload and execute their steps (database reads, LLM calls, database writes) as individual retryable steps:
+
+```
+inngest.createFunction(
+  { id: "tagger-agent", retries: 3 },
+  { event: "memory.ingested" },
+  async ({ event, step }) => {
+    const memory = await step.run("fetch-memory", () => fetchMemory(event.data.memory_id));
+    const tags = await step.run("generate-tags", () => callLLM(memory));
+    await step.run("write-tags", () => writeTagsToDb(memory.id, tags));
+  }
+);
+```
+
+**Failure handling:**
+- Steps retry up to the configured maximum (default 3) with exponential backoff
+- After max retries, the function moves to Inngest's failed state and appears in the observability dashboard
+- `assumption_log` records the last-known agent decision before failure, supporting post-failure audit
+- `review_queue` items created by agents before failure are preserved; the user sees outstanding items even if the agent did not complete
+
+---
+
+### What This Replaces / Supersedes
+
+This decision supersedes the architectural note in Part VI ("Concurrent writes to different tables will work correctly due to PostgreSQL's row-level locking") that implied concurrency without specifying a dispatch model. The row-level locking observation remains correct; Inngest provides the event delivery and retry layer above it.
+
+The `agent_jobs` table considered in Next Step #36 is **not implemented**. Inngest's event log is the equivalent record of what has been dispatched and its outcome.
+
+---
+
+### Relationship to Next Steps
+
+This section resolves **Next Step #36** in the architecture doc. With orchestration decided, the following previously blocked items are now unblocked:
+
+- **Capture Agent implementation** — can now be built with `inngest.send()` calls after confirmed INSERTs
+- **Tagger Agent implementation** — listens to `memory.ingested`, no longer needs an ad hoc trigger
+- **Synthesis Agent nightly batch** — implemented as `synthesis.nightly_batch` cron function
+- **Life's Players first generation** (Part XV) — triggered by `phase0.stage_completed` event at Stage 3
+
+The only remaining orchestration-adjacent open item is the viewer_can_access() full implementation (Next Step in schema_v1.sql), which is a schema concern, not an orchestration concern.
+
+
+---
+
+## Part XVII — Orchestrator Agent + Dual-Mode Sub-Agents + Private Notes Layer (added 2026-05-17)
+
+This part captures three interrelated architectural additions made during the May 2026 spec work: the introduction of a new agent class (the Orchestrator), the reshaping of existing sub-agents as dual-mode, and the addition of a second content layer on memories (private notes) that sits below Access Cards in the visibility model.
+
+Canonical specs: `documentation/feature_capture_assistant.md` v1.1 and `documentation/feature_residential_globe_onboarding.md` v1.1.
+
+### The Orchestrator Agent
+
+A new agent class introduced alongside the capture assistant work. The orchestrator is a Claude Sonnet 4.5 instance invoked synchronously on every user submission (typed, dictated, pasted, eventually file-uploaded). It has broad context of the user's chronicle state and produces a reasoned response with proposed actions visible to the user as cards.
+
+The orchestrator does NOT replace the existing sub-agents — Tagger, Entity, Search, future Temporal. It coordinates them. The sub-agents continue to listen to Inngest events for deeper async passes; the orchestrator calls into them inline as tools when generating the user-facing immediate response.
+
+**Three-layer prompt structure (multi-tenant safety + cost efficiency):**
+
+| Layer | Scope | Cache strategy |
+|---|---|---|
+| A. Generic system prompt | Multi-user, version-controlled. Agent role, output protocol, tool semantics, hard invariants. No user data. | Anthropic `cache_control` with long TTL |
+| B. Per-user chronicle context digest | User-specific. Compact 1–3k-token summary of chronicle state. Stored in `user_chronicle_digests`, regenerated on chronicle changes via Planner-owned compaction job. | `cache_control`, hash-keyed; cache invalidates naturally when digest is regenerated |
+| C. Submission-time inputs | This call only. User's submission + active-screen context. | Never cached |
+
+This separation is enforced at the SDK wrapper level (`lib/agents/orchestrator.ts`). Layer A never carries user data; Layer B is always loaded from the per-user store; only Layer C is constructed fresh per call.
+
+### Dual-Mode Sub-Agents
+
+Tagger and Entity (and eventually Temporal) are designed as both:
+
+- **Inngest async listeners** on `memory/ingested` — heavier, slower passes that enrich the record over the minute after ingestion
+- **Synchronous inline tools** — called by the orchestrator during the immediate response generation, returning structured data for the user-facing proposal cards
+
+Both modes share a core function. The Inngest listener wraps it with event handling and persistence side-effects; the inline tool wraps it as an Anthropic tool definition. Designing these together (rather than building event listeners first and adding tools later) prevents wasted refactoring.
+
+### Private Notes Layer
+
+A second content layer on `memories`:
+
+```
+memories.private_notes TEXT  -- owner-only commentary; filtered out of non-owner projections
+```
+
+This is **not** another Access Card tier. It is a content-layer split *within* every memory:
+
+| Layer | Visibility | Use |
+|---|---|---|
+| Public content (existing `content_raw`, `content_normalized`, etc.) | Governed by Access Cards | The recollection as the owner wants it represented to whichever audience the card grants |
+| Private notes (new `private_notes`) | Owner-only, regardless of Access Card grants | Owner's honest assessments, social-context reminders, drafts, second thoughts |
+
+**RLS enforcement (column-level filter):** When `viewer_can_access()` is fully implemented in Step 13, it must project all columns EXCEPT `private_notes` for non-owner viewers — even when the memory itself is granted via an Access Card. This is column-level filtering, not row-level. Implementation pattern: a view `memories_visible` that the API queries, which omits `private_notes` when the calling user is not the owner.
+
+### Phase 0 Reframe — Parallel Strands
+
+Captured here for traceability against the architecture record: Phase 0 is no longer three sequential stages with explicit completion gates. It is three parallel strands (residential, entity, topic) that run concurrently under the capture assistant's orchestration. The system internally tracks data thresholds and emits `chronicle/threshold.reached` events when criteria are met. The original `phase0/stage.completed` event is renamed accordingly.
+
+The dependency theory (Tier 1 structural scaffold → Tier 2 entity seed → Tier 3 topic map) remains unchanged as theory; the orchestrator enforces it internally by choosing which strand to prompt next based on chronicle state. The user never sees a "Stage N of 3" indicator.
+
+### What This Replaces / Adds To
+
+This part adds to (not replaces) the existing architecture:
+
+- Adds the Orchestrator Agent as a new layer above the sub-agents
+- Adds the `user_chronicle_digests` and `capture_submissions` tables
+- Adds the `memories.private_notes` column
+- Reshapes Tagger and Entity to dual-mode
+- Renames the `phase0/stage.completed` Inngest event to `chronicle/threshold.reached`
+- Adds `viewer_can_access()` requirement: column-level filter on `private_notes`
+
+The existing dual-layer Raw Vault + Synthesis model, the Access Cards privacy model, and the constraint-graph temporal model are all unchanged.

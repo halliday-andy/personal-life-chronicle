@@ -1,8 +1,25 @@
 -- ============================================================
--- LIFE CHRONICLE DATABASE SCHEMA v1.0
+-- LIFE CHRONICLE DATABASE SCHEMA v1.4
 -- Platform: PostgreSQL 15+ with pgvector extension
 -- Hosted: Supabase (managed Postgres)
 -- Author: Architecture Design Session, April 2026
+--
+-- Synced to the deployed schema in migration
+--   supabase/migrations/20260505000000_initial_schema.sql
+-- and the follow-on migration
+--   supabase/migrations/20260520182927_entity_confirmation_queue.sql
+--
+-- v1.4 — 2026-05-20: privacy_tier ENUM and tier_locked columns removed
+--                    from memories, entities, relationships, media, and
+--                    syntheses. The five-tier sharing model was superseded
+--                    by the Access Cards framework (§E below). The
+--                    compute_synthesis_tier()/trg_set_synthesis_privacy_tier
+--                    helpers and their triggers were retired with it.
+--                    The five tier names live on as the system_code values
+--                    of the five system cards seeded per user.
+--                    Also added: 'entity_confirmation_needed' as a
+--                    review_queue.item_type value (tap-to-confirm flow
+--                    for new person entities).
 -- ============================================================
 
 -- Enable extensions
@@ -12,65 +29,23 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;     -- fuzzy text search
 CREATE EXTENSION IF NOT EXISTS postgis;     -- geospatial: geometry, geography, spatial indexes
 
 -- ============================================================
--- ⚠ DEPRECATED — APRIL 2026
+-- PRIVACY MODEL — Access Cards (see §E below)
 --
--- The privacy_tier ENUM and the five-tier sharing model defined
--- below are being replaced by the ACCESS CARDS framework. See:
+-- Life Chronicle's privacy model is the Access Cards framework
+-- (cards / contacts / card_holders / record_card_grants /
+-- synthesis_visibility_cache / card_audit_log / access_log). The
+-- earlier five-tier privacy_tier ENUM was retired in v1.4 — both the
+-- type and the columns on memories, entities, relationships, media,
+-- and syntheses are gone from the deployed schema.
 --
---   documentation/access_cards_requirements.md   (canonical spec)
---   documentation/DB_Architecture_Design_v1.md   (Part X summary;
---                                                 Part VIII retained
---                                                 as migration "from")
+-- The five tier names live on as the system_code values of the five
+-- system cards pre-seeded for every new user (Private, Close Friends,
+-- Family, Professional, Public). The UI still presents these names;
+-- the underlying mechanism is card-based.
 --
--- Do NOT add new fields, indexes, triggers, RLS policies, or
--- application logic that depends on this ENUM. New privacy work
--- should target the cards / contacts / card_holders /
--- record_card_grants / synthesis_visibility_cache / card_audit_log /
--- access_log tables specified in the requirements doc.
---
--- The block below is retained as the schema's "from" specification
--- until the Access Cards migration ships (lossless migration plan
--- in access_cards_requirements.md §9). It will be removed at the
--- end of that migration. The five tier names live on as the
--- system_code values of the five system cards pre-seeded for every
--- user; the UI in the MVP still surfaces them as named "tiers"
--- while the schema underneath is card-based.
+-- Canonical spec: documentation/access_cards_requirements.md
+-- Architecture summary: documentation/DB_Architecture_Design_v1.md §X
 -- ============================================================
--- PRIVACY TIER (legacy)
--- Five-level visibility model applied consistently across all
--- content-bearing tables. Default is always 'private'.
---
--- Enforcement strategy:
---   Supabase Row Level Security (RLS) policies read this column
---   to filter what each authenticated viewer can see.
---   The application layer NEVER bypasses RLS for content reads.
---
--- Tier hierarchy (most → least restrictive):
---   private       → only the owning user
---   close_friends → user + explicitly invited close friends
---   family        → user + family members (linked person entities)
---   professional  → user + professional connections
---   public        → any authenticated or anonymous viewer
---
--- Sensitive-category auto-Private rule:
---   Memories tagged with sensitive dimensions (is_sensitive = true
---   on the dimension record) are created with privacy_tier = 'private'
---   regardless of the user's default preference. The user must
---   explicitly promote them — they cannot accidentally be public.
---
--- Synthesis tier rule:
---   A synthesis record inherits the MOST RESTRICTIVE tier among
---   all its source memories. A synthesis drawing from one 'private'
---   memory can never be 'public', even if all others are.
--- ============================================================
-
-CREATE TYPE privacy_tier AS ENUM (
-    'private',
-    'close_friends',
-    'family',
-    'professional',
-    'public'
-);
 
 
 -- ============================================================
@@ -112,8 +87,10 @@ CREATE TABLE dimensions (
     name         TEXT NOT NULL,
     description  TEXT,
     sort_order   SMALLINT,
-    -- Sensitive flag: memories tagged with this dimension auto-default to
-    -- privacy_tier = 'private' regardless of user preference.
+    -- Sensitive flag: memories tagged with this dimension receive
+    -- record_card_grants(grant_type='auto_isolate') against every active
+    -- card on insert (Capture Agent responsibility). The owner must
+    -- explicitly remove auto-isolation before any card can grant access.
     -- Apply to: medical, legal, financial, sexual, mental health domains.
     is_sensitive BOOLEAN NOT NULL DEFAULT false,
     metadata     JSONB DEFAULT '{}',
@@ -205,7 +182,6 @@ CREATE TABLE entities (
 
     description         TEXT,
     embedding           VECTOR(1536),               -- for semantic entity discovery
-    privacy_tier        privacy_tier NOT NULL DEFAULT 'private',
     metadata            JSONB DEFAULT '{}',         -- extensible: occupation, nationality, etc.
     created_at          TIMESTAMPTZ DEFAULT NOW(),
     updated_at          TIMESTAMPTZ DEFAULT NOW()
@@ -330,10 +306,6 @@ CREATE TABLE relationships (
     strength        FLOAT CHECK (strength BETWEEN 0 AND 1),
     notes           TEXT,
     source_memory_ids UUID[],        -- provenance: which memories established this
-    -- Privacy: who can see this relationship exists.
-    -- Often matches the least-public entity involved.
-    -- E.g. a relationship to a therapist defaults to 'private'.
-    privacy_tier    privacy_tier NOT NULL DEFAULT 'private',
     metadata        JSONB DEFAULT '{}',
     created_at      TIMESTAMPTZ DEFAULT NOW()
 );
@@ -342,7 +314,6 @@ CREATE INDEX idx_relationships_subject  ON relationships(subject_id);
 CREATE INDEX idx_relationships_object   ON relationships(object_id);
 CREATE INDEX idx_relationships_type     ON relationships(type_id);
 CREATE INDEX idx_relationships_user     ON relationships(user_id);
-CREATE INDEX idx_relationships_privacy  ON relationships(user_id, privacy_tier);
 
 
 -- ============================================================
@@ -429,13 +400,12 @@ CREATE TABLE memories (
     source_media_id         UUID,                   -- media file this was derived from
 
     -- State
-    privacy_tier            privacy_tier NOT NULL DEFAULT 'private',
-                                                    -- always starts Private; user promotes explicitly
-    tier_locked             BOOLEAN DEFAULT false,  -- true = system has auto-locked to Private
-                                                    -- (sensitive category); user must confirm to unlock
     is_draft                BOOLEAN DEFAULT false,
     is_verified             BOOLEAN DEFAULT false,  -- user has reviewed/confirmed
     verified_at             TIMESTAMPTZ,
+    -- Visibility on this memory is governed by record_card_grants (§E)
+    -- rather than a per-row column. Sensitive-dimension auto-isolation
+    -- is enforced by inserting auto-isolate grants against every card.
 
     metadata                JSONB DEFAULT '{}',
     created_at              TIMESTAMPTZ DEFAULT NOW(),
@@ -526,11 +496,10 @@ CREATE TABLE media (
     ocr_text        TEXT,                       -- OCR for docs/photos
     embedding       VECTOR(1536),               -- semantic search
     faces_detected  JSONB,                      -- [{entity_id, confidence, bounding_box}]
-    -- Privacy: controls who can view this media item.
-    -- A photo that appears in a shared memory still obeys its own tier.
-    -- The consumer should always check BOTH memory.privacy_tier and
-    -- media.privacy_tier and apply the MORE restrictive of the two.
-    privacy_tier    privacy_tier NOT NULL DEFAULT 'private',
+    -- Visibility is governed by record_card_grants against the linked
+    -- memory (and, when card grants are extended to media in a future
+    -- iteration, against the media row directly). A photo appearing in
+    -- a shared memory is visible to viewers granted that memory.
     metadata        JSONB DEFAULT '{}',
     created_at      TIMESTAMPTZ DEFAULT NOW()
 );
@@ -538,7 +507,6 @@ CREATE TABLE media (
 CREATE INDEX idx_media_user         ON media(user_id);
 CREATE INDEX idx_media_type         ON media(user_id, type);
 CREATE INDEX idx_media_captured     ON media(captured_at);
-CREATE INDEX idx_media_privacy      ON media(user_id, privacy_tier);
 CREATE INDEX idx_media_embedding    ON media USING ivfflat(embedding vector_cosine_ops)
     WITH (lists = 100);
 
@@ -760,11 +728,10 @@ CREATE TABLE syntheses (
     reviewed_at         TIMESTAMPTZ,
     user_corrections    TEXT,                   -- user notes on what to adjust
 
-    -- Privacy: MOST RESTRICTIVE tier among all source_memory_ids.
-    -- Computed by compute_synthesis_tier() called after insert/update.
-    -- Never manually set — always derived. A synthesis can be
-    -- promoted only if ALL source memories are promoted first.
-    privacy_tier    privacy_tier NOT NULL DEFAULT 'private',
+    -- Visibility: governed by synthesis_visibility_cache (§E). A
+    -- synthesis is visible to a card holder iff every source memory
+    -- is visible via that card's grants. Cache is recomputed when
+    -- source memories' grants change.
 
     metadata            JSONB DEFAULT '{}',
     created_at          TIMESTAMPTZ DEFAULT NOW()
@@ -775,7 +742,6 @@ CREATE INDEX idx_syntheses_type         ON syntheses(user_id, type);
 CREATE INDEX idx_syntheses_dimension    ON syntheses(dimension_id);
 CREATE INDEX idx_syntheses_entity       ON syntheses(entity_id);
 CREATE INDEX idx_syntheses_current      ON syntheses(user_id, is_current) WHERE is_current;
-CREATE INDEX idx_syntheses_privacy      ON syntheses(user_id, privacy_tier);
 CREATE INDEX idx_syntheses_embedding    ON syntheses USING ivfflat(embedding vector_cosine_ops)
     WITH (lists = 100);
 
@@ -961,77 +927,16 @@ ORDER BY m.user_id, m.time_estimate NULLS LAST, m.time_earliest NULLS LAST;
 
 
 -- ============================================================
--- PRIVACY TIER FUNCTIONS
+-- SYNTHESIS VISIBILITY
+--
+-- The legacy compute_synthesis_tier() / trg_set_synthesis_privacy_tier
+-- / cascade_synthesis_tier_on_memory_change() helpers were retired in
+-- v1.4 along with the privacy_tier ENUM. Synthesis visibility is now
+-- materialised in synthesis_visibility_cache (see §E) and recomputed
+-- when source memories' record_card_grants change. The invariant
+-- preserved across the change: a synthesis is visible to a card holder
+-- iff every one of its source memories is visible to that card.
 -- ============================================================
-
--- compute_synthesis_tier(source_memory_ids UUID[]) → privacy_tier
---
--- Returns the most restrictive privacy_tier among all source memories.
--- Called automatically by a trigger on syntheses INSERT/UPDATE.
--- The tier order (most → least restrictive) matches the enum declaration:
---   private < close_friends < family < professional < public
--- Since PostgreSQL enum comparison uses declaration order, MIN() on the
--- enum gives the most restrictive value directly.
---
--- Usage:
---   UPDATE syntheses
---     SET privacy_tier = compute_synthesis_tier(source_memory_ids)
---   WHERE id = <new_synthesis_id>;
-
-CREATE OR REPLACE FUNCTION compute_synthesis_tier(p_source_ids UUID[])
-RETURNS privacy_tier
-LANGUAGE sql STABLE AS $$
-    SELECT MIN(privacy_tier)          -- MIN on enum = most restrictive
-    FROM   memories
-    WHERE  id = ANY(p_source_ids)
-    AND    privacy_tier IS NOT NULL;
-$$;
-
--- Trigger function: auto-compute synthesis privacy_tier on insert/update
-CREATE OR REPLACE FUNCTION trg_set_synthesis_privacy_tier()
-RETURNS TRIGGER LANGUAGE plpgsql AS $$
-BEGIN
-    -- Only recompute if source_memory_ids changed or tier not yet set
-    IF (TG_OP = 'INSERT') OR
-       (TG_OP = 'UPDATE' AND NEW.source_memory_ids IS DISTINCT FROM OLD.source_memory_ids)
-    THEN
-        NEW.privacy_tier := COALESCE(
-            compute_synthesis_tier(NEW.source_memory_ids),
-            'private'   -- fallback: if no sources found, default to private
-        );
-    END IF;
-    RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER trg_syntheses_privacy_tier
-    BEFORE INSERT OR UPDATE ON syntheses
-    FOR EACH ROW EXECUTE FUNCTION trg_set_synthesis_privacy_tier();
-
--- When a source memory's privacy_tier is PROMOTED (made less restrictive),
--- cascade-recompute all syntheses that reference it.
--- Note: DEMOTION (making more restrictive) always flows through the trigger
--- above on the synthesis row itself. This function handles the promotion path.
-CREATE OR REPLACE FUNCTION cascade_synthesis_tier_on_memory_change()
-RETURNS TRIGGER LANGUAGE plpgsql AS $$
-BEGIN
-    -- Only act when privacy_tier actually changed
-    IF NEW.privacy_tier IS DISTINCT FROM OLD.privacy_tier THEN
-        UPDATE syntheses s
-        SET    privacy_tier = COALESCE(
-                   compute_synthesis_tier(s.source_memory_ids), 'private'
-               )
-        WHERE  NEW.id = ANY(s.source_memory_ids)
-          AND  s.user_id = NEW.user_id
-          AND  s.is_current = true;
-    END IF;
-    RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER trg_cascade_synthesis_tier
-    AFTER UPDATE OF privacy_tier ON memories
-    FOR EACH ROW EXECUTE FUNCTION cascade_synthesis_tier_on_memory_change();
 
 
 -- ============================================================
@@ -1662,63 +1567,48 @@ $$;
 
 
 -- ============================================================
--- ROW LEVEL SECURITY POLICY SCAFFOLD
+-- ROW LEVEL SECURITY POLICY SCAFFOLD (Access Cards model)
 --
--- Supabase enforces RLS when a row's privacy_tier is evaluated
--- against the requesting viewer's identity. The policies below
--- are a scaffold: enable them after user/connection group tables
--- are fully defined. The pattern is the same across all content
--- tables (memories, entities, relationships, media, syntheses).
+-- RLS gating for content tables (memories, entities, relationships,
+-- media, syntheses) is mediated by viewer_can_access(), which reads
+-- the Access Cards data model (§E) — cards, card_holders, and
+-- record_card_grants — to decide whether a given viewer can see a
+-- given content row.
 --
--- Tier resolution logic (applied by each SELECT policy):
+-- Current status: viewer_can_access() exists as a stub returning
+-- FALSE. RLS must NOT be activated until the function body is fully
+-- implemented (Step 13 of the development sequence), or all users
+-- will be locked out of their own content.
 --
---   'private'       → auth.uid() = user_id
---   'close_friends' → auth.uid() = user_id
---                     OR auth.uid() IN (SELECT friend_id FROM user_close_friends
---                                       WHERE user_id = t.user_id)
---   'family'        → auth.uid() = user_id
---                     OR auth.uid() IN (SELECT member_id FROM user_family_members
---                                       WHERE user_id = t.user_id)
---   'professional'  → auth.uid() = user_id
---                     OR auth.uid() IN (SELECT connection_id FROM user_professional_connections
---                                       WHERE user_id = t.user_id)
---   'public'        → true (any authenticated user)
---
--- Implementation note: connection group tables (user_close_friends,
--- user_family_members, user_professional_connections) should be
--- added in a subsequent migration, alongside the RLS activation.
--- Until that migration, all content is readable only by the owner
--- (equivalent to treating everything as 'private').
---
--- To enable RLS on a table:
---   ALTER TABLE memories ENABLE ROW LEVEL SECURITY;
---   CREATE POLICY memories_owner_all ON memories
---       USING (user_id = auth.uid());
---   CREATE POLICY memories_shared_read ON memories
---       FOR SELECT USING (
---           privacy_tier = 'public'
---           OR (privacy_tier = 'family'
---               AND auth.uid() IN (
---                   SELECT member_id FROM user_family_members
---                   WHERE user_id = memories.user_id
---               ))
---           -- ... extend for close_friends and professional
---       );
+-- Sensitive-dimension auto-isolation is enforced at the application
+-- layer (Capture Agent): when a memory is tagged with a dimension
+-- that has is_sensitive=true, the agent inserts record_card_grants
+-- rows with grant_type='auto_isolate' against every active card.
+-- The owner must explicitly remove auto-isolation before any card
+-- can grant access.
 --
 -- The Service Role key (used by all agents and background jobs)
 -- bypasses RLS entirely — it must NEVER be exposed client-side.
 -- All agent writes go through Service Role; all user reads go
 -- through the anon/authenticated role which RLS governs.
 --
--- Sensitive-dimension auto-lock is enforced at the application
--- layer (Capture Agent), not in SQL, to keep policies simple:
---   IF any tagged dimension.is_sensitive THEN
---       memory.privacy_tier = 'private'
---       memory.tier_locked  = TRUE
---   END IF
+-- To enable RLS on a content table (deferred until Step 13):
+--   ALTER TABLE memories ENABLE ROW LEVEL SECURITY;
+--   CREATE POLICY memories_select ON memories
+--       FOR SELECT USING (
+--           viewer_can_access(auth.uid(), user_id, 'memory', id)
+--       );
+--   CREATE POLICY memories_owner_write ON memories
+--       FOR ALL USING (auth.uid() = user_id);
+--
+-- Private-notes layer: when v1.5 adds memories.private_notes, the
+-- SELECT policy must use a view that projects all memory columns
+-- EXCEPT private_notes for non-owner viewers — column-level filter,
+-- not row-level (see DB_Architecture_Design_v1.md Part XVII).
 -- ============================================================
 
--- RLS activation (commented out until connection group tables exist):
+-- RLS activation (commented out until viewer_can_access() is fully
+-- implemented in Step 13):
 -- ALTER TABLE memories       ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE entities       ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE relationships  ENABLE ROW LEVEL SECURITY;
@@ -2068,15 +1958,17 @@ CREATE INDEX idx_memory_periods_period ON memory_periods(period_id);
 
 
 -- ============================================================
--- E. ACCESS CARDS FRAMEWORK
--- Replaces the privacy_tier ENUM model.
+-- E. ACCESS CARDS FRAMEWORK — the privacy model
 -- Full requirements: documentation/access_cards_requirements.md
 --
--- Migration note: The privacy_tier ENUM columns on memories,
--- entities, relationships, media, and syntheses are retained
--- during the transition (the schema v1.0 deprecation notice
--- above documents this). RLS activation and privacy_tier column
--- removal are the final steps of this migration.
+-- The Access Cards framework is the sole privacy model from v1.4
+-- onward. The legacy privacy_tier ENUM and the per-row privacy_tier
+-- columns on content tables were removed in v1.4. The five tier
+-- names live on as system_code values of the five system cards
+-- pre-seeded for every user.
+--
+-- Remaining work: viewer_can_access() full body + RLS activation
+-- (Step 13 of the development sequence).
 -- ============================================================
 
 -- E.1 cards — Card definitions (permission grants)
@@ -2274,17 +2166,41 @@ CREATE TABLE memory_shares (
     synthesis_id    UUID REFERENCES syntheses(id),
         -- NULL if the share is of a raw memory. Exactly one of memory_id /
         -- synthesis_id should be non-null for a well-formed share record.
-    card_id         UUID REFERENCES cards(id),  -- which card governs access; NULL = public
+    card_id         UUID REFERENCES cards(id),
+        -- For Single Post Shares: records the privacy context of the shared item at
+        -- time of share (defaults to the Private system card). This is NOT a permission
+        -- grant — the share_token is the credential. For card-governed shares this
+        -- records which card determined access. NULL = explicitly public (no card context).
     channel         share_channel NOT NULL,
     share_url       TEXT,                       -- the URL shared (if captured)
     platform_post_id TEXT,                      -- external post ID (if captured, e.g. tweet ID)
     shared_at       TIMESTAMPTZ DEFAULT NOW(),
-    metadata        JSONB DEFAULT '{}'
+    metadata        JSONB DEFAULT '{}',
+
+    -- ── Single Post Share (token-based, no login required) ──────────────────
+    -- MVP feature. The share_token is embedded in the share URL and is the
+    -- sole credential for accessing the shared view. Anyone with the URL
+    -- can view the item; no Life Chronicle account required.
+    share_token     UUID UNIQUE DEFAULT uuid_generate_v4(),
+        -- Token embedded in the shareable URL: /share/{share_token}
+        -- Generated automatically on INSERT; never changes after creation.
+    expires_at      TIMESTAMPTZ,
+        -- NULL = no expiry (link lives until revoked).
+        -- Owner can set 7-day / 30-day / 1-year / custom expiry at share time.
+    is_revoked      BOOLEAN NOT NULL DEFAULT false,
+        -- Owner can kill any share link at any time. Revoked links return 410 Gone.
+    revoked_at      TIMESTAMPTZ,
+    view_count      INTEGER NOT NULL DEFAULT 0,
+        -- Incremented on each anonymous token-authenticated view. No PII stored.
+    last_viewed_at  TIMESTAMPTZ
+        -- Timestamp of most recent view. Helps owner see if a link was ever opened.
 );
 
 CREATE INDEX idx_memory_shares_user    ON memory_shares(user_id, shared_at DESC);
 CREATE INDEX idx_memory_shares_memory  ON memory_shares(memory_id) WHERE memory_id IS NOT NULL;
 CREATE INDEX idx_memory_shares_synth   ON memory_shares(synthesis_id) WHERE synthesis_id IS NOT NULL;
+CREATE INDEX idx_memory_shares_token   ON memory_shares(share_token) WHERE is_revoked = false;
+    -- Partial index: only active (non-revoked) tokens are looked up on the public share endpoint.
 
 
 -- Comments from recipients on a shared memory or artifact
@@ -2347,20 +2263,295 @@ CREATE INDEX idx_contrib_attach_review ON contribution_attachments(user_id, revi
 
 
 -- ============================================================
--- END OF SCHEMA v1.1
--- Remaining migration targets:
---   1. Seed dimensions table (WisdomTopicSort + Gemini Taxonomy)
---   2. Seed questions table (interview questions → dimension IDs)
---   3. CEF v1 export format support (ZIP manifest schema)
---   4. Add assumption_log table for agent inference traceability
---   5. Add soft-delete / redaction fields to memories
---      (redacted_at, redaction_reason, redacted_by)
---   6. Seed five system cards per new user account
---      (Private, Close Friends, Family, Professional, Public)
---      with system_code values and default holder lists
---   7. Implement viewer_can_access() SQL function
---   8. Activate RLS policies on content tables using viewer_can_access()
---      and synthesis_visibility_cache for syntheses
---   9. Remove privacy_tier ENUM columns after RLS activation
---      (or retain as _legacy_ columns through one release for safety)
+-- H. REVIEW QUEUE
+-- Unified user touch point for all pending review items.
+-- Every agent-proposed action that requires user approval lands
+-- here before taking effect.  Keeps the "pending decisions"
+-- surface in one place rather than scattered across views.
+--
+-- item_type values:
+--   entity_merge_proposal   — Entity Agent found two entity records
+--                             that may be the same person/place.
+--   temporal_constraint     — Temporal Agent inferred a relative
+--                             ordering constraint (awaiting confirmation).
+--   sensitive_promotion     — User is about to un-isolate a sensitive
+--                             memory from all cards (requires ack).
+--   synthesis_stale         — A synthesis has been invalidated and is
+--                             ready for review / regeneration.
+--   contribution_review     — A card holder submitted a memory
+--                             contribution (Phase 2; schema-ready).
+--   assumption_review       — Agent made a disambiguation decision
+--                             the user may want to inspect.
+-- ============================================================
+
+CREATE TABLE review_queue (
+    id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id             UUID NOT NULL,
+
+    item_type           TEXT NOT NULL
+        CHECK (item_type IN (
+            'entity_merge_proposal',
+            'temporal_constraint',
+            'sensitive_promotion',
+            'synthesis_stale',
+            'contribution_review',
+            'assumption_review'
+        )),
+
+    -- Polymorphic FK to the item being reviewed.
+    -- The referencing table depends on item_type:
+    --   entity_merge_proposal → entities.id (the proposed primary entity)
+    --   temporal_constraint   → temporal_constraints.id
+    --   sensitive_promotion   → memories.id
+    --   synthesis_stale       → syntheses.id
+    --   contribution_review   → memories.id (the contributed memory)
+    --   assumption_review     → assumption_log.id
+    item_id             UUID NOT NULL,
+
+    -- Context snapshot stored at queue-time so the review surface
+    -- can render without fetching the full row.
+    context_json        JSONB DEFAULT '{}',
+
+    priority            SMALLINT NOT NULL DEFAULT 3
+        CHECK (priority BETWEEN 1 AND 5),
+        -- 1 = urgent (conflict / sensitive), 3 = normal, 5 = low
+
+    surfaced_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    resolved_at         TIMESTAMPTZ,                    -- NULL until resolved
+    resolution          TEXT
+        CHECK (resolution IN ('accepted', 'modified', 'rejected', 'snoozed')),
+    resolution_note     TEXT,                           -- optional user note on rejection
+
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_review_queue_user         ON review_queue(user_id, resolved_at NULLS FIRST);
+CREATE INDEX idx_review_queue_pending      ON review_queue(user_id, priority)
+    WHERE resolved_at IS NULL;
+CREATE INDEX idx_review_queue_item         ON review_queue(item_type, item_id);
+
+
+-- ============================================================
+-- I. ASSUMPTION LOG
+-- First-class record of every agent inference and
+-- disambiguation decision.  Required for synthesis traceability
+-- and the user correction path: "The Tagger Agent assumed 'John'
+-- in memory #47 was the same as 'John Smith' — here's why."
+-- Without this, wrong synthesis outputs have no inspectable path
+-- to correction.  Writes silently at MVP; user-visible in Phase 2.
+-- ============================================================
+
+CREATE TABLE assumption_log (
+    id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id             UUID NOT NULL,
+
+    -- Which agent made this decision
+    agent               TEXT NOT NULL
+        CHECK (agent IN (
+            'capture_agent',
+            'tagger_agent',
+            'entity_agent',
+            'synthesis_agent',
+            'planner_agent',
+            'temporal_agent',
+            'search_agent'
+        )),
+
+    -- What kind of decision
+    assumption_type     TEXT NOT NULL
+        CHECK (assumption_type IN (
+            'entity_disambiguation',    -- "This 'John' is John Smith (entity #X)"
+            'dimension_assignment',     -- "This memory is tagged with career_change"
+            'temporal_inference',       -- "Constraint inferred from text: 'after the move'"
+            'entity_merge',             -- "Two entity records merged as same person"
+            'synthesis_source',         -- "Memory #X included in synthesis scope"
+            'geocoding_resolution',     -- "Place resolved to OSM relation #Y"
+            'other'
+        )),
+
+    -- The decision context
+    memory_id           UUID REFERENCES memories(id),   -- memory this applies to (if any)
+    entity_id           UUID REFERENCES entities(id),   -- entity involved (if any)
+    synthesis_id        UUID REFERENCES syntheses(id),  -- synthesis involved (if any)
+
+    -- Machine-readable decision record
+    decision_json       JSONB NOT NULL DEFAULT '{}',
+        -- Structure varies by assumption_type; always includes:
+        --   { "input": "...", "decision": "...", "confidence": 0.0–1.0,
+        --     "reasoning": "...", "alternatives_considered": [...] }
+
+    -- Human-readable summary (for review_queue display)
+    summary             TEXT NOT NULL,
+
+    confidence          FLOAT DEFAULT 1.0
+        CHECK (confidence BETWEEN 0 AND 1),
+
+    -- User review state
+    is_confirmed        BOOLEAN,   -- NULL = unreviewed, true = user confirmed, false = user rejected
+    reviewed_at         TIMESTAMPTZ,
+    review_note         TEXT,
+
+    -- The model + prompt version that produced this decision (for eval)
+    model_version       TEXT,
+    prompt_hash         TEXT,
+
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_assumption_log_user        ON assumption_log(user_id, created_at DESC);
+CREATE INDEX idx_assumption_log_memory      ON assumption_log(memory_id) WHERE memory_id IS NOT NULL;
+CREATE INDEX idx_assumption_log_entity      ON assumption_log(entity_id) WHERE entity_id IS NOT NULL;
+CREATE INDEX idx_assumption_log_unreviewed  ON assumption_log(user_id, confidence)
+    WHERE is_confirmed IS NULL;
+
+
+-- ============================================================
+-- J. MEMORIES — MISSING COLUMNS (v1.2 additions)
+-- Columns required by the PRD that were absent from v1.1.
+-- Applied via ALTER TABLE so the base table definition above
+-- remains readable as the canonical structure.
+-- ============================================================
+
+-- Soft-delete / redaction (GDPR right-to-erasure compatible)
+-- Redacted rows are invisible to all reads except an explicit
+-- owner-controlled audit view.  Distinct from physical delete —
+-- preserves the audit trail of the redaction event.
+ALTER TABLE memories
+    ADD COLUMN IF NOT EXISTS redacted_at        TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS redaction_reason   TEXT,           -- 'user_request' | 'gdpr_erasure' | 'moderation'
+    ADD COLUMN IF NOT EXISTS redacted_by        UUID;           -- user_id of actor
+
+CREATE INDEX idx_memories_redacted ON memories(user_id, redacted_at)
+    WHERE redacted_at IS NOT NULL;
+
+-- Natural-language temporal description companion to the
+-- structured uncertainty envelope.  The free-text field
+-- ("sometime in the late 1980s", "before my sister was born")
+-- is preserved verbatim alongside time_earliest/time_latest/
+-- time_precision.  The Temporal Agent uses it as evidence;
+-- exports carry it in CEF v1 Event.fuzzy.
+-- (Maps to time_fuzzy_description; distinct from occurred_at_fuzzy
+--  which captures the user's original phrasing at record time.)
+ALTER TABLE memories
+    ADD COLUMN IF NOT EXISTS time_fuzzy_description TEXT;
+
+-- Per-memory downstream-use consent flags.
+-- Distinct from privacy / card grants — these govern specific
+-- AI and indexing uses of the content, not viewer access.
+-- Both default to false (most conservative).
+ALTER TABLE memories
+    ADD COLUMN IF NOT EXISTS voice_clone_allowed        BOOLEAN NOT NULL DEFAULT false,
+    ADD COLUMN IF NOT EXISTS public_indexing_allowed    BOOLEAN NOT NULL DEFAULT false;
+
+-- Apply the same consent flags to media (a voice recording
+-- may be consented differently from the derived memory text).
+ALTER TABLE media
+    ADD COLUMN IF NOT EXISTS voice_clone_allowed        BOOLEAN NOT NULL DEFAULT false,
+    ADD COLUMN IF NOT EXISTS public_indexing_allowed    BOOLEAN NOT NULL DEFAULT false;
+
+
+-- ============================================================
+-- K. viewer_can_access() — Access Evaluation Function (stub)
+-- This function must be implemented before RLS policies can be
+-- activated on content tables.  The stub below defines the
+-- signature and documents the algorithm; replace the body with
+-- the full implementation once the cards schema is seeded and
+-- verified.  See access_cards_requirements.md §5 for the
+-- full algorithm and performance requirements.
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION viewer_can_access(
+    p_viewer_id     UUID,
+    p_owner_id      UUID,
+    p_record_type   TEXT,
+    p_record_id     UUID
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+AS $$
+/*
+  Access evaluation algorithm (access_cards_requirements.md §5):
+
+  1. If viewer == owner → grant immediately.
+  2. Find all active cards owned by owner where:
+       - viewer is a holder (via card_holders → contacts), AND
+       - card is within its validity window.
+  3. For each such card C:
+       a. If record is in record_card_grants(C, 'exclude' | 'auto_isolate') → skip.
+       b. If record is in record_card_grants(C, 'include') → GRANT.
+       c. Else evaluate record against C.scope_rules:
+            - Empty scope_rules ({}) → GRANT.
+            - Else all populated axes must match (AND across axes,
+              OR within each axis).
+  4. If no card grants access → DENY.
+
+  Performance target: single-digit ms for 1–5 cards, 1–3 scope axes.
+  JWT optimization: viewer's card IDs for this owner can be carried
+  in the JWT to avoid the card_holders join on every query
+  (see access_cards_requirements.md §10).
+*/
+BEGIN
+    -- Owner always has full access.
+    IF p_viewer_id = p_owner_id THEN
+        RETURN TRUE;
+    END IF;
+
+    -- TODO: implement full card-scope evaluation here.
+    -- Return FALSE (deny) as safe default until implementation is complete.
+    -- Do NOT activate RLS policies until this function has a full body.
+    RETURN FALSE;
+END;
+$$;
+
+COMMENT ON FUNCTION viewer_can_access IS
+    'Access Cards evaluation function. STUB — full body required before RLS activation. '
+    'See access_cards_requirements.md §5 for algorithm and performance requirements.';
+
+
+-- ============================================================
+-- END OF SCHEMA v1.2
+-- ============================================================
+-- STATUS SUMMARY
+--   ✅ Raw Vault (memories, memory_revisions)
+--   ✅ Entity Graph (entities, relationships, temporal_constraints)
+--   ✅ Dimension Taxonomy (dimension_types, dimensions)
+--   ✅ Tagging Layer (memory_dimensions, memory_entities, memory_media)
+--   ✅ Synthesis Layer (syntheses, synthesis_visibility_cache)
+--   ✅ Access Cards schema (cards, contacts, card_holders,
+--       record_card_grants, card_audit_log, access_log)
+--   ✅ Geospatial (entities.geom, life_journey view,
+--       life_journey_geojson(), memories_within_radius())
+--   ✅ The Stroll (stroll_sessions, reflections, memory_revisions)
+--   ✅ Phase 0 support (interview_sessions.session_type,
+--       interview_sessions.phase0_stage)
+--   ✅ Social sharing (memory_shares, share_comments,
+--       contribution_attachments)
+--   ✅ User periods (user_periods, memory_periods)
+--   ✅ Review queue (review_queue)
+--   ✅ Assumption log (assumption_log)
+--   ✅ Soft-delete fields on memories
+--   ✅ Consent flags on memories and media
+--   ✅ viewer_can_access() stub (full body required before RLS)
+--   ✅ Seed dimensions + questions (v1.3 build, May 2026)
+--   ✅ Seed five system cards on signup via on-user-created Edge Function
+--   ✅ Agent orchestration via Inngest (architecture doc Part XVI)
+--   ✅ privacy_tier ENUM and tier_locked columns removed (v1.4, 2026-05-20)
+--   ✅ entity_confirmation_needed item_type for tap-to-confirm
+--      (migration 20260520182927_entity_confirmation_queue.sql)
+--
+-- REMAINING BEFORE MVP BUILD
+--   1. Implement viewer_can_access() full body (§5 algorithm) —
+--      Step 13 of the development sequence
+--   2. Activate RLS on memories, entities, relationships, media
+--      using viewer_can_access(); syntheses uses
+--      synthesis_visibility_cache for performance — Step 13
+--   3. Add memories.private_notes column + column-level filter in
+--      viewer_can_access() (per DB_Architecture_Design_v1.md
+--      Part XVII; targeted for substep 6h)
+--   4. Add capture_submissions table + user_chronicle_digests table
+--      (per feature_capture_assistant.md §10.1 and §4.5; Step 6 work)
+--   5. CEF v1 export: validate against cef-schema.json;
+--      add delta-export support (since last backup)
 -- ============================================================
