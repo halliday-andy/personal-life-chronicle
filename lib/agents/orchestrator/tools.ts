@@ -28,6 +28,12 @@ import { runEntity, type EntityResult } from '@/lib/agents/entity/core'
 export interface ToolContext {
   user_id: string
   supabase: SupabaseClient
+  /**
+   * The capture_submissions row that triggered this orchestrator run.
+   * Passed to create_memory so each draft links back to its submission;
+   * also used by add_to_backlog so queued items have provenance.
+   */
+  source_submission_id?: string
 }
 
 export interface ToolResultPayload {
@@ -143,12 +149,16 @@ export const ORCHESTRATOR_TOOLS: Anthropic.Tool[] = [
   {
     name: 'flag_for_private_notes',
     description:
-      "Suggest that a passage of text be moved to the memory's private_notes layer (owner-only) rather than the main content. Use when the submission contains honest commentary or social-context observations the user might not want shared even via Access Cards. Returns a proposal; no-op on persistence until substep 6d ships the private_notes column.",
+      "Append a passage to a memory's private_notes layer (owner-only, never exposed via Access Cards or shares). Use when the submission contains honest commentary or social-context observations the user might not want shared even via the Family or Professional cards. When memory_id is supplied the passage is written immediately; without it, returns a proposal the orchestrator can apply once a draft exists.",
     input_schema: {
       type: 'object' as const,
       properties: {
-        passage: { type: 'string', description: 'The passage you would move to private_notes.' },
+        passage: { type: 'string', description: 'The passage to add to private_notes.' },
         rationale: { type: 'string', description: 'Why this seems more personal.' },
+        memory_id: {
+          type: 'string',
+          description: 'UUID of the memory to append to. Omit to return proposal-only.',
+        },
       },
       required: ['passage', 'rationale'],
     },
@@ -156,7 +166,7 @@ export const ORCHESTRATOR_TOOLS: Anthropic.Tool[] = [
   {
     name: 'add_to_backlog',
     description:
-      "Queue a Things-to-come-back-to item — a thought the user wants to develop later. Use when the submission is intentionally incomplete (a stub) or when an interesting tangent comes up that the user hasn't asked you to develop now. Returns a proposal; persistence to review_queue lands when memory_elaboration_needed is added to the item_type enum.",
+      "Queue a Things-to-come-back-to item — a thought the user wants to develop later. Use when the submission is intentionally incomplete (a stub) or when an interesting tangent comes up that the user hasn't asked you to develop now. Persists as a review_queue row with item_type='memory_elaboration_needed' linked to the current capture_submissions row.",
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -194,9 +204,9 @@ export async function executeTool(
       case 'propose_interview':
         return handleProposeInterview(input)
       case 'flag_for_private_notes':
-        return handleFlagPrivateNotes(input)
+        return await handleFlagPrivateNotes(input, context)
       case 'add_to_backlog':
-        return handleAddBacklog(input)
+        return await handleAddBacklog(input, context)
       default:
         return {
           tool: name,
@@ -245,6 +255,7 @@ async function handleCreateMemory(
       source: 'text_entry',
       confidence: 'certain',
       is_draft: true, // Orchestrator-created memories start as drafts.
+      source_submission_id: ctx.source_submission_id ?? null,
       metadata: { created_by: 'orchestrator' },
     })
     .select('id')
@@ -398,26 +409,144 @@ function handleProposeInterview(input: Record<string, unknown>): ToolResultPaylo
   }
 }
 
-function handleFlagPrivateNotes(input: Record<string, unknown>): ToolResultPayload {
+async function handleFlagPrivateNotes(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResultPayload> {
+  const passage = String(input.passage ?? '').trim()
+  const rationale = String(input.rationale ?? '')
+  const memory_id = input.memory_id ? String(input.memory_id) : undefined
+
+  if (!passage) {
+    return {
+      tool: 'flag_for_private_notes',
+      persisted: false,
+      rationale,
+      data: { error: 'passage is empty' },
+    }
+  }
+
+  // No memory_id → proposal-only (orchestrator can apply to a draft later).
+  if (!memory_id) {
+    return {
+      tool: 'flag_for_private_notes',
+      persisted: false,
+      rationale,
+      data: {
+        passage,
+        note: 'No memory_id supplied; proposal-only. Provide memory_id to persist directly.',
+      },
+    }
+  }
+
+  // Append to private_notes (never overwrite — owner-only commentary is
+  // additive). Read-modify-write because Postgres lacks a clean append
+  // operator for TEXT in a single statement that we can use through
+  // PostgREST without a function.
+  const { data: current, error: readErr } = await ctx.supabase
+    .from('memories')
+    .select('private_notes')
+    .eq('id', memory_id)
+    .eq('user_id', ctx.user_id)
+    .single()
+
+  if (readErr || !current) {
+    return {
+      tool: 'flag_for_private_notes',
+      persisted: false,
+      rationale,
+      data: { error: `memory ${memory_id} not found: ${readErr?.message ?? 'no row'}` },
+    }
+  }
+
+  const existing = (current.private_notes as string | null) ?? ''
+  const separator = existing.length > 0 ? '\n\n---\n\n' : ''
+  const updated = existing + separator + passage
+
+  const { error: writeErr } = await ctx.supabase
+    .from('memories')
+    .update({ private_notes: updated })
+    .eq('id', memory_id)
+    .eq('user_id', ctx.user_id)
+
+  if (writeErr) {
+    return {
+      tool: 'flag_for_private_notes',
+      persisted: false,
+      rationale,
+      data: { error: writeErr.message },
+    }
+  }
+
   return {
     tool: 'flag_for_private_notes',
-    persisted: false,
-    rationale: String(input.rationale ?? ''),
+    persisted: true,
+    rationale,
     data: {
-      passage: input.passage,
-      note: 'private_notes column not yet present in the schema; this is a proposal-only signal until substep 6d.',
+      memory_id,
+      appended_length: passage.length,
+      total_length: updated.length,
     },
   }
 }
 
-function handleAddBacklog(input: Record<string, unknown>): ToolResultPayload {
+async function handleAddBacklog(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResultPayload> {
+  const text = String(input.text ?? '').trim()
+  const rationale = String(input.rationale ?? '')
+
+  if (!text) {
+    return {
+      tool: 'add_to_backlog',
+      persisted: false,
+      rationale,
+      data: { error: 'text is empty' },
+    }
+  }
+
+  // review_queue.item_id is a polymorphic UUID. memory_elaboration_needed
+  // entries don't reference a memory yet (they ARE the stub of an
+  // unwritten memory), so we use the source_submission_id as the anchor
+  // for traceability. If no submission context is available we fall back
+  // to gen_random_uuid()-equivalent (a synthetic placeholder).
+  const item_id = ctx.source_submission_id ?? crypto.randomUUID()
+
+  const { data, error } = await ctx.supabase
+    .from('review_queue')
+    .insert({
+      user_id: ctx.user_id,
+      item_type: 'memory_elaboration_needed',
+      item_id,
+      context_json: {
+        text,
+        rationale,
+        source_submission_id: ctx.source_submission_id ?? null,
+        proposed_by: 'orchestrator',
+      },
+      priority: 3,
+    })
+    .select('id')
+    .single()
+
+  if (error) {
+    return {
+      tool: 'add_to_backlog',
+      persisted: false,
+      rationale,
+      data: { error: error.message },
+    }
+  }
+
   return {
     tool: 'add_to_backlog',
-    persisted: false,
-    rationale: String(input.rationale ?? ''),
+    persisted: true,
+    rationale,
     data: {
-      text: input.text,
-      note: 'memory_elaboration_needed item_type not yet present in review_queue; this is a proposal-only signal.',
+      review_queue_id: data?.id,
+      text,
+      item_type: 'memory_elaboration_needed',
     },
   }
 }

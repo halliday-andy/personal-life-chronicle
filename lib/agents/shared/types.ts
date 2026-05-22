@@ -29,6 +29,9 @@ export type AssumptionType =
   | 'entity_merge'
   | 'synthesis_source'
   | 'geocoding_resolution'
+  | 'orchestrator_reasoning'
+  | 'orchestrator_dispatch'
+  | 'globe_modal_extraction'
   | 'other'
 
 export interface AgentCoreInput {

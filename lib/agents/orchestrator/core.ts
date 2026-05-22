@@ -33,6 +33,13 @@ export interface OrchestratorInput {
   user_guidance?: string
   /** Optional context about where the user is in the app (e.g. "placing globe pins"). */
   active_context?: string
+  /**
+   * Channel by which this submission arrived. Defaults to 'typed' since the
+   * MVP capture surface is the text field (Wispr Flow types into it natively
+   * so we can't distinguish typed vs. dictated server-side). The UI can pass
+   * 'pasted' for explicit paste events or 'voice' once push-to-talk lands.
+   */
+  input_type?: 'typed' | 'dictated' | 'pasted' | 'file_upload' | 'voice'
   /** Optional prior conversation in this session. */
   conversation_history?: ConversationTurn[]
   /** Injected clients for testing / shared connections. */
@@ -51,6 +58,7 @@ export interface OrchestratorResponse {
   proposals: OrchestratorProposal[]
   /** Diagnostics: digest hash, iteration count, model + prompt versions. */
   meta: {
+    submission_id: string
     digest_hash: string
     iterations: number
     model: string
@@ -63,6 +71,40 @@ export interface OrchestratorResponse {
 export async function runOrchestrator(input: OrchestratorInput): Promise<OrchestratorResponse> {
   const supabase = getAgentSupabase(input.supabase)
   const anthropic = input.anthropic ?? getAnthropicClient()
+
+  // ─── capture_submissions — open a lineage anchor for this run ─────
+  // Every memory, entity proposal, and backlog item produced this run
+  // links back here via source_submission_id. The UI eventually flips
+  // status to 'integrated' or 'declined' when the user resolves the
+  // proposals; the orchestrator only flips 'processing' → 'awaiting_review'.
+  const { data: submissionRow, error: submissionErr } = await supabase
+    .from('capture_submissions')
+    .insert({
+      user_id: input.user_id,
+      input_type: input.input_type ?? 'typed',
+      input_text: input.submission_text,
+      user_guidance: input.user_guidance ?? null,
+      status: 'processing',
+      metadata: {
+        active_context: input.active_context ?? null,
+        history_length: input.conversation_history?.length ?? 0,
+      },
+    })
+    .select('id')
+    .single()
+
+  if (submissionErr || !submissionRow) {
+    throw new Error(
+      `Failed to open capture_submissions row: ${submissionErr?.message ?? 'no row returned'}`,
+    )
+  }
+  const submissionId = submissionRow.id as string
+
+  // Cross-link: orchestrator_run_id = capture_submissions.id for MVP.
+  await supabase
+    .from('capture_submissions')
+    .update({ orchestrator_run_id: submissionId })
+    .eq('id', submissionId)
 
   // ─── Layer B: per-user chronicle digest (cached) ─────────────────
   // Read from user_chronicle_digests. Regenerates lazily if stale,
@@ -151,6 +193,7 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Orchest
         executeTool(tu.name, tu.input as Record<string, unknown>, {
           user_id: input.user_id,
           supabase,
+          source_submission_id: submissionId,
         }),
       ),
     )
@@ -183,11 +226,12 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Orchest
   }
 
   // ─── Audit log ────────────────────────────────────────────────────
-  // Single summary row per orchestrator run.
+  // Single summary row per orchestrator run. assumption_type now uses
+  // the proper 'orchestrator_reasoning' value (added in the 6d migration).
   await logAssumption(supabase, {
     user_id: input.user_id,
-    agent: 'capture_agent', // orchestrator_reasoning enum value lands later; use capture_agent until then
-    assumption_type: 'other',
+    agent: 'capture_agent', // orchestrator runs as a capture-class agent
+    assumption_type: 'orchestrator_reasoning',
     memory_id: null,
     summary: `Orchestrator run: ${proposals.length} tool call(s) over ${iteration} iteration(s); reply ${finalReply.length} chars`,
     decision_json: {
@@ -198,6 +242,7 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Orchest
           ? 0
           : proposals.reduce((s, p) => s + (p.confidence ?? 0.5), 0) / proposals.length,
       reasoning: 'See proposals[] for per-tool rationale.',
+      submission_id: submissionId,
       digest_hash: digest.hash,
       iterations: iteration,
       tool_names: proposals.map((p) => p.tool),
@@ -207,10 +252,29 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Orchest
     prompt_hash: digest.hash,
   })
 
+  // ─── Close out the capture_submissions row ────────────────────────
+  // 'awaiting_review' when proposals exist that need user resolution;
+  // 'integrated' when the run was purely conversational (no drafts,
+  // no proposals to act on — e.g. the user asked a question).
+  const hasPendingProposals = proposals.some(
+    (p) =>
+      p.tool === 'create_memory' ||
+      p.tool === 'add_to_backlog' ||
+      p.tool === 'flag_for_private_notes' ||
+      p.tool === 'propose_interview',
+  )
+  await supabase
+    .from('capture_submissions')
+    .update({
+      status: hasPendingProposals ? 'awaiting_review' : 'integrated',
+    })
+    .eq('id', submissionId)
+
   return {
     reply: finalReply,
     proposals,
     meta: {
+      submission_id: submissionId,
       digest_hash: digest.hash,
       iterations: iteration,
       model: DEFAULT_AGENT_MODEL,

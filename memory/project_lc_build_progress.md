@@ -103,13 +103,29 @@ Five items surfaced during the Step 6a and 6b verifications. Each has a correspo
 
 | # | Item | Lands in | Task |
 |---|---|---|---|
-| 1 | Add `orchestrator_reasoning` + `globe_modal_extraction` to `assumption_log.assumption_type` CHECK; switch orchestrator to use it | 6d migration | #21 |
+| 1 | ✅ Add `orchestrator_reasoning` + `globe_modal_extraction` to `assumption_log.assumption_type` CHECK; switch orchestrator to use it | 6d migration | #21 — closed 2026-05-22 |
 | 2 | Dedupe Tagger/Entity work — inline preview + async fanout both run; user-approve should short-circuit async (or fire `memory/finalized` instead of `memory/ingested`) | 6f UI build | #22 |
 | 3 | Orchestrator system prompt nudge — reply must not contradict structured tool data (saw "linked to existing" claim while data showed `created_new`) | 6f after proposal cards exist | #23 |
-| 4 | Wire `add_to_backlog` and `flag_for_private_notes` to real persistence once 6d migration ships `private_notes` column and `memory_elaboration_needed` item_type | 6d migration + tools.ts update | #24 |
+| 4 | ✅ Wire `add_to_backlog` and `flag_for_private_notes` to real persistence once 6d migration ships `private_notes` column and `memory_elaboration_needed` item_type | 6d migration + tools.ts update | #24 — closed 2026-05-22 |
 | 5 | Orchestrator latency 35–55s — partial fix applied (parallel sub-agent execution: short 35→17s, long 55→35s); streaming + Haiku + deferred-inline remain post-6f | post-6f | #25 (partial) |
 
 These are the kind of items that vanish in chat history if they're not captured in the task list AND mirrored to durable memory. This subsection is the durable record; the task list is the actionable surface. Both must move together — when one of these tasks is closed, the matching row here gets a `✅` and a one-line note on what was done.
+
+## Step 6d — what got built (2026-05-22)
+
+Multi-purpose schema migration + orchestrator wiring. Closes followup tasks #21 (orchestrator_reasoning enum) and #24 (backlog + private_notes wired to persistence).
+
+| Piece | Purpose |
+|---|---|
+| `supabase/migrations/20260521215905_capture_assistant_schema.sql` | Six related additions: capture_submissions table, memories.private_notes, memories.source_submission_id, memory_source ENUM extension ('external_witness_account'), assumption_log.assumption_type CHECK extension (orchestrator_reasoning, orchestrator_dispatch, globe_modal_extraction), review_queue.item_type CHECK extension (memory_elaboration_needed, orchestrator_proposal). |
+| `lib/agents/orchestrator/core.ts` | Opens a capture_submissions row at the start of each run (status='processing'); closes it ('awaiting_review' when proposals need user resolution, 'integrated' when the run was purely conversational); audit log now uses assumption_type='orchestrator_reasoning'; submission_id passed into ToolContext. |
+| `lib/agents/orchestrator/tools.ts` | ToolContext gains source_submission_id. create_memory threads it into the memories insert. flag_for_private_notes appends to memories.private_notes when memory_id is supplied (proposal-only otherwise). add_to_backlog inserts a real review_queue row with item_type='memory_elaboration_needed' and full lineage via context_json. |
+| `lib/agents/shared/types.ts` | AssumptionType union expanded to match the migration. |
+| `scripts/verify-6d-tools.mjs` | Direct dispatch verification of the two newly-persistent tools (cleans up after itself). |
+
+Verified end-to-end: capture_submissions row created; memory.source_submission_id links cleanly; assumption_log uses 'orchestrator_reasoning'; flag_for_private_notes writes to the column; add_to_backlog inserts a queue row with the right item_type.
+
+The followup table at the top of this file now shows tasks #21 and #24 as closed.
 
 ## Step 6c — what got built (2026-05-21)
 
