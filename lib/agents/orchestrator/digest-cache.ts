@@ -16,7 +16,7 @@
  * meaningfully — which gives Anthropic prompt caching a stable key for
  * Layer B across consecutive submissions.
  *
- * Reference: documentation/feature_capture_assistant.md §4.5,
+ * Reference: documentation/feature_capture_assistant.md §4.6,
  *            supabase/migrations/20260521130453_user_chronicle_digests.sql
  */
 

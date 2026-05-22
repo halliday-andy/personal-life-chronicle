@@ -14,7 +14,7 @@
 -- The digest_hash field gives a stable cache key for Anthropic prompt
 -- caching — identical hash = identical Layer B prompt block = cache hit.
 --
--- Reference: documentation/feature_capture_assistant.md §4.5.
+-- Reference: documentation/feature_capture_assistant.md §4.6.
 
 CREATE TABLE user_chronicle_digests (
     user_id              UUID PRIMARY KEY,
