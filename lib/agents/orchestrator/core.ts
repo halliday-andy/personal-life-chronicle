@@ -14,7 +14,8 @@ import { DEFAULT_AGENT_MODEL, getAnthropicClient } from '@/lib/agents/shared/ant
 import { getAgentSupabase, logAssumption } from '@/lib/agents/shared/db'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { ORCHESTRATOR_SYSTEM_PROMPT, SYSTEM_PROMPT_VERSION } from './system'
-import { buildUserDigest, type ChronicleDigest } from './digest'
+import type { ChronicleDigest } from './digest'
+import { getChronicleDigest } from './digest-cache'
 import { ORCHESTRATOR_TOOLS, executeTool, type ToolResultPayload } from './tools'
 
 const MAX_TOOL_ITERATIONS = 5
@@ -63,8 +64,10 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Orchest
   const supabase = getAgentSupabase(input.supabase)
   const anthropic = input.anthropic ?? getAnthropicClient()
 
-  // ─── Layer B: per-user chronicle digest ──────────────────────────
-  const digest = await buildUserDigest(input.user_id, supabase)
+  // ─── Layer B: per-user chronicle digest (cached) ─────────────────
+  // Read from user_chronicle_digests. Regenerates lazily if stale,
+  // missing, or older than the cache TTL. See digest-cache.ts.
+  const digest = await getChronicleDigest(input.user_id, supabase)
 
   // ─── Compose the system blocks with cache_control on A and B ─────
   // Layer A is a constant; cache it long. Layer B is per-user; cache it

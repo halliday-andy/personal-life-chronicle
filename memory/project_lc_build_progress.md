@@ -111,6 +111,20 @@ Five items surfaced during the Step 6a and 6b verifications. Each has a correspo
 
 These are the kind of items that vanish in chat history if they're not captured in the task list AND mirrored to durable memory. This subsection is the durable record; the task list is the actionable surface. Both must move together — when one of these tasks is closed, the matching row here gets a `✅` and a one-line note on what was done.
 
+## Step 6c — what got built (2026-05-21)
+
+Durable Layer B cache for the orchestrator. Removes the per-submission digest rebuild and gives Anthropic prompt caching a stable Layer B key across consecutive submissions.
+
+| Piece | Purpose |
+|---|---|
+| `supabase/migrations/20260521130453_user_chronicle_digests.sql` | `user_chronicle_digests` table — one row per user; `digest_text`, `digest_hash`, `generated_at`, `generation_version`, `stats`, `is_stale`. Partial index on stale rows for the sweeper. |
+| `lib/agents/orchestrator/digest-cache.ts` | `getChronicleDigest()` (read-or-regenerate, 5min TTL), `markDigestStale()`, `regenerateDigest()`. |
+| `lib/inngest/agents/chronicle-digester.ts` | Three functions: invalidate-on-`memory/ingested`, invalidate-on-`entity/merged`, and an hourly cron sweep that regenerates any stale rows proactively. |
+| Wiring | Orchestrator now reads via `getChronicleDigest`; the three new Inngest functions are registered in `lib/inngest/index.ts` and the serve handler. |
+| Verification scripts | `scripts/verify-digest-cache.mjs` (direct cache paths), `scripts/verify-inngest-invalidation.mjs` (Inngest listener). Both pass: cache hit 164ms vs regenerate 524-665ms; Inngest invalidation ~575ms end-to-end. |
+
+The hourly cron is conservative — most regeneration still happens lazily on read, since `is_stale` is flipped by the event listener and the next orchestrator call rebuilds. The cron is a backstop for users whose chronicle changes outside event-driven paths (e.g., direct admin writes) or whose digest stays cold for hours.
+
 ## Step 6b — what got built (2026-05-20)
 
 Orchestrator library lives at `lib/agents/orchestrator/`:

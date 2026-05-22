@@ -10,6 +10,9 @@ import {
   synthesisAgentCron,
   timelineAgent,
   searchAgent,
+  chronicleDigesterOnMemoryIngested,
+  chronicleDigesterOnEntityMerged,
+  chronicleDigesterSweep,
 } from '@/lib/inngest'
 
 export const { GET, POST, PUT } = serve({
@@ -24,5 +27,8 @@ export const { GET, POST, PUT } = serve({
     synthesisAgentCron,
     timelineAgent,
     searchAgent,
+    chronicleDigesterOnMemoryIngested,
+    chronicleDigesterOnEntityMerged,
+    chronicleDigesterSweep,
   ],
 })

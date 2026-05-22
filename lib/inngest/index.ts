@@ -9,3 +9,8 @@ export {
 } from './agents/synthesis-agent'
 export { timelineAgent } from './agents/timeline-agent'
 export { searchAgent } from './agents/search-agent'
+export {
+  chronicleDigesterOnMemoryIngested,
+  chronicleDigesterOnEntityMerged,
+  chronicleDigesterSweep,
+} from './agents/chronicle-digester'
