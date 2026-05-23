@@ -59,7 +59,10 @@ export default async function DashboardPage() {
             <p className="mt-1 text-sm font-medium text-stone-700">Ontology Bootstrap</p>
             <p className="mt-2 text-xs text-stone-400">Not started</p>
           </div>
-          <div className="bg-white rounded-xl border border-stone-200 p-5">
+          <Link
+            href="/memories"
+            className="block bg-white rounded-xl border border-stone-200 p-5 hover:border-stone-300 hover:shadow-sm transition-all"
+          >
             <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Memories</p>
             <p className="mt-1 text-2xl font-semibold text-stone-900">{totalMemories}</p>
             <p className="mt-2 text-xs text-stone-400">
@@ -67,7 +70,8 @@ export default async function DashboardPage() {
                 ? 'Start an interview to begin'
                 : `${finalisedCount} finalised · ${draftCount} draft${draftCount === 1 ? '' : 's'} awaiting review`}
             </p>
-          </div>
+            <p className="mt-2 text-xs text-stone-500">View all →</p>
+          </Link>
           <div className="bg-white rounded-xl border border-stone-200 p-5">
             <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Your Cards</p>
             <p className="mt-1 text-sm font-medium text-stone-700">
