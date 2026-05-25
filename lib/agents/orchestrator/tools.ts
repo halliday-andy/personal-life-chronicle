@@ -256,7 +256,12 @@ async function handleCreateMemory(
       confidence: 'certain',
       is_draft: true, // Orchestrator-created memories start as drafts.
       source_submission_id: ctx.source_submission_id ?? null,
-      metadata: { created_by: 'orchestrator' },
+      // skip_async_fanout: suppress the Tagger + Entity Inngest listeners
+      // for this draft. The orchestrator's inline preview tools populate
+      // the proposal cards; persistence waits until the user Accepts via
+      // POST /api/memory/[id]/finalize, which removes this flag and
+      // re-emits memory/ingested so the listeners run with persist=true.
+      metadata: { created_by: 'orchestrator', skip_async_fanout: true },
     })
     .select('id')
     .single()
