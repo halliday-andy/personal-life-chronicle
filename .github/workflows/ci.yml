@@ -1,0 +1,52 @@
+# Continuous integration guard for the pinned Node version.
+#
+# Runs on every push to main and every PR. If a dependency upgrade or
+# code change breaks the build under the pinned Node version (.nvmrc),
+# the failure surfaces at PR time rather than when the dev server
+# crashes during a capture session.
+#
+# Reference: README.md "Maintenance — Runtime version pinning".
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node from .nvmrc
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Build
+        # NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY etc. are
+        # not provided to CI on purpose — `next build` only needs them
+        # for routes that hit them at build-time. Our protected pages
+        # are dynamic (force-dynamic), so they're SSR'd per-request and
+        # don't fail the build when env vars are missing.
+        run: npm run build
+        env:
+          # Stub values so any code that READS process.env at module
+          # init doesn't NPE during build. Real values come from the
+          # deployed environment, not from CI.
+          NEXT_PUBLIC_SUPABASE_URL: https://ci-stub.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-stub-key
+          SUPABASE_SERVICE_ROLE_KEY: ci-stub-service-key
+          ANTHROPIC_API_KEY: ci-stub-anthropic-key
