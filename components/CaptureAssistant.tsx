@@ -13,6 +13,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { ProposalCard, type MemoryCardData } from './ProposalCard'
 
 type ConversationTurn = { role: 'user' | 'assistant'; content: string }
 
@@ -239,18 +240,21 @@ export default function CaptureAssistant() {
                   </div>
                 )
               }
+              const grouped = groupProposalsByMemory(entry.proposals)
               return (
                 <div key={i} className="flex justify-start">
-                  <div className="max-w-[92%] space-y-2.5">
+                  <div className="max-w-[92%] space-y-2.5 w-full">
                     <div className="rounded-2xl rounded-bl-sm bg-white border border-stone-200 text-stone-800 text-sm px-4 py-2.5 leading-relaxed whitespace-pre-wrap shadow-sm">
                       {entry.reply}
                     </div>
-                    {entry.proposals.length > 0 && (
-                      <div className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 space-y-1.5">
-                        <div className="text-[10px] uppercase tracking-wide text-stone-400 font-medium">
-                          Proposals (read-only for now; cards arrive in 6f)
-                        </div>
-                        {entry.proposals.map((p, j) => (
+
+                    {grouped.memoryCards.map((card) => (
+                      <ProposalCard key={card.memory.memory_id} initial={card} />
+                    ))}
+
+                    {grouped.otherProposals.length > 0 && (
+                      <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 space-y-1">
+                        {grouped.otherProposals.map((p, j) => (
                           <ProposalLine key={j} p={p} />
                         ))}
                       </div>
@@ -318,6 +322,73 @@ export default function CaptureAssistant() {
       </aside>
     </>
   )
+}
+
+// ── Grouping ────────────────────────────────────────────────────
+//
+// One orchestrator response can produce many tool calls. Visually we want
+// to cluster create_memory with its sibling classify_dimensions and
+// extract_entities calls into a single ProposalCard. Other tools
+// (propose_interview, add_to_backlog, flag_for_private_notes,
+// search_chronicle) get their own thin lines underneath.
+//
+// Heuristic: in the proposals[] array order, each create_memory starts a
+// new cluster. classify_dimensions / extract_entities that follow it
+// (before the next create_memory or end of list) belong to that cluster.
+
+function groupProposalsByMemory(proposals: ProposalSummary[]): {
+  memoryCards: MemoryCardData[]
+  otherProposals: ProposalSummary[]
+} {
+  const memoryCards: MemoryCardData[] = []
+  const otherProposals: ProposalSummary[] = []
+  let currentCard: MemoryCardData | null = null
+
+  for (const p of proposals) {
+    if (p.tool === 'create_memory' && p.persisted) {
+      const d = p.data as {
+        memory_id?: string
+        content_raw?: string
+        occurred_at_fuzzy?: string | null
+        time_precision?: string
+        is_draft?: boolean
+      }
+      if (!d.memory_id || !d.content_raw) continue
+      currentCard = {
+        memory: {
+          memory_id: d.memory_id,
+          content_raw: d.content_raw,
+          occurred_at_fuzzy: d.occurred_at_fuzzy ?? null,
+          time_precision: d.time_precision ?? 'unknown',
+          is_draft: d.is_draft ?? true,
+        },
+        tags: [],
+        entities: [],
+      }
+      memoryCards.push(currentCard)
+    } else if (p.tool === 'classify_dimensions' && currentCard) {
+      const tags = (p.data as { proposals?: unknown[] }).proposals
+      if (Array.isArray(tags)) {
+        currentCard.tags = tags as MemoryCardData['tags']
+        currentCard.tagsRationale = p.rationale
+      }
+    } else if (p.tool === 'extract_entities' && currentCard) {
+      const ents = (p.data as { proposals?: unknown[] }).proposals
+      if (Array.isArray(ents)) {
+        // Only show entities that resolved successfully (have an entity_id)
+        currentCard.entities = (ents as MemoryCardData['entities']).filter(
+          (e) => e.resolved_entity_id != null,
+        )
+      }
+    } else if (p.tool === 'create_memory') {
+      // create_memory that didn't persist (error path) — surface as other
+      otherProposals.push(p)
+    } else {
+      otherProposals.push(p)
+    }
+  }
+
+  return { memoryCards, otherProposals }
 }
 
 function ProposalLine({ p }: { p: ProposalSummary }) {
