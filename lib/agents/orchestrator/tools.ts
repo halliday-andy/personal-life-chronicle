@@ -81,15 +81,18 @@ export const ORCHESTRATOR_TOOLS: Anthropic.Tool[] = [
   {
     name: 'classify_dimensions',
     description:
-      "Get proposed dimension tags for a piece of text from the Tagger sub-agent. Returns proposals only by default (persist=false); the user approves before any memory_dimensions rows are written.",
+      "Classify a piece of text against the chronicle's dimension taxonomy via the Tagger sub-agent. When called for a memory you just created (memory_id supplied), pass persist=true to write memory_dimensions rows immediately — the proposal card then renders editable tag chips. Without memory_id, the call is preview-only (no DB writes). The draft state of the memory means the work is provisional; the user can adjust on the card.",
     input_schema: {
       type: 'object' as const,
       properties: {
         text: { type: 'string', description: 'The text to classify.' },
-        memory_id: { type: 'string', description: 'Optional memory_id if persisting.' },
+        memory_id: {
+          type: 'string',
+          description: 'UUID of the memory being tagged. Required when persist=true.',
+        },
         persist: {
           type: 'boolean',
-          description: 'Default false. Set true only when the user has approved.',
+          description: 'Default true when memory_id is supplied; false otherwise.',
         },
         rationale: { type: 'string', description: 'One sentence on why classification is useful here.' },
       },
@@ -99,15 +102,18 @@ export const ORCHESTRATOR_TOOLS: Anthropic.Tool[] = [
   {
     name: 'extract_entities',
     description:
-      "Get proposed named entities (people, places, organizations, vehicles, event series) from a piece of text, with resolution against the user's existing entity graph. Returns proposals only by default; the user approves before writes.",
+      "Extract named entities (people, places, organizations, vehicles, event series) from a piece of text, with resolution against the user's existing entity graph via the Entity sub-agent. When called for a memory you just created (memory_id supplied), pass persist=true to write entities + memory_entities rows immediately — the proposal card renders editable entity chips that the user can rename or remove. Without memory_id, the call is preview-only.",
     input_schema: {
       type: 'object' as const,
       properties: {
         text: { type: 'string', description: 'The text to extract from.' },
-        memory_id: { type: 'string', description: 'Optional memory_id if persisting.' },
+        memory_id: {
+          type: 'string',
+          description: 'UUID of the memory being analysed. Required when persist=true.',
+        },
         persist: {
           type: 'boolean',
-          description: 'Default false. Set true only when the user has approved.',
+          description: 'Default true when memory_id is supplied; false otherwise.',
         },
         rationale: { type: 'string', description: 'One sentence on why extraction is useful here.' },
       },
@@ -306,7 +312,11 @@ async function handleClassifyDimensions(
 ): Promise<ToolResultPayload> {
   const text = String(input.text ?? '')
   const memory_id = input.memory_id ? String(input.memory_id) : undefined
-  const persist = input.persist === true
+  // Default persist=true when memory_id is supplied (the typical case for
+  // tagging a draft memory). Without a memory_id we can't write anyway,
+  // so this stays preview-only.
+  const persist =
+    input.persist === undefined ? Boolean(memory_id) : input.persist === true
   const rationale = String(input.rationale ?? '')
 
   const result: TaggerResult = await runTagger({
@@ -338,7 +348,10 @@ async function handleExtractEntities(
 ): Promise<ToolResultPayload> {
   const text = String(input.text ?? '')
   const memory_id = input.memory_id ? String(input.memory_id) : undefined
-  const persist = input.persist === true
+  // Default persist=true when memory_id is supplied (typical case for
+  // extracting entities from a draft memory). Mirrors classify_dimensions.
+  const persist =
+    input.persist === undefined ? Boolean(memory_id) : input.persist === true
   const rationale = String(input.rationale ?? '')
 
   const result: EntityResult = await runEntity({
