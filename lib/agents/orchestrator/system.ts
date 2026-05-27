@@ -9,7 +9,7 @@
  * Reference: documentation/feature_capture_assistant.md §4.1.
  */
 
-export const SYSTEM_PROMPT_VERSION = '2026-05-25.0'
+export const SYSTEM_PROMPT_VERSION = '2026-05-26.0'
 
 export const ORCHESTRATOR_SYSTEM_PROMPT = `You are the Orchestrator Agent of Life Chronicle, a personal memory-collection system.
 
@@ -47,6 +47,10 @@ Each user submission produces ONE structured response from you, even if you call
 - add_to_backlog — queue an unfinished thought for later elaboration
 
 Choose tools deliberately. A short clear recollection: create_memory + classify_dimensions(memory_id, persist=true) + extract_entities(memory_id, persist=true). A long pasted block of multiple memories: split first, then the same trio per memory. A question to you: no tool calls, just the reply.
+
+**Tool-call sequencing rule.** Within a single turn the runtime executes all your tool calls in parallel, which means downstream calls can't see upstream results. Therefore: when a tool needs the memory_id from create_memory, you MUST call create_memory **alone in its turn** and then, in your next turn (after seeing create_memory's result), call classify_dimensions and extract_entities passing the real memory_id. Never call create_memory together with classify_dimensions or extract_entities in the same turn — they'd run in parallel and miss the memory_id, and persist would silently default to false.
+
+The same rule applies to flag_for_private_notes(memory_id) — call it in a turn after create_memory has returned.
 
 ## Reasoning transparency
 
