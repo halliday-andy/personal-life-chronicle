@@ -6,6 +6,20 @@ import SignOutButton from './sign-out-button'
 
 export const dynamic = 'force-dynamic'
 
+function labelForType(t: string): string {
+  switch (t) {
+    case 'entity_confirmation_needed': return 'confirm'
+    case 'entity_merge_proposal': return 'merge'
+    case 'memory_elaboration_needed': return 'elaborate'
+    case 'temporal_constraint': return 'temporal'
+    case 'synthesis_stale': return 'refresh'
+    case 'sensitive_promotion': return 'sensitive'
+    case 'assumption_review': return 'review'
+    case 'contribution_review': return 'contrib'
+    default: return t
+  }
+}
+
 export default async function DashboardPage() {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -17,7 +31,7 @@ export default async function DashboardPage() {
   // Once Step 13 lands and RLS is active, this can flip back to the
   // user-scoped client.
   const admin = createAdminClient()
-  const [memoriesRes, draftsRes, cardsRes] = await Promise.all([
+  const [memoriesRes, draftsRes, cardsRes, reviewRes] = await Promise.all([
     admin
       .from('memories')
       .select('*', { count: 'exact', head: true })
@@ -31,11 +45,29 @@ export default async function DashboardPage() {
       .from('cards')
       .select('*', { count: 'exact', head: true })
       .eq('owner_user_id', user.id),
+    admin
+      .from('review_queue')
+      .select('item_type')
+      .eq('user_id', user.id)
+      .is('resolved_at', null),
   ])
   const totalMemories = memoriesRes.count ?? 0
   const draftCount = draftsRes.count ?? 0
   const finalisedCount = totalMemories - draftCount
   const cardCount = cardsRes.count ?? 0
+
+  const reviewRows = (reviewRes.data ?? []) as { item_type: string }[]
+  const reviewOpen = reviewRows.length
+  const reviewByType: Record<string, number> = {}
+  for (const r of reviewRows) {
+    reviewByType[r.item_type] = (reviewByType[r.item_type] ?? 0) + 1
+  }
+  const reviewSummary = reviewOpen === 0
+    ? 'Nothing waiting'
+    : Object.entries(reviewByType)
+        .map(([t, n]) => `${n} ${labelForType(t)}`)
+        .slice(0, 2)
+        .join(' · ')
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -53,7 +85,7 @@ export default async function DashboardPage() {
         <h1 className="text-xl font-semibold text-stone-900">Welcome back</h1>
         <p className="mt-1 text-sm text-stone-500">Your life chronicle is waiting.</p>
 
-        <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white rounded-xl border border-stone-200 p-5">
             <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Phase 0</p>
             <p className="mt-1 text-sm font-medium text-stone-700">Ontology Bootstrap</p>
@@ -71,6 +103,22 @@ export default async function DashboardPage() {
                 : `${finalisedCount} finalised · ${draftCount} draft${draftCount === 1 ? '' : 's'} awaiting review`}
             </p>
             <p className="mt-2 text-xs text-stone-500">View all →</p>
+          </Link>
+          <Link
+            href="/review"
+            className="block bg-white rounded-xl border border-stone-200 p-5 hover:border-stone-300 hover:shadow-sm transition-all relative"
+          >
+            <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Review</p>
+            <div className="mt-1 flex items-baseline gap-2">
+              <p className="text-2xl font-semibold text-stone-900">{reviewOpen}</p>
+              {reviewOpen > 0 && (
+                <span className="rounded-full bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide">
+                  open
+                </span>
+              )}
+            </div>
+            <p className="mt-2 text-xs text-stone-400">{reviewSummary}</p>
+            <p className="mt-2 text-xs text-stone-500">Go to review →</p>
           </Link>
           <div className="bg-white rounded-xl border border-stone-200 p-5">
             <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Your Cards</p>
