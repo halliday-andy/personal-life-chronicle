@@ -352,7 +352,7 @@ async function deleteEntity(
   admin: ReturnType<typeof createAdminClient>,
   entityId: string,
   userId: string,
-): Promise<{ deleted_id: string } | { error: NextResponse }> {
+): Promise<{ deleted_id: string; dependent_queue_rows_closed: number } | { error: NextResponse }> {
   const { data: entRaw, error: loadErr } = await admin
     .from('entities')
     .select('id, user_id')
@@ -371,6 +371,9 @@ async function deleteEntity(
   // fine: rejecting an entity_confirmation row means "this was a
   // spurious extraction, throw it out entirely". The memory remains;
   // it just no longer claims this person was mentioned.
+  //
+  // assumption_log.entity_id is ON DELETE SET NULL (migration 2026-05-30)
+  // so the audit trail survives with a null entity_id.
   await admin.from('memory_entities').delete().eq('entity_id', entityId)
   const { error: delErr } = await admin
     .from('entities')
@@ -384,7 +387,33 @@ async function deleteEntity(
       ),
     }
   }
-  return { deleted_id: entityId }
+
+  // Cascade-close any other open review_queue rows that reference
+  // this now-deleted entity by item_id. The most common case: an
+  // entity_merge_proposal that listed this entity as the duplicate.
+  // Once the entity is gone, the proposal has nothing to act on, so
+  // we dismiss it with a reason field so the audit history makes
+  // sense ("this didn't need user action — the underlying entity was
+  // deleted").
+  const { count: depCount, error: depErr } = await admin
+    .from('review_queue')
+    .update({
+      resolved_at: new Date().toISOString(),
+      resolution: 'dismissed',
+      resolution_payload: { reason: 'source_entity_deleted' },
+      resolved_by: 'system:entity_deleted',
+    }, { count: 'exact' })
+    .eq('user_id', userId)
+    .eq('item_id', entityId)
+    .is('resolved_at', null)
+  if (depErr) {
+    // Don't bubble — the primary action (entity delete) already
+    // succeeded. Log and continue. The orphan row(s) can be cleaned
+    // up by the user via Dismiss on the /review page.
+    console.warn('[resolve] dependent queue cleanup failed:', depErr.message)
+  }
+
+  return { deleted_id: entityId, dependent_queue_rows_closed: depCount ?? 0 }
 }
 
 function mapRpcError(message: string): NextResponse {
