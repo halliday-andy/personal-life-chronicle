@@ -35,6 +35,17 @@
 -- in app/api/review-queue/[id]/resolve/route.ts deleteEntity() redundant.
 -- That cleanup is removed in the same commit as this migration (since
 -- pre-migration the app needed it; post-migration the DB does it).
+--
+-- Bug found mid-flight 2026-05-30: an earlier draft of this migration
+-- listed `stroll_sessions.triggered_by_memory_id` as an FK needing a
+-- rule. The column doesn't exist on stroll_sessions — it's
+-- `memories.triggered_by_memory_id` (a self-FK from the Stroll feature
+-- where new memories link back to the memory that triggered them).
+-- The enumeration script's table-tracker drifted across an ALTER
+-- TABLE memories block and assigned the column to the wrong parent.
+-- Fixed by replacing the bogus stroll_sessions line with the correct
+-- memories self-FK ALTER. The transaction wrapper meant the failed
+-- attempt left zero schema state behind.
 
 BEGIN;
 
@@ -109,15 +120,20 @@ ALTER TABLE temporal_constraints DROP CONSTRAINT IF EXISTS temporal_constraints_
 ALTER TABLE temporal_constraints ADD CONSTRAINT temporal_constraints_anchor_memory_id_fkey
     FOREIGN KEY (anchor_memory_id) REFERENCES memories(id) ON DELETE SET NULL;
 
--- stroll_sessions.origin_memory_id, .triggered_by_memory_id — the
--- Stroll session log records that a reminiscence session happened.
--- Preserve the session row, lose the memory links.
+-- stroll_sessions.origin_memory_id — the Stroll session log records that
+-- a reminiscence session happened. Preserve the session row, lose the
+-- memory link.
 ALTER TABLE stroll_sessions DROP CONSTRAINT IF EXISTS stroll_sessions_origin_memory_id_fkey;
 ALTER TABLE stroll_sessions ADD CONSTRAINT stroll_sessions_origin_memory_id_fkey
     FOREIGN KEY (origin_memory_id) REFERENCES memories(id) ON DELETE SET NULL;
 
-ALTER TABLE stroll_sessions DROP CONSTRAINT IF EXISTS stroll_sessions_triggered_by_memory_id_fkey;
-ALTER TABLE stroll_sessions ADD CONSTRAINT stroll_sessions_triggered_by_memory_id_fkey
+-- memories.triggered_by_memory_id — self-FK from the Stroll feature
+-- (Pathway A: a new memory stub created because the user was reminded
+-- of it while reading another memory). If the triggering memory is
+-- deleted, the triggered memory survives — it's its own artifact
+-- now. Just lose the provenance link.
+ALTER TABLE memories DROP CONSTRAINT IF EXISTS memories_triggered_by_memory_id_fkey;
+ALTER TABLE memories ADD CONSTRAINT memories_triggered_by_memory_id_fkey
     FOREIGN KEY (triggered_by_memory_id) REFERENCES memories(id) ON DELETE SET NULL;
 
 -- reflections.source_memory_id — a reflection is a Pathway B (Stroll)
