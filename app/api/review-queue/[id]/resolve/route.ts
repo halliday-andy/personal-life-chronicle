@@ -366,15 +366,14 @@ async function deleteEntity(
     return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
   }
 
-  // Hard delete. memory_entities will lose its rows for this entity
-  // (no CASCADE — they'll need explicit removal). For MVP this is
-  // fine: rejecting an entity_confirmation row means "this was a
-  // spurious extraction, throw it out entirely". The memory remains;
-  // it just no longer claims this person was mentioned.
-  //
-  // assumption_log.entity_id is ON DELETE SET NULL (migration 2026-05-30)
-  // so the audit trail survives with a null entity_id.
-  await admin.from('memory_entities').delete().eq('entity_id', entityId)
+  // Hard delete. Post-migration 20260530144509 the FK rules handle the
+  // ripple effects:
+  //   memory_entities.entity_id      ON DELETE CASCADE  → links auto-cleared
+  //   assumption_log.entity_id       ON DELETE SET NULL → audit preserved
+  //   relationships.subject/object   ON DELETE CASCADE  → edges removed
+  //   coverage.entity_id             ON DELETE CASCADE  → rows removed
+  //   syntheses/contacts/etc.        ON DELETE SET NULL → links nulled
+  // No manual cleanup needed here — Postgres does the right thing.
   const { error: delErr } = await admin
     .from('entities')
     .delete()
