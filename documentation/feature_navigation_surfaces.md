@@ -134,7 +134,7 @@ Common scaffolding: life stages on the time axis (eight standard stages — chil
 
 ### 5.5 MVP behaviour and the lead dimension
 
-The MVP ships one Timelines dimension: **Significant Relationships** (a.k.a. the romance strand). This is deliberately narrower than the "Players / Life's Cast" framing in the original PRD. The Significant Relationships dimension covers the people who occupied the central emotional roles in the user's life — partners, deepest friendships, the family figures who shaped them. Casual acquaintances and professional contacts are visible in Recollections (as entity chips on memory cards) but don't populate this dimension.
+The MVP ships one Timelines dimension. The user sees it as **Life's Cast**; the technical/scoping descriptor (used in this spec, in schema comments, and in tooltips when the user hovers) is the **Significant Relationships** dimension. Both names point at the same data; "Life's Cast" carries the emotional register and the Shakespeare resonance ("all the men and women merely players; they have their exits and their entrances"), while "Significant Relationships" carries the scoping precision — partners, deepest friendships, lifelong family figures. Casual acquaintances and professional contacts are visible in Recollections (as entity chips on memory cards) but don't populate this dimension.
 
 The narrowing matters for onboarding (see §8.3). Asking the user to map out "all the significant people" is overwhelming. Asking them to start with the romance strand — the partners, the longest friendships, the lifelong family figures — is a sequence they can walk through in one sitting. It also produces a satisfyingly visual timeline very quickly: three or four bars on a swimlane, some spanning decades.
 
@@ -182,13 +182,13 @@ The user's first signed-in screen is the empty Globe with the welcome prompt *"W
 
 After the first pin (or first capture-assistant submission, whichever comes first), the system surfaces a Recollections tab: *"Here's what you've shared so far — searchable any time."* The user sees their captures as cards. They learn that the chronicle has a chronological face, not just a geographic one.
 
-### 8.3 Introducing Timelines — early, narrow, and inviting
+### 8.3 Inviting the user to Timelines — early, narrow, and inviting
 
-The Timelines surface is introduced **as soon as the user has confirmed three person entities through the entity verification UI** (the /review confirmations from Step 6g — the user has explicitly said "yes, this is a person in my life, and this is the correct spelling"). Three is enough to render a non-trivial swimlane. The introduction is active: the onboarding agent draws the user to Timelines with copy along the lines of *"You've named a few significant people — take a look at how the start of your life's relationship arc is shaping up."*
+The Timelines tab is always in the top nav. What changes at the three-confirmed-persons threshold is the onboarding agent's *invitation* to visit it — the warm, contextual prompt that draws the user's attention to a tab they may not have noticed yet. The threshold (three person entities confirmed via the entity verification UI in /review) is chosen because three is enough to render a non-trivial swimlane that gives the user a visceral sense of how their life is starting to render back to them.
 
-The lead dimension is the **Significant Relationships** / romance strand (see §5.5). The framing matters: the user isn't being asked to enumerate everyone they've ever known. They're being invited to walk through the partners, lifelong friends, and family figures who anchor their life — a narrow but high-payoff narrative spine that's easy to enumerate in one sitting. Even at three or four bars the swimlane gives the user a visceral sense of how the chronicle is starting to render their life back to them.
+The lead dimension is **Life's Cast** (technically: the **Significant Relationships** dimension — see §5.5). The framing matters: the user isn't being asked to enumerate everyone they've ever known. They're being invited to walk through the partners, lifelong friends, and family figures who anchor their life — a narrow but high-payoff narrative spine that's easy to enumerate in one sitting. The agent's prompt is something like *"You've named a few significant people — take a look at how the start of your life's relationship arc is shaping up."*
 
-Critically, the threshold for surfacing Timelines is *not* "the dimension is full." It's "the dimension has enough mass to render something meaningful at all." Sparse is fine; the swimlane handles sparse data gracefully (a few short bars with lots of axis showing the user where future entries can land). The intent is to bring the user to the surface early, while the system can still encourage continued capture by showing them the shape of what they're building.
+The threshold is not "the dimension is full." It's "the dimension has enough mass that the swimlane render feels rewarding to look at." Sparse is fine; the swimlane handles sparse data gracefully (a few short bars with lots of axis showing the user where future entries can land). The intent is to bring the user to the surface early, while the system can still encourage continued capture by showing them the shape of what they're building.
 
 ### 8.4 No explicit completion gate
 
