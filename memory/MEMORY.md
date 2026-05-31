@@ -27,6 +27,8 @@ Consolidated 2026-05-10. Updated 2026-05-17 (capture assistant + residential glo
 
 ## Resolved-history (decisions and reviews, retained for the "why")
 
+- [Decision: Phase 0 reframing (2026-05-31)](decision_phase0_reframing_2026-05-31.md) — Three-surfaces familiarisation model replaces three-stage sequential protocol; Life's Cast / Significant Relationships as MVP Timelines lead dimension; PRD v1.1; canonical spec at `documentation/feature_navigation_surfaces.md`
+
 - [Project: LC pre-PRD decisions (resolved 2026-04-30)](project_lc_prd_readiness.md) — Seven decisions including video PRD retirement, marketing positioning, Phase 0 three-stage model, MVP synthesis pair
 - [Project: LC architecture split — resolved](project_lc_architecture_split.md) — Voice/interview is primary; video deferred to Phase 2/3; schema-extensibility constraint
 - [Project: LC April 2026 gap review (historical)](project_lc_gap_review_april2026.md) — All 14 gaps now closed; retained for the four MVP hypotheses and durable architectural lessons
