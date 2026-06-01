@@ -83,9 +83,9 @@ This user does not require voice-only phone access. The MVP does not attempt to 
 
 | **ID** | **Hypothesis** | **Success Indicator** |
 | --- | --- | --- |
-| H1 | Non-technical adults complete Phase 0 if value emerges mid-flight | ≥60% of users who begin Stage 1 complete all three stages within 14 days |
-| H2 | Users return weekly under prompt cadence | ≥40% weekly active rate at 30 days post-Phase 0 completion |
-| H3 | AI synthesis feels accurate enough to share | ≥70% of users who view Life's Players rate it positively (thumbs); ≥30% share at least one artifact |
+| H1 | Non-technical adults activate within the three-surfaces model and return for ongoing capture | ≥60% of users who place a first residential pin return for a second capture session (any surface) within 14 days; ≥40% engage in three or more capture sessions within the first 30 days. *(v1.1 replaces the original stage-completion metric; thresholds are first-cut, calibrated to alpha data once available.)* |
+| H2 | Users return weekly under prompt cadence | ≥40% weekly active rate at 30 days post-activation |
+| H3 | Sharing specific memories elicits commentary, and that commentary drives chronicle growth | ≥30% of users share at least one memory via Single Post Share within 30 days of activation; ≥50% of share recipients leave a comment; ≥20% of comments result in a new or enriched significant-other entity in the chronicle. *(v1.1 replaces the artifact-thumbs metric with a share→comment→entity-growth feedback-loop test.)* |
 | H4 | Users trust the privacy model with one genuinely sensitive memory | ≥20% of users record at least one memory with a sensitive dimension tag without immediately deleting it |
 
 # 3. Phase 0 — Onboarding via the Three Navigation Surfaces
@@ -126,7 +126,7 @@ The interview_sessions table records session_type values for each user-facing in
 
 Within the residential strand, the Globe is the highest-priority elicitation surface during onboarding. A person’s sequence of homes provides bilateral temporal constraints at every move — each confirmed move date simultaneously closes the previous period and opens the next. The residential chain is the structural backbone the Temporal Agent builds on first, before any other temporal resolution work.
 
-The Globe onboarding flow (per feature_residential_globe_onboarding.md) is structured around what people remember easily: the place itself, who was there, why the move happened, and what was happening in life at the time. Dates are asked last and framed relationally (“was this before or after…”) rather than directly (“what year…”).
+The Globe onboarding flow (per feature_residential_globe_onboarding.md) is structured around what people remember easily: the place itself, who was there, why the move happened, and what was happening in life at the time. At MVP, the pin modal captures dates inline as part of pin creation — a free-text date field accepts approximations like "approximately 1962–1968," "early 70s," or "I don't know" (per feature_residential_globe_onboarding.md §3.2). The Temporal Agent's relational-questioning approach — never asking for years directly, always asking for orderings — is a Phase 2 design target for the conversational/voice flows that will eventually layer over the pin-based UI. At MVP, the pin sequence itself is the implicit ordering.
 
 # 4. Feature Scope
 
@@ -152,7 +152,7 @@ The MVP is a 3–4 month build scoped to establish the core value loop: Phase 0 
 
 ### NAV SURFACES (new in v1.1)
 
-**MVP: **Globe surface (Mapbox GL JS 2D/2.5D pins + transit animation + click-to-memories), Recollections surface (sort + filter chips + entity chips + draft badge + cross-surface deep links), Timelines surface (Life’s Cast / Significant Relationships dimension; swimlane render; dimension selector on page), navigation chrome (top tabs + slim left rail + capture FAB per feature_navigation_surfaces.md §11)
+**MVP: **Globe surface (Mapbox GL JS 2D/2.5D pins + transit animation + click-to-memories; single image attachable per residence pin, rendered in the pin card and shown in a modal mini-card that overlays the Globe on pin click — image plus a limited fact strip: place name, dates, who was there), Recollections surface (sort + filter chips + entity chips + draft badge + cross-surface deep links), Timelines surface (Life’s Cast / Significant Relationships dimension; swimlane render; dimension selector on page), navigation chrome (top tabs + slim left rail + capture FAB per feature_navigation_surfaces.md §11)
 
 **Phase 2 adds: **Globe Cesium 3D + satellite memory prompts + video pin attachments; Recollections full-text + semantic search + saved searches + chapter grouping; Timelines Career / Education / Themes dimensions + cross-surface “where they appear” Globe highlight
 
@@ -160,7 +160,7 @@ The MVP is a 3–4 month build scoped to establish the core value loop: Phase 0 
 
 **MVP: **Assumption log (silent background write — Tagger and Entity agents write traces; surfaces are not user-visible at MVP)
 
-**Phase 2 adds: **Assumption log UI (user-visible review of agent reasoning); entity_biography for places (enriches Globe pin click with prose portrait); lifes_cast for Life’s Cast / Significant Relationships (enriches Timelines entries with prose summary per entity); Chapter Narrative (life_period_narrative, requires richer collection); Relationship Portrait (relationship_portrait, deep single-relationship synthesis); Wisdom Distillation (requires The Stroll reflections); The Stroll reminiscence mode (launched from within Recollections or Timelines, not a fourth nav surface)
+**Phase 2 adds: **Assumption log UI (user-visible review of agent reasoning); entity_biography for places (enriches Globe pin click with prose portrait); lifes_cast for Life’s Cast / Significant Relationships (enriches Timelines entries with prose summary per entity); Chapter Narrative (life_period_narrative, requires richer collection); Relationship Portrait (relationship_portrait, deep single-relationship synthesis); Wisdom Distillation (requires The Stroll reflections); The Stroll reminiscence mode (launched from within Recollections or Timelines, not a fourth nav surface); personal_biography (multi-dimensional, user-directable biography drawn from all 10 dimensions + the entity graph — see §9.5)
 
 ### PRIVACY & SHARING
 
@@ -357,7 +357,7 @@ Rationale: Inngest provides event-driven triggering, durable multi-step flows (i
 
 Event taxonomy: memory.ingested (Capture → Tagger + Entity Agents), synthesis.invalidated (any agent → Synthesis Agent), phase0.stage_completed (Planner → Synthesis Agent for stage artifacts), entity.merged (Entity → Synthesis + Tagger), user.period_confirmed (application → Synthesis Agent). Scheduled jobs: synthesis.nightly_batch (02:00 UTC), planner.daily_review (03:00 UTC).
 
-Tier strategy: Hobby tier ($0/month, 50k executions) for the personal build phase — estimated 2,700–6,300 steps/month for a single active user, well within the free allowance. Upgrade to Pro ($75/month) when approaching 400–500 active beta users (~1.1M–2.0M steps/month). No code changes required at tier upgrade.
+Tier strategy: Inngest's free tier accommodates the personal build phase (estimated 2,700–6,300 steps/month for a single active user, well under the free allowance). Tier upgrades happen as user count grows, with no code changes required at upgrade time. Specific cost projections and per-user economics are governed by §10.4 Cost Guardrails, anchored against the MVP user-subscription target of approximately $10/month.
 
 ## 7.4 Privacy-Safe RAG Retrieval Ordering
 
@@ -460,6 +460,31 @@ The MVP does not block on synthesis. Both entity_biography and lifes_cast are sc
 
 The other synthesis types in the original PRD v1 (Chapter Narrative, Relationship Portrait, Wisdom Distillation) remain Phase 2 per §4. None block on MVP work.
 
+## 9.5 Surface enrichment: personal_biography (Phase 2, user-directable)
+
+**Synthesis type:** `personal_biography` (new in PRD v1.1, Phase 2).
+**User-facing name:** TBD (candidates: "Your Story" or "Life Narrative" — to be validated in UX testing).
+
+**Concept.** A multi-dimensional prose biography of the user, woven across all ten WisdomTopicSort dimensions and the entity graph, with user direction over emphasis, voice, audience, and omissions.
+
+The first generation of synthesis types (`entity_biography`, `lifes_cast`, `life_period_narrative`, `relationship_portrait`, `wisdom_distillation`) each render a slice of the chronicle. `personal_biography` is the integrative output — the user's life as a single coherent read, drawn from every axis. It's the artifact that answers *"what does my chronicle add up to?"*
+
+**User direction (Phase 2 affordances).** The user can guide the synthesis with prompts such as:
+
+- "Emphasize family relationships over career"
+- "Write this for my grandchildren"
+- "Omit anything tagged sensitive"
+- "Focus on the years 1985–2005"
+- "Write in third person"
+
+The result is a draft the user can edit, regenerate with different direction, or save as a versioned narrative. Versioning matters because successive iterations may target different framings or audiences — a memoir for family, a professional retrospective, a wisdom-focused legacy narrative for grandchildren.
+
+**Data inputs.** Memories (all dimensions), the entity graph (significant relationships, places, organizations), the residential arc (Globe path), the Life's Cast timeline (Significant Relationships), and — when present — accumulated reflections from The Stroll (which carry the user's own interpretive voice).
+
+**Production economics.** Generation is expensive (full-chronicle context window plus directable prompting), so generation is user-triggered, not automatic, and is rate-limited per subscription tier. The MVP user-subscription target of approximately $10/month (§10.4) doesn't cover unlimited personal_biography generation; this is a Phase 3 candidate for inclusion in a premium tier. Requires enough chronicle density to produce a meaningful narrative — heuristic threshold: ≥50 memories with broad dimension coverage. Below that the user sees a "your chronicle is still gathering shape" affordance rather than a forced generation.
+
+**Where it appears.** From a dedicated synthesis surface (Phase 2 — likely a "Studio" or "Synthesis Gallery" page reachable from the slim left rail or the user profile).
+
 # 10. Non-Functional Requirements
 
 ## 10.1 Performance
@@ -494,6 +519,7 @@ The other synthesis types in the original PRD v1 (Chapter Narrative, Relationshi
 - Client-side silence trim before audio upload (−40 dB threshold, head/tail). Recordings over 3 minutes are dropped at the client, not truncated, with a user message.
 - Synthesis regeneration is pull-based and batched, not real-time cascade. Invalidated syntheses are regenerated on a schedule (nightly per user) and on-demand when the user opens a synthesis view. The UI shows "updated N hours ago" or "refresh available."
 - Per-user monthly cost ceilings are a required architectural constraint, not an ops deployment concern. These must be designed before Phase 2 scale.
+- **MVP user-subscription target: approximately $10/month per user.** All per-user infrastructure costs (LLM tokens, vector storage, Inngest executions, audio/image storage, geocoding API calls) must fit within that envelope while preserving margin. Synthesis features that exceed the envelope are either Phase 2/3 enhancements at a higher subscription tier (e.g. personal_biography, premium-tier candidate) or rate-limited at MVP. Specific dollar projections for hosting tiers (Supabase, Inngest, Anthropic, Mapbox) belong in an ops/finance worksheet, not in this product spec — but every architectural decision must be checked against this envelope before being committed.
 
 ## 10.5 Observability
 
