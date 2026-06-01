@@ -254,4 +254,4 @@ Mobile collapses the top tabs into a bottom nav (three icons + capture FAB centr
 - `documentation/feature_reminiscence_mode.md` — the Stroll, a mode of engagement with memories
 - `memory/project_lc_ontology_bootstrap.md` — the three-strand data model that the three surfaces visualise
 - `documentation/schema_v1.sql` — `memories`, `entities`, `syntheses`, `dimensions` tables
-- `documentation/Life_Chronicle_PRD_v1.docx` — to be revised in v1.1 to reference this spec instead of carrying the old stage-and-artifact framing
+- `documentation/Life_Chronicle_PRD.md` — v1.1, references this spec from §3 / §4 / §5 / §6.3 / §9. The pre-v1.1 `.docx` is archived at `documentation/archive/Life_Chronicle_PRD_v1.docx`.

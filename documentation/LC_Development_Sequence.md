@@ -12,7 +12,7 @@ Each step below has:
 - **Acceptance criteria** — how to know the step is done
 - **Prompt** — the exact Claude Code prompt to issue (steps 1–3 provided in full; later steps have abbreviated prompts)
 
-Read the full PRD first: `documentation/Life_Chronicle_PRD_v1.docx`
+Read the full PRD first: `documentation/Life_Chronicle_PRD.md`
 Read the schema: `documentation/schema_v1.sql`
 Read the architecture: `documentation/DB_Architecture_Design_v1.md`
 
@@ -417,13 +417,13 @@ The prompts for Steps 1, 2, and 3 are written in full above. Issue them in order
 Before issuing Step 1 prompt:
 - Confirm the frontend framework (Next.js 14 recommended above)
 - Have your Supabase project credentials ready (or let Claude Code scaffold them as placeholders)
-- Point Claude Code to this file and to `documentation/Life_Chronicle_PRD_v1.docx` as context
+- Point Claude Code to this file and to `documentation/Life_Chronicle_PRD.md` as context
 
 **Command to give Claude Code before any prompt:**
 
 ```
 Before we start building, read the following context documents:
-1. documentation/Life_Chronicle_PRD_v1.docx — the full product requirements
+1. documentation/Life_Chronicle_PRD.md — the full product requirements
 2. documentation/schema_v1.sql — the complete database schema
 3. documentation/DB_Architecture_Design_v1.md — architecture rationale and invariants
 4. documentation/LC_Development_Sequence.md — this document; the ordered build plan

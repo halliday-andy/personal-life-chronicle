@@ -9,7 +9,7 @@ originSessionId: focused-eloquent-thompson
 
 - `/Personal-Life-Chronicle/documentation/schema_v1.sql` — Full PostgreSQL schema (v1.3). Tables, indexes, PostGIS geospatial layer, temporal uncertainty model, residential scaffolding, semantic search functions. **Canonical source of truth for the data model.** Deployed via `supabase/migrations/20260505000000_initial_schema.sql`.
 - `/Personal-Life-Chronicle/documentation/DB_Architecture_Design_v1.md` — Architecture rationale through April 2026: taxonomy, dual-layer Raw Vault + Synthesis design, platform selection, multi-agent architecture, geospatial globe vision, temporal agent, residential scaffold. Parts I–XVI complete; Part XVI is the Inngest orchestration decision.
-- `/Personal-Life-Chronicle/documentation/Life_Chronicle_PRD_v1.docx` — PRD v1.1. Authoritative product spec.
+- `/Personal-Life-Chronicle/documentation/Life_Chronicle_PRD.md` — PRD v1.1 (markdown canonical since 2026-05-31). Authoritative product spec. Archived .docx versions at `documentation/archive/`.
 - `/Personal-Life-Chronicle/documentation/access_cards_requirements.md` — Privacy model canonical spec.
 - `/Personal-Life-Chronicle/documentation/feature_reminiscence_mode.md` — The Stroll feature spec.
 - `/Personal-Life-Chronicle/documentation/LC_Development_Sequence.md` — 15-step ordered build plan. Steps 1–5 complete (see project_lc_build_progress.md).

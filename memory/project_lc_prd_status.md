@@ -12,7 +12,7 @@ PRD authored, schema deployed, build phase active. Steps 1–5 of `LC_Developmen
 
 | Document | Version | Location |
 |---|---|---|
-| PRD | v1.1 | `documentation/Life_Chronicle_PRD_v1.docx` |
+| PRD | v1.1 | `documentation/Life_Chronicle_PRD.md` (markdown canonical since 2026-05-31; .docx archived under `documentation/archive/`) |
 | Schema | v1.4 | `documentation/schema_v1.sql` (deployed via `supabase/migrations/`) |
 | Architecture | Parts I–XVI | `documentation/DB_Architecture_Design_v1.md` |
 | Development Sequence | v1.0 | `documentation/LC_Development_Sequence.md` |

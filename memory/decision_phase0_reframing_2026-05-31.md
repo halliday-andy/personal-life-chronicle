@@ -58,7 +58,7 @@ Andy's refinement during the spec review pass (2026-05-30): *"timeline for peopl
 ## Implementation status
 
 - **Spec:** `documentation/feature_navigation_surfaces.md` v1.0 committed in `796cddd`, patched in `e120be3` (Life's Cast branding).
-- **PRD:** v1.1 .docx replaces v1 in this commit. Backup of v1 at `documentation/Life_Chronicle_PRD_v1.docx.v1.bak`.
+- **PRD:** Converted to canonical markdown as `documentation/Life_Chronicle_PRD.md` (v1.1). v1.1 .docx and v1.0 .docx archived at `documentation/archive/`. Future PRD edits happen directly in markdown via the Edit tool, retiring the docx-skill / XML / repack overhead. Conversion rationale captured 2026-05-31 — see commit history.
 - **Code:** no code changes yet. The MVP build still has `/dashboard`, `/memories`, `/review`, `/interview` as separate pages; the three-surfaces top nav has not been built. The Globe surface (Step 7) and Timelines surface (post-Step 7) are still ahead of us in the build sequence. Step 6h is next.
 
 ---
@@ -75,8 +75,9 @@ Andy's refinement during the spec review pass (2026-05-30): *"timeline for peopl
 ## Decision record references
 
 - `documentation/feature_navigation_surfaces.md` — canonical spec
-- `documentation/Life_Chronicle_PRD_v1.docx` — v1.1 (this revision)
-- `documentation/Life_Chronicle_PRD_v1.docx.v1.bak` — v1 backup
+- `documentation/Life_Chronicle_PRD.md` — v1.1 (this revision; markdown canonical from 2026-05-31)
+- `documentation/archive/Life_Chronicle_PRD_v1.docx` — final v1.1 .docx before the markdown switch
+- `documentation/archive/Life_Chronicle_PRD_v1.0.docx` — pre-revision v1.0 .docx backup
 - `memory/project_lc_ontology_bootstrap.md` — three-strand data model (unchanged)
 - `memory/project_lc_prd_readiness.md` Decision 3 — the parallel-strands amendment from 2026-05-17 that this reframing builds on
-- `scripts/prd_v1_to_v1.1.py` — the section-replacement script that generated the v1.1 .docx (preserved for transparency about what changed)
+- `scripts/archive/prd_v1_to_v1.1.py` — the one-off section-replacement script that generated the v1.1 .docx (archived; no longer needed since the PRD is now markdown-canonical)

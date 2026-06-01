@@ -1830,9 +1830,9 @@ CREATE INDEX idx_memory_revisions_active       ON memory_revisions(source_memory
 --
 -- Design authority:
 --   Access Cards:         documentation/access_cards_requirements.md
---   Social sharing:       PRD_MVP_v1.md §8 (Decision 7, April 2026)
---   Life's Players:       PRD_MVP_v1.md §9 (Decision 4, April 2026)
---   Phase 0 chapter naming: PRD_MVP_v1.md §3
+--   Social sharing:       Life_Chronicle_PRD.md §8 (Decision 7, April 2026)
+--   Life's Players:       Life_Chronicle_PRD.md §9 (Decision 4, April 2026)
+--   Phase 0 chapter naming: Life_Chronicle_PRD.md §3
 -- ============================================================
 
 
