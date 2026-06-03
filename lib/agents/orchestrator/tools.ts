@@ -502,6 +502,7 @@ async function handleFlagPrivateNotes(
     rationale,
     data: {
       memory_id,
+      passage,             // Echo back so ProposalCard can surface what was routed.
       appended_length: passage.length,
       total_length: updated.length,
     },

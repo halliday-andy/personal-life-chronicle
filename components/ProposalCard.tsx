@@ -18,6 +18,7 @@
  */
 
 import { useState } from 'react'
+import PrivateNotesPanel from './PrivateNotesPanel'
 
 // ── Shared types matching the orchestrator's proposals shape ─────
 
@@ -47,6 +48,10 @@ interface MemoryProposalData {
   occurred_at_fuzzy: string | null
   time_precision: string
   is_draft: boolean
+  /** Initial private_notes value for the PrivateNotesPanel — usually null
+   *  on a fresh draft, populated if the orchestrator routed a passage via
+   *  flag_for_private_notes. */
+  private_notes?: string | null
 }
 
 export interface MemoryCardData {
@@ -54,6 +59,10 @@ export interface MemoryCardData {
   tagsRationale?: string
   tags: DimProposal[]
   entities: EntityProposal[]
+  /** Passages that the orchestrator routed to private_notes in the same
+   *  turn that created this draft. Used to show a "moved here" hint and
+   *  to open the panel pre-expanded so the user sees what was moved. */
+  routedToPrivateNotes?: string[]
 }
 
 export type CardStatus = 'pending' | 'accepted' | 'declined' | 'failed'
@@ -334,6 +343,36 @@ export function ProposalCard({ initial }: { initial: MemoryCardData }) {
             />
           ))}
         </div>
+      )}
+
+      {/* Orchestrator-routed-passage hint, when applicable */}
+      {!editing &&
+        initial.routedToPrivateNotes &&
+        initial.routedToPrivateNotes.length > 0 && (
+          <div className="flex items-start gap-1.5 text-[11px] text-stone-500 italic px-1">
+            <span aria-hidden>🔒</span>
+            <span>
+              {initial.routedToPrivateNotes.length === 1
+                ? 'A passage from your submission was moved to private notes (owner-only).'
+                : `${initial.routedToPrivateNotes.length} passages from your submission were moved to private notes (owner-only).`}
+            </span>
+          </div>
+        )}
+
+      {/* Private notes panel — collapsed by default, auto-expanded when
+          the orchestrator routed a passage so the user sees it. */}
+      {!editing && (
+        <PrivateNotesPanel
+          memoryId={memory.memory_id}
+          initialNotes={
+            initial.routedToPrivateNotes && initial.routedToPrivateNotes.length > 0
+              ? initial.routedToPrivateNotes.join('\n\n---\n\n')
+              : (initial.memory.private_notes ?? null)
+          }
+          startExpanded={
+            (initial.routedToPrivateNotes?.length ?? 0) > 0
+          }
+        />
       )}
 
       {/* Error */}

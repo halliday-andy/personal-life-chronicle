@@ -380,6 +380,21 @@ function groupProposalsByMemory(proposals: ProposalSummary[]): {
           (e) => e.resolved_entity_id != null,
         )
       }
+    } else if (
+      p.tool === 'flag_for_private_notes' &&
+      p.persisted &&
+      currentCard
+    ) {
+      // The orchestrator routed a passage to this draft's private_notes
+      // layer. Attach it to the card so PrivateNotesPanel can surface it
+      // pre-expanded — the user shouldn't have to hunt for what was moved.
+      const d = p.data as { memory_id?: string; passage?: string }
+      if (d.memory_id === currentCard.memory.memory_id && d.passage) {
+        currentCard.routedToPrivateNotes = [
+          ...(currentCard.routedToPrivateNotes ?? []),
+          d.passage,
+        ]
+      }
     } else if (p.tool === 'create_memory') {
       // create_memory that didn't persist (error path) — surface as other
       otherProposals.push(p)

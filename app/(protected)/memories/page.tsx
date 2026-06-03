@@ -11,6 +11,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import PrivateNotesPanel from '@/components/PrivateNotesPanel'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,6 +25,7 @@ interface MemoryRow {
   created_at: string
   source_submission_id: string | null
   source_session_id: string | null
+  private_notes: string | null
 }
 
 function precisionLabel(p: string | null): string {
@@ -45,7 +47,10 @@ export default async function MemoriesPage() {
   const { data: memories, error } = await admin
     .from('memories')
     .select(
-      'id, content_raw, occurred_at_fuzzy, time_precision, is_draft, source, created_at, source_submission_id, source_session_id',
+      // Safe to include private_notes here: this page is owner-only
+      // (the redirect above gates it behind the authenticated user).
+      // Step 13 RLS will enforce this at the database layer too.
+      'id, content_raw, occurred_at_fuzzy, time_precision, is_draft, source, created_at, source_submission_id, source_session_id, private_notes',
     )
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
@@ -130,6 +135,9 @@ function MemoryCard({ m }: { m: MemoryRow }) {
       <p className={`text-sm leading-relaxed whitespace-pre-wrap ${dimmed ? 'text-stone-600' : 'text-stone-900'}`}>
         {m.content_raw}
       </p>
+
+      <PrivateNotesPanel memoryId={m.id} initialNotes={m.private_notes} />
+
       <div className="mt-2 text-[10px] text-stone-400 font-mono">
         {m.id.slice(0, 8)} · {m.source}
         {m.source_submission_id ? ' · from orchestrator' : ''}
