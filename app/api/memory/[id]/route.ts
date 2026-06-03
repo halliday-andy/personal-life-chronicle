@@ -6,10 +6,21 @@
  *     Capture_submissions and entities are preserved (entities may be linked
  *     from other memories; submissions are lineage records).
  *
- *   PATCH /api/memory/[id] — Edit a draft memory's content_raw,
- *     occurred_at_fuzzy, or time_precision. Only allowed when is_draft=true;
- *     final-memory edits go through memory_revisions in 6g+ to preserve the
- *     Raw Vault invariant (content_raw never modified after finalization).
+ *   PATCH /api/memory/[id] — Edit memory fields.
+ *
+ *     Two field classes with different mutability rules:
+ *
+ *     Raw-Vault-bound fields (content_raw, occurred_at_fuzzy, time_precision):
+ *       editable ONLY on drafts. Once finalized, content_raw is immutable
+ *       per the Raw Vault architectural invariant. Final-memory corrections
+ *       go through memory_revisions (Phase 2 surface).
+ *
+ *     Owner-only metadata (private_notes, Step 6h):
+ *       editable regardless of draft/final status. private_notes is
+ *       commentary the owner adds for themselves; it is never exposed via
+ *       Access Cards, shares, or any non-owner read. Not part of the Raw
+ *       Vault invariant — Raw Vault covers the user's verbatim narrative
+ *       text, not their meta-annotations on it.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -60,25 +71,35 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
 }
 
 interface PatchBody {
+  // Raw-Vault-bound (drafts only)
   content_raw?: string
   occurred_at_fuzzy?: string | null
   time_precision?: 'unknown' | 'decade' | 'year' | 'season' | 'month' | 'day'
+  // Owner-only metadata (any time)
+  private_notes?: string | null
 }
+
+const RAW_VAULT_FIELDS = ['content_raw', 'occurred_at_fuzzy', 'time_precision'] as const
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   const auth = await authAndOwn(params.id)
   if (!auth.ok) return auth.response
-  if (auth.memory.is_draft === false) {
+
+  const body = (await request.json()) as PatchBody
+
+  // If the request touches Raw-Vault-bound fields and the memory is finalised,
+  // refuse — Raw Vault invariant. private_notes-only edits still pass.
+  const touchesRawVault = RAW_VAULT_FIELDS.some((f) => f in body)
+  if (touchesRawVault && auth.memory.is_draft === false) {
     return NextResponse.json(
       {
-        error: 'Cannot edit content_raw on a finalised memory',
-        detail: 'Final-memory edits go through memory_revisions (Step 6g+). The Raw Vault invariant preserves content_raw immutable after finalisation.',
+        error: 'Cannot edit Raw-Vault-bound fields on a finalised memory',
+        detail: 'content_raw / occurred_at_fuzzy / time_precision are immutable after finalisation. Final-memory text corrections go through memory_revisions (Phase 2). private_notes can still be edited on finalised memories.',
       },
       { status: 400 },
     )
   }
 
-  const body = (await request.json()) as PatchBody
   const updates: Record<string, unknown> = {}
   if (typeof body.content_raw === 'string') {
     const trimmed = body.content_raw.trim()
@@ -89,6 +110,18 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
   if (body.occurred_at_fuzzy !== undefined) updates.occurred_at_fuzzy = body.occurred_at_fuzzy
   if (body.time_precision !== undefined) updates.time_precision = body.time_precision
+  if (body.private_notes !== undefined) {
+    // Replace mode: empty string or null clears the field; non-empty text
+    // overwrites whatever was there. The orchestrator's
+    // flag_for_private_notes tool uses APPEND semantics separately; this
+    // endpoint is for owner-initiated direct edits where replace is the
+    // expected mental model.
+    if (body.private_notes === null || body.private_notes === '') {
+      updates.private_notes = null
+    } else if (typeof body.private_notes === 'string') {
+      updates.private_notes = body.private_notes
+    }
+  }
   updates.updated_at = new Date().toISOString()
 
   if (Object.keys(updates).length === 1) {
@@ -101,7 +134,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     .from('memories')
     .update(updates)
     .eq('id', params.id)
-    .select('id, content_raw, occurred_at_fuzzy, time_precision, is_draft')
+    .select('id, content_raw, occurred_at_fuzzy, time_precision, is_draft, private_notes')
     .single()
   if (error || !data) {
     return NextResponse.json({ error: 'Failed to update', detail: error?.message }, { status: 500 })
