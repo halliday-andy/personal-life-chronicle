@@ -221,6 +221,7 @@ function EntityConfirmationBody({
   const [renaming, setRenaming] = useState(false)
   const [newName, setNewName] = useState(name)
   const [merging, setMerging] = useState(false)
+  const [reassigning, setReassigning] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
   if (!ent) {
@@ -277,18 +278,35 @@ function EntityConfirmationBody({
       ) : merging ? (
         <MergePicker
           source={ent}
+          intent="merge"
           onCancel={() => setMerging(false)}
           onConfirm={(targetId) =>
             onResolveTyped(item, 'merged', { merged_into_id: targetId })
           }
         />
+      ) : reassigning ? (
+        <MergePicker
+          source={ent}
+          intent="reassign"
+          onCancel={() => setReassigning(false)}
+          onConfirm={(targetId) =>
+            onResolveTyped(item, 'merged', { merged_into_id: targetId })
+          }
+        />
       ) : (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             className="px-3 py-1.5 text-xs font-medium rounded-md bg-sky-600 hover:bg-sky-700 text-white"
             onClick={() => onResolveTyped(item, 'confirmed')}
           >
             Confirm as {name}
+          </button>
+          <button
+            className="px-3 py-1.5 text-xs font-medium rounded-md border border-stone-300 text-stone-700 hover:bg-stone-50"
+            onClick={() => setReassigning(true)}
+            title="Pick which existing entity the orchestrator should have linked to"
+          >
+            Actually this was…
           </button>
           <div className="relative">
             <button
@@ -300,26 +318,27 @@ function EntityConfirmationBody({
             </button>
             {menuOpen && (
               <div
-                className="absolute right-0 mt-1 w-44 bg-white border border-stone-200 rounded-md shadow-md z-10 text-sm"
+                className="absolute right-0 mt-1 w-52 bg-white border border-stone-200 rounded-md shadow-md z-10 text-sm"
                 onMouseLeave={() => setMenuOpen(false)}
               >
                 <button
                   className="block w-full text-left px-3 py-2 hover:bg-stone-50"
                   onClick={() => { setMenuOpen(false); setRenaming(true) }}
                 >
-                  Rename…
+                  Fix name…
                 </button>
                 <button
                   className="block w-full text-left px-3 py-2 hover:bg-stone-50"
                   onClick={() => { setMenuOpen(false); setMerging(true) }}
+                  title="Assert this entity is the same real-world individual as another"
                 >
-                  Merge into…
+                  Merge with…
                 </button>
                 <button
                   className="block w-full text-left px-3 py-2 hover:bg-rose-50 text-rose-700"
                   onClick={() => { setMenuOpen(false); onResolveTyped(item, 'rejected') }}
                 >
-                  Reject (delete)
+                  Delete (extraction was wrong)
                 </button>
               </div>
             )}
@@ -488,14 +507,34 @@ function GenericBody({
 // Merge target picker — typeahead over same-type entities.
 // ------------------------------------------------------------------
 
+/**
+ * MergePicker supports two distinct user intents that share the same
+ * underlying operation (merge_entities re-points FKs from source to
+ * target and deletes the source):
+ *
+ *   intent='merge'     — "These two distinct entities I know about
+ *                         are actually the same one." Real-world
+ *                         identity claim. Rare, deliberate.
+ *
+ *   intent='reassign'  — "The orchestrator misread the text; the
+ *                         memory was actually mentioning this other
+ *                         existing entity, not a new one." Common,
+ *                         especially with voice transcription.
+ *
+ * The DB doesn't care about the difference — same RPC, same effect.
+ * The user does care: framing affects what they're willing to do
+ * with confidence. (See Task #66 for the design rationale.)
+ */
 function MergePicker({
   source,
   onCancel,
   onConfirm,
+  intent = 'merge',
 }: {
   source: EntityRef
   onCancel: () => void
   onConfirm: (targetId: string) => Promise<boolean> | void
+  intent?: 'merge' | 'reassign'
 }) {
   const [q, setQ] = useState('')
   const [results, setResults] = useState<EntityRef[]>([])
@@ -529,6 +568,11 @@ function MergePicker({
 
   return (
     <div className="border border-stone-200 rounded-md p-3 bg-stone-50">
+      <p className="text-xs text-stone-600 mb-2 leading-relaxed">
+        {intent === 'reassign'
+          ? <>The orchestrator picked up <span className="font-semibold">{source.canonical_name}</span> as a new {source.type}. If it actually meant an existing {source.type}, pick them below — the memory&rsquo;s link will move, and {source.canonical_name} will be removed.</>
+          : <>Merge <span className="font-semibold">{source.canonical_name}</span> with another {source.type} you&rsquo;re asserting is the same individual. Source will be deleted; memories, aliases, and queue items move to the target.</>}
+      </p>
       <div className="flex items-center gap-2 mb-2">
         <input
           type="text"
