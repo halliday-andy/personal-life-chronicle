@@ -18,6 +18,7 @@
  */
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import PrivateNotesPanel from './PrivateNotesPanel'
 
 // ── Shared types matching the orchestrator's proposals shape ─────
@@ -70,6 +71,7 @@ export type CardStatus = 'pending' | 'accepted' | 'declined' | 'failed'
 // ── Component ────────────────────────────────────────────────────
 
 export function ProposalCard({ initial }: { initial: MemoryCardData }) {
+  const router = useRouter()
   const [memory, setMemory] = useState(initial.memory)
   const [tags, setTags] = useState(initial.tags)
   const [entities, setEntities] = useState(initial.entities)
@@ -91,6 +93,11 @@ export function ProposalCard({ initial }: { initial: MemoryCardData }) {
       const res = await fetch(`/api/memory/${memory.memory_id}/finalize`, { method: 'POST' })
       if (!res.ok) throw new Error((await res.json())?.error ?? 'Failed to accept')
       setStatus('accepted')
+      // Invalidate any server-rendered surface that lists this memory
+      // (e.g. /memories) so it doesn't show stale draft state. Without
+      // this, the user accepts a draft here but a /memories tab opened
+      // earlier keeps showing the draft badge until manual refresh.
+      router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
       setStatus('failed')
@@ -106,6 +113,9 @@ export function ProposalCard({ initial }: { initial: MemoryCardData }) {
       const res = await fetch(`/api/memory/${memory.memory_id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error((await res.json())?.error ?? 'Failed to decline')
       setStatus('declined')
+      // Same invalidation as Accept — /memories had this draft in its
+      // list; it should disappear without manual refresh.
+      router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
       setStatus('failed')
@@ -136,6 +146,8 @@ export function ProposalCard({ initial }: { initial: MemoryCardData }) {
       const updated = await res.json()
       setMemory((m) => ({ ...m, ...updated }))
       setEditing(false)
+      // Content/date/precision changed — keep /memories coherent.
+      router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
