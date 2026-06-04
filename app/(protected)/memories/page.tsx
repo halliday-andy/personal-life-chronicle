@@ -11,27 +11,9 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import PrivateNotesPanel from '@/components/PrivateNotesPanel'
+import MemoryCard, { type MemoryRow } from '@/components/MemoryCard'
 
 export const dynamic = 'force-dynamic'
-
-interface MemoryRow {
-  id: string
-  content_raw: string
-  occurred_at_fuzzy: string | null
-  time_precision: string | null
-  is_draft: boolean
-  source: string
-  created_at: string
-  source_submission_id: string | null
-  source_session_id: string | null
-  private_notes: string | null
-}
-
-function precisionLabel(p: string | null): string {
-  if (!p || p === 'unknown') return 'time unknown'
-  return p
-}
 
 export default async function MemoriesPage() {
   const supabase = createClient()
@@ -106,43 +88,5 @@ export default async function MemoriesPage() {
         )}
       </main>
     </div>
-  )
-}
-
-function MemoryCard({ m }: { m: MemoryRow }) {
-  const dimmed = m.is_draft
-  return (
-    <article
-      className={`rounded-xl border p-4 ${
-        dimmed ? 'bg-stone-50 border-stone-200' : 'bg-white border-stone-200'
-      }`}
-    >
-      <div className="flex items-start gap-2 mb-2 text-xs">
-        {m.is_draft ? (
-          <span className="rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-medium uppercase tracking-wide px-1.5 py-0.5 text-[10px]">
-            Draft · awaiting review
-          </span>
-        ) : (
-          <span className="rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium uppercase tracking-wide px-1.5 py-0.5 text-[10px]">
-            Final
-          </span>
-        )}
-        <span className="text-stone-400">
-          {m.occurred_at_fuzzy ? `${m.occurred_at_fuzzy} · ${precisionLabel(m.time_precision)}` : precisionLabel(m.time_precision)}
-        </span>
-        <span className="ml-auto text-stone-400">{new Date(m.created_at).toLocaleDateString()}</span>
-      </div>
-      <p className={`text-sm leading-relaxed whitespace-pre-wrap ${dimmed ? 'text-stone-600' : 'text-stone-900'}`}>
-        {m.content_raw}
-      </p>
-
-      <PrivateNotesPanel memoryId={m.id} initialNotes={m.private_notes} />
-
-      <div className="mt-2 text-[10px] text-stone-400 font-mono">
-        {m.id.slice(0, 8)} · {m.source}
-        {m.source_submission_id ? ' · from orchestrator' : ''}
-        {m.source_session_id ? ' · from interview session' : ''}
-      </div>
-    </article>
   )
 }
