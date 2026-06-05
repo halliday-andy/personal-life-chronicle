@@ -5,14 +5,16 @@ Consolidated 2026-05-10. Updated 2026-05-17 (capture assistant + residential glo
 ## Current state (read first)
 
 - [Project: LC current state — PRD v1.1, schema v1.4](project_lc_prd_status.md) — Document versions, what's settled, critical invariants, open OQs
-- [Project: LC build progress — May 2026](project_lc_build_progress.md) — Steps 1–5 complete; Step 6 (capture assistant + orchestrator) is next; what's running; build decisions not in the PRD
+- [Project: LC build progress — May 2026](project_lc_build_progress.md) — Steps 1–5 complete; Step 6 (capture assistant + orchestrator) is next; what's running; build decisions not in the PRD — NOTE: stale (~6d); Step 6e–6h, /entities, /memories, nav reframing landed after; refresh pending
+- [Decision: Step 7 phased into build slices (2026-06-05)](decision_step7_slice_phasing_2026-06-05.md) — **Read first for Step 7.** Walking-skeleton phasing (Slices 1–5); Slice 1 = search-first globe loop is the confirmed build target; modal-first / globe projection / arc-drag-insert deleted / image in Slice 2 / Timeline separate; prep state (nothing applied)
 - [Reference: LC Development Sequence](reference_lc_dev_sequence.md) — 15-step build plan with current step state; invariants summary; updated 2026-05-17 for parallel-strand Phase 0
 - [User: Andy profile](user_andy_profile.md) — Background; working style; how to collaborate in build sessions
 
 ## Approved feature specs (canonical for upcoming builds)
 
 - [Project: LC Capture Assistant + Orchestrator](project_lc_capture_assistant.md) — Summary memory; canonical spec at `documentation/feature_capture_assistant.md` v1.1. Step 6 build (substeps 6a–6i).
-- Canonical: `documentation/feature_residential_globe_onboarding.md` v1.1 — Residential strand UX; Step 7 build (substeps 7a–7j). Absorbs old Step 10.
+- Canonical: `documentation/feature_residential_globe_onboarding.md` v1.1 — Residential strand UX; Step 7 build. Now phased into slices — see [Step 7 slice phasing](decision_step7_slice_phasing_2026-06-05.md).
+- [Project: LC future pin types (deferred)](project_lc_future_pin_types.md) — Aspirational bucket-list pin; multi-home concurrent-domicile display. Post-MVP globe enhancements.
 
 ## Architecture & schema (durable design decisions)
 
