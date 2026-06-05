@@ -15,6 +15,19 @@
 
 **Place type in Slice 1:** Main Residence only (`relationship_type='lived_at'`).
 
+## 1a. Design direction — "Nocturne / observatory"
+
+Approved 2026-06-05. The Globe is the product's emotional signature; it gets a deliberate aesthetic, distinct from the inherited utilitarian admin UI (Geist + Tailwind-default stone — kept only where it earns its place; not a binding model).
+
+- **Tone:** immersive, dark, observatory-like. You step into a quiet room and your life lights up on a dark earth.
+- **Type:** **Fraunces** (variable display serif) for intimate prompts/headings — warm, literary, memoir-appropriate; loaded via `next/font/google`. **Geist** retained as the UI/data sans. Fraunces carries the soul; Geist stays out of the way.
+- **Palette (CSS vars, dark):** `--night` deep indigo-black canvas with faint radial glow + grain; cool dark earth; **`--ember` warm amber-gold = the user's own pins ("your life, lit")**; arcs render as a warm gradient thread. Semantic states retuned for dark (no raw `emerald-600`).
+- **Material:** floating **glass** (backdrop-blur, hairline light borders) for the Find Location box, pin modal, and pin detail — they hover over the globe, not on a white sheet.
+- **Motion:** slow globe settle on load; **pin-bloom** on placement = the signature beat; arcs animate their draw as the journey extends. Restraint elsewhere.
+- **Composition:** opening serif prompt holds the lower third on an empty globe, recedes once the first pin lands and the search box takes primacy.
+
+These tokens are established on the globe surface in Slice 1 and become the foundation the admin surfaces can be brought into later (out of scope here).
+
 ## 2. Prep dependencies (must be true before build runs)
 
 - Migration 1 applied → `capture_mode` CHECK accepts `globe_onboarding`. (Relationship-type rows it adds aren't used until Slice 3, but the migration is applied whole.)
