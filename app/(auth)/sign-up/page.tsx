@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 export default function SignUpPage() {
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -15,6 +16,11 @@ export default function SignUpPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+
+    if (!name.trim()) {
+      setError('Please enter your name.')
+      return
+    }
 
     if (password !== confirm) {
       setError('Passwords do not match.')
@@ -34,6 +40,10 @@ export default function SignUpPage() {
       password,
       options: {
         emailRedirectTo: `${location.origin}/auth/callback`,
+        // Captured at registration so the self entity can be created
+        // with the user's real name at account inception (read by the
+        // on-user-created edge function).
+        data: { full_name: name.trim() },
       },
     })
 
@@ -76,6 +86,22 @@ export default function SignUpPage() {
 
       <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-stone-700 mb-1">
+              Your name
+            </label>
+            <input
+              id="name"
+              type="text"
+              autoComplete="name"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent"
+              placeholder="e.g. Andy Halliday"
+            />
+          </div>
+
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-stone-700 mb-1">
               Email

@@ -81,8 +81,37 @@ serve(async (req) => {
       })
     }
 
+    // Create the "self" person entity at account inception, using the
+    // name captured at registration (sign-up passes options.data.full_name,
+    // which lands in raw_user_meta_data). This entity is the subject of
+    // all the user's first-person relationships — residences, and later
+    // person/org links. See lib/globe/self-entity.ts for the app-side
+    // equivalent and the idempotent backfill for pre-existing accounts.
+    const record = payload?.record ?? {}
+    const meta = record.raw_user_meta_data ?? {}
+    const displayName =
+      (meta.full_name ?? meta.name ?? '').toString().trim() ||
+      (record.email ? String(record.email).split('@')[0] : '') ||
+      'You'
+
+    const { error: selfErr } = await supabase.from('entities').insert({
+      user_id: userId,
+      type: 'person',
+      canonical_name: displayName,
+      metadata: { is_self: true },
+    })
+    if (selfErr) {
+      // Non-fatal: card seeding already succeeded. Log for visibility;
+      // the backfill script / app-side ensureSelfEntity will recover.
+      console.error('Failed to create self entity:', selfErr)
+    }
+
     return new Response(
-      JSON.stringify({ seeded: SYSTEM_CARDS.length, user_id: userId }),
+      JSON.stringify({
+        seeded: SYSTEM_CARDS.length,
+        user_id: userId,
+        self_entity: selfErr ? 'failed' : 'created',
+      }),
       { status: 200, headers: { 'Content-Type': 'application/json' } },
     )
   } catch (err) {
