@@ -124,6 +124,7 @@ export default function GlobeView() {
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: { 'line-color': '#f4b14a', 'line-width': 1.6, 'line-opacity': 0.55, 'line-blur': 0.4 },
       })
+      map.resize()
       setReady(true)
       loadPins()
     })
@@ -190,7 +191,10 @@ export default function GlobeView() {
 
   return (
     <div className="nocturne relative h-screen w-screen overflow-hidden">
-      <div ref={containerRef} className="absolute inset-0" />
+      {/* h-full (not absolute inset-0): mapbox-gl.css forces
+          .mapboxgl-map { position: relative }, which overrides Tailwind's
+          .absolute and collapses an inset-0 container to height 0. */}
+      <div ref={containerRef} className="h-full w-full" />
 
       {/* Find Location — search-first entry */}
       <div className="absolute left-1/2 top-6 z-20 w-[min(440px,90vw)] -translate-x-1/2">
