@@ -25,3 +25,86 @@ body {
     text-wrap: balance;
   }
 }
+
+/* ============================================================
+   Globe surface — "Nocturne / observatory" (Step 7 Slice 1)
+   Scoped under .nocturne so it never leaks into the admin UI.
+   ============================================================ */
+.nocturne {
+  --night: #070b18;
+  --night-2: #0d1426;
+  --ember: #f4b14a;
+  --ember-soft: #f7c978;
+  --glass: rgba(15, 22, 42, 0.62);
+  --glass-border: rgba(214, 224, 255, 0.16);
+  --ink: #eef2ff;
+  --ink-dim: #aab4d4;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(1200px 800px at 50% 18%, rgba(58, 78, 140, 0.22), transparent 60%),
+    var(--night);
+}
+
+.nocturne-display {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-optical-sizing: auto;
+}
+
+/* Floating glass chrome (search box, modal, detail cards). */
+.glass {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* Warm ember pin — the user's own life, lit. */
+.globe-pin {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 35% 30%, var(--ember-soft), var(--ember));
+  box-shadow:
+    0 0 0 2px rgba(7, 11, 24, 0.85),
+    0 0 14px 3px rgba(244, 177, 74, 0.65);
+  cursor: pointer;
+  transition: transform 140ms ease;
+}
+.globe-pin:hover {
+  transform: scale(1.25);
+}
+
+/* The signature beat: a warm bloom when a pin lands. */
+.globe-pin-bloom::after {
+  content: "";
+  position: absolute;
+  inset: 50%;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 9999px;
+  background: rgba(244, 177, 74, 0.55);
+  animation: pin-bloom 900ms ease-out forwards;
+  pointer-events: none;
+}
+@keyframes pin-bloom {
+  0%   { transform: scale(0.4); opacity: 0.9; }
+  100% { transform: scale(7);   opacity: 0;   }
+}
+
+/* Draft pin — pulses to say "not placed yet, drag me". */
+.globe-pin-draft {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 35% 30%, #ffffff, var(--ember-soft));
+  box-shadow: 0 0 0 2px rgba(7, 11, 24, 0.85), 0 0 18px 5px rgba(247, 201, 120, 0.7);
+  cursor: grab;
+  animation: draft-pulse 1.6s ease-in-out infinite;
+}
+@keyframes draft-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(7,11,24,.85), 0 0 14px 4px rgba(247,201,120,.55); }
+  50%      { box-shadow: 0 0 0 2px rgba(7,11,24,.85), 0 0 26px 9px rgba(247,201,120,.85); }
+}
