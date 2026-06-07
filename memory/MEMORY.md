@@ -5,8 +5,8 @@ Consolidated 2026-05-10. Updated 2026-05-17 (capture assistant + residential glo
 ## Current state (read first)
 
 - [Project: LC current state — PRD v1.1, schema v1.4](project_lc_prd_status.md) — Document versions, what's settled, critical invariants, open OQs
-- [Project: LC build progress — May 2026](project_lc_build_progress.md) — Steps 1–5 complete; Step 6 (capture assistant + orchestrator) is next; what's running; build decisions not in the PRD — NOTE: stale (~6d); Step 6e–6h, /entities, /memories, nav reframing landed after; refresh pending
-- [Decision: Step 7 phased into build slices (2026-06-05)](decision_step7_slice_phasing_2026-06-05.md) — **Read first for Step 7.** Walking-skeleton phasing (Slices 1–5); Slice 1 = search-first globe loop is the confirmed build target; modal-first / globe projection / arc-drag-insert deleted / image in Slice 2 / Timeline separate; prep state (nothing applied)
+- [Project: LC build progress](project_lc_build_progress.md) — refreshed 2026-06-05: Steps 1–6 complete; **Step 7 Slice 1 (residential globe walking skeleton) shipped**; what's running; build decisions + bugs fixed. Read first when resuming build work.
+- [Decision: Step 7 phased into build slices (2026-06-05)](decision_step7_slice_phasing_2026-06-05.md) — **Read first for Step 7.** Walking-skeleton phasing (Slices 1–5). **Slice 1 SHIPPED**; **Slice 4 (edit/relocate/delete) is next.** Records the design calls (modal-first / globe projection / arc-drag-insert deleted / image in Slice 2 / Timeline separate), the self-entity decision, satellite-zoom enhancement, and the Raw-Vault/edit-capability gap.
 - [Reference: LC Development Sequence](reference_lc_dev_sequence.md) — 15-step build plan with current step state; invariants summary; updated 2026-05-17 for parallel-strand Phase 0
 - [User: Andy profile](user_andy_profile.md) — Background; working style; how to collaborate in build sessions
 

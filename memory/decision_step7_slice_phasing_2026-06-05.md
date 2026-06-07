@@ -1,7 +1,7 @@
 # Decision: Step 7 phased into build slices (residential globe)
 
 **Date:** 2026-06-05
-**Status:** Agreed with Andy. Slice 1 is the confirmed initial build target. Supersedes the all-at-once 7a–7j sequencing in `feature_residential_globe_onboarding.md` §12.
+**Status:** Agreed with Andy. **Slice 1 SHIPPED 2026-06-05** (create-and-view loop working, reviewed live, globe look approved). **Slice 4 (edit/relocate/delete) is the next build.** Supersedes the all-at-once 7a–7j sequencing in `feature_residential_globe_onboarding.md` §12. Slice 1 build details: `project_lc_build_progress.md`.
 **Owner:** Andy Halliday (product), in a resumed session reviewing the design from a fresh standpoint.
 
 ---

@@ -157,6 +157,27 @@ Orchestrator library lives at `lib/agents/orchestrator/`:
 
 CLI test harness at `scripts/test-orchestrator.mjs`. Smoke-tested with two samples; both produced well-shaped responses. Orchestrator-created memories carry `metadata.created_by='orchestrator'` and `is_draft=true`. Async Tagger and Entity agents pick them up via the existing `memory/ingested` event.
 
+## Catch-up note (2026-06-05): state between this log and now
+
+This file went quiet after Step 6d (2026-05-22). Since then, per git history: Step 6e–6h shipped (capture-assistant UI, proposal cards, unified Review Queue, private-notes UI), the `/entities` management view + dashboard tiles landed, entity merge/reject hardening, an FK-on-delete audit, and the **navigation-surfaces reframing** (PRD v1.1; Globe / Recollections / Timelines as distinct surfaces — see `decision_phase0_reframing_2026-05-31.md`). Step 6 is effectively complete. Treat git log + the decision memos as authoritative for that interval; this section just closes the gap.
+
+## Step 7 Slice 1 — what got built (2026-06-05)
+
+Residential globe **walking skeleton** — the create-and-view loop. Phasing + design in `decision_step7_slice_phasing_2026-06-05.md`; canonical UX in `documentation/feature_residential_globe_onboarding.md` (phased).
+
+| Piece | Detail |
+|---|---|
+| Self-entity primitive | `lib/globe/self-entity.ts` (`ensureSelfEntity`/`findSelfEntity`). The user's `type='person', metadata.is_self=true` entity is the subject of all first-person relationships. Backfill: `scripts/backfill-self-entity.mjs` (created "Andy Halliday"). Registration now captures a name (sign-up + `on-user-created` create it at inception — **edge fn not yet deployed**). |
+| Persistence | Migration `20260605120000_globe_residence_functions.sql`: `create_residence_pin` (atomic entity→relationship `lived_at`→optional memory+link, PostGIS via `ST_MakePoint`) + `get_residence_pins` (coords out, placement order). API `app/api/globe/residence` GET/POST. `lib/globe/geocoding.ts` (Mapbox v6 reverse → place_subtype + country). |
+| UI | `/globe` (nocturne dark globe, `projection: globe`, Fraunces display + Geist). Search-first: search → fly-to → drag draft pin → modal (verbatim narrative + free-text "when") → save → ember pin **bloom** + warm arc in placement order. `components/globe/{GlobeView,GlobeClient,FindLocationBox,PinModal}.tsx`. |
+| Verification | `scripts/verify-globe-slice1-schema.mjs` + `scripts/verify-globe-residence.mjs` — both PASS. Production build clean. Reviewed live in-browser; Andy approved the globe look. |
+
+**Bugs fixed during first use:** stale-dev-server hang; map container collapsing to 0 height (mapbox-gl.css `position:relative` overriding Tailwind `.absolute` — fixed with `h-full w-full`); search-input black-on-black text (forced `--ink`/ember caret).
+
+**Slice 1 scope = create + view only.** No edit/relocate/delete (Slice 4), no image (Slice 2), no AI extraction (Slice 2), no place types (Slice 3), no sidekick. Globe memories are saved `is_draft=false` (final) — reconsider for Slice 4.
+
+**Next: Slice 4 (edit/relocate/delete)** — flagged highest-value after first real use immediately needed pin correction.
+
 ## How to apply
 
 When starting work on Step 6 or Step 7, this is the file to read first. It captures the actual state of the codebase and the decisions that aren't documented elsewhere. Cross-reference `LC_Development_Sequence.md` for the canonical step definitions.

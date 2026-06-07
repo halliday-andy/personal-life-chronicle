@@ -17,8 +17,8 @@ type: reference
 | 3 | Inngest setup + 7 stub agent functions (9 functions total counting synthesis triggers) | ✅ Complete |
 | 4 | Auth UI (sign-up, sign-in, middleware route protection, callback) | ✅ Complete |
 | 5 | Capture Agent + Interview API + free-form interview UI | ✅ Complete |
-| 6 | **Capture Assistant + Orchestrator + Tagger + Entity Agents** (expanded). Substeps 6a–6i per `feature_capture_assistant.md` v1.1. Includes Inngest event rename `phase0/stage.completed` → `chronicle/threshold.reached`. | Next |
-| 7 | **Residential strand (Life Globe onboarding)**. Substeps 7a–7j per `feature_residential_globe_onboarding.md` v1.1. Absorbs old Step 10. | Pending |
+| 6 | **Capture Assistant + Orchestrator + Tagger + Entity Agents** (expanded). Substeps 6a–6i per `feature_capture_assistant.md` v1.1. Includes Inngest event rename `phase0/stage.completed` → `chronicle/threshold.reached`. | ✅ Complete (6a–6h shipped) |
+| 7 | **Residential strand (Life Globe onboarding)**. Now **phased into Slices 1–5** (see `decision_step7_slice_phasing_2026-06-05.md`) — replaces the all-at-once 7a–7j. | **Slice 1 ✅ shipped** (walking skeleton: search→pin→persist→globe). Slice 4 (edit/relocate/delete) next. |
 | 8 | Entity strand UX (forthcoming feature spec — prompted by capture assistant after ≥3 residential pins) | Pending |
 | 9 | Topic strand UX (forthcoming feature spec — prompted by capture assistant after entity content accumulates) | Pending |
 | 10 | ABSORBED INTO STEP 7 — Life Globe is the input surface, not a downstream synthesis | — |
