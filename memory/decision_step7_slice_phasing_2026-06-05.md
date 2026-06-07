@@ -27,6 +27,14 @@ The canonical residential-globe spec bundled the entire product surface (Mapbox 
 - **Image-on-pin is IN MVP** (resolves the PRD §4.2 vs globe-spec §3.2 conflict in the PRD's favour) but lands in **Slice 2**, not the bare skeleton.
 - **Timeline is its own separate surface**, decoupled from the globe/residential sequence. Out of Step 7. (Aligns with the navigation-surfaces reframing: Globe / Recollections / Timelines are distinct surfaces.)
 
+## Globe rendering enhancement (Andy, 2026-06-05, deferred)
+
+Approved the dark stylized globe (`dark-v11`) for the zoomed-out view. **Future enhancement:** as the user zooms into a local view, transition the map from the dark, sparse, stylized style toward something richer in colour and detail — up to and including a **satellite view** at close zoom. Implementation likely a zoom-driven style/source swap (e.g. `dark-v11` → `satellite-streets-v12`) with a smooth transition. Not in the MVP slices; revisit after Slice 1–4.
+
+## Editing/correction capability (surfaced 2026-06-05)
+
+First real use immediately hit the need to **relocate a pin and correct a recollection** — there is no edit/relocate/delete UI in Slice 1 (it's Slice 4), and globe memories are saved `is_draft=false` so they fall under the Raw Vault invariant (no in-place `content_raw` edit; corrections via `memory_revisions`, unbuilt). Interim fix path: a guarded dev script deletes a pin (memory→relationship→place) so the user re-places it. **Implication: Slice 4 (edit/relocate/delete) is the highest-value next slice** — correcting entries is fundamental to real chronicling. Also reconsider whether globe memories should be drafts (reviewable/editable) rather than final on creation.
+
 ## Deferred (explicitly)
 
 - Multi-home / seasonal-domicile **concurrent** display — special pin + connector graphics for families maintaining several simultaneous domiciles used seasonally/intermittently. See `feature_residential_globe_onboarding.md` §5.6 (the high-net-worth multi-home case).
