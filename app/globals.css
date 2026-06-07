@@ -51,6 +51,22 @@ body {
   font-optical-sizing: auto;
 }
 
+/* Mapbox Search JS input — force legible light text + visible caret on
+   the dark glass. The component sets color: rgba(0,0,0,.75) on its own
+   hashed `…--Input` class, which the theme.colorText variable doesn't
+   override; target the stable `--Input` suffix (hash-proof). */
+.nocturne mapbox-search-box input,
+.nocturne [class$="--Input"],
+.nocturne [class*="--Input "] {
+  color: var(--ink) !important;
+  caret-color: var(--ember-soft) !important;
+}
+.nocturne mapbox-search-box input::placeholder,
+.nocturne [class$="--Input"]::placeholder {
+  color: var(--ink-dim) !important;
+  opacity: 1;
+}
+
 /* Floating glass chrome (search box, modal, detail cards). */
 .glass {
   background: var(--glass);
