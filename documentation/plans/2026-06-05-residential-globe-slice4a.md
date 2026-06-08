@@ -34,7 +34,7 @@ Two distinct operations, deliberately separated:
 - **Click a pin** → it becomes draggable and a **right-side glass panel** opens (globe stays visible). The marker click stops propagation, so clicking empty globe still drops a *new* draft pin — edit vs. add stay distinct.
 - **Panel** = the pin's card (also the Slice 2 detail view, pulled forward): editable **name**, **when**, **recollection** + actions **Save**, **Delete**.
 - **Relocate:** drag the selected pin → panel shows "Moved — Save to keep" with the re-geocoded name; **Save** commits, **Cancel**/close reverts. No toggle.
-- **Delete:** two-click confirm ("Click again to remove"); removes pin + recollection atomically; panel closes.
+- **Delete:** **hard delete** (no undo — decided for MVP; no soft-delete/retain). The confirm UX must make permanence explicit: first click reveals a clear warning ("Delete permanently — this can't be undone"), second click commits. Removes pin + recollection atomically; panel closes. (Lesson from losing a hard-deleted recollection: deletion must *announce* its permanence, even if we don't retain.)
 - **Live:** count chip + arc update after any change; Esc cancels a pending relocation; closing deselects.
 
 ## 4. Data & API
