@@ -92,6 +92,19 @@ body {
   transform: scale(1.25);
 }
 
+/* Selected pin — ring + lift, and it becomes draggable for relocation. */
+.globe-pin-selected {
+  cursor: grab;
+  transform: scale(1.2);
+  box-shadow:
+    0 0 0 2px var(--night),
+    0 0 0 4px var(--ember-soft),
+    0 0 20px 6px rgba(244, 177, 74, 0.85);
+}
+.globe-pin-selected:active {
+  cursor: grabbing;
+}
+
 /* The signature beat: a warm bloom when a pin lands. */
 .globe-pin-bloom::after {
   content: "";

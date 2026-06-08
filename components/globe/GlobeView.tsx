@@ -18,6 +18,7 @@ import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import FindLocationBox, { RetrievedPlace } from './FindLocationBox'
 import PinModal, { PinDraftData } from './PinModal'
+import PinEditPanel from './PinEditPanel'
 
 interface Pin {
   relationship_id: string
@@ -46,6 +47,7 @@ export default function GlobeView() {
   const pinMarkersRef = useRef<mapboxgl.Marker[]>([])
   const draftMarkerRef = useRef<mapboxgl.Marker | null>(null)
   const bloomIdRef = useRef<string | null>(null)
+  const selectedIdRef = useRef<string | null>(null)
 
   const [ready, setReady] = useState(false)
   const [pins, setPins] = useState<Pin[]>([])
@@ -53,6 +55,9 @@ export default function GlobeView() {
   const [modalOpen, setModalOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [stagedCoords, setStagedCoords] = useState<{ lng: number; lat: number } | null>(null)
+  const [savingPanel, setSavingPanel] = useState(false)
 
   const hasPins = pins.length > 0
 
@@ -89,6 +94,22 @@ export default function GlobeView() {
     draftMarkerRef.current?.remove()
     setDraft(null)
     setModalOpen(false)
+  }, [])
+
+  const deselect = useCallback(() => {
+    selectedIdRef.current = null
+    setSelectedId(null)
+    setStagedCoords(null)
+  }, [])
+
+  // Select an existing pin for editing (and clear any in-progress new pin).
+  const selectPin = useCallback((relId: string) => {
+    draftMarkerRef.current?.remove()
+    setDraft(null)
+    setModalOpen(false)
+    selectedIdRef.current = relId
+    setSelectedId(relId)
+    setStagedCoords(null)
   }, [])
 
   // Initialise the map once.
@@ -129,13 +150,17 @@ export default function GlobeView() {
       loadPins()
     })
 
-    map.on('click', (e) => setDraftAt(e.lngLat.lng, e.lngLat.lat, ''))
+    map.on('click', (e) => {
+      // Clicking empty globe: deselect an open pin, else drop a new draft.
+      if (selectedIdRef.current) { deselect(); return }
+      setDraftAt(e.lngLat.lng, e.lngLat.lat, '')
+    })
 
     return () => {
       map.remove()
       mapRef.current = null
     }
-  }, [loadPins, setDraftAt])
+  }, [loadPins, setDraftAt, deselect])
 
   // Re-render pin markers + arc whenever pins change.
   useEffect(() => {
@@ -144,22 +169,35 @@ export default function GlobeView() {
     pinMarkersRef.current.forEach((m) => m.remove())
     pinMarkersRef.current = []
     pins.forEach((p) => {
+      const isSel = p.relationship_id === selectedId
       const el = document.createElement('div')
-      el.className = 'globe-pin' + (bloomIdRef.current === p.place_entity_id ? ' globe-pin-bloom' : '')
+      el.className =
+        'globe-pin' +
+        (bloomIdRef.current === p.place_entity_id ? ' globe-pin-bloom' : '') +
+        (isSel ? ' globe-pin-selected' : '')
       el.title = p.name
-      pinMarkersRef.current.push(new mapboxgl.Marker({ element: el }).setLngLat([p.lng, p.lat]).addTo(map))
+      el.addEventListener('click', (ev) => { ev.stopPropagation(); selectPin(p.relationship_id) })
+      const marker = new mapboxgl.Marker({ element: el, draggable: isSel }).setLngLat([p.lng, p.lat]).addTo(map)
+      if (isSel) {
+        marker.on('dragend', () => {
+          const ll = marker.getLngLat()
+          setStagedCoords({ lng: ll.lng, lat: ll.lat })
+        })
+      }
+      pinMarkersRef.current.push(marker)
     })
     bloomIdRef.current = null
     const src = map.getSource('arcs') as mapboxgl.GeoJSONSource | undefined
     src?.setData(lineFeature(pins))
-  }, [pins, ready])
+  }, [pins, ready, selectedId, selectPin])
 
   const handleRetrieve = useCallback((place: RetrievedPlace) => {
     const map = mapRef.current
     if (!map) return
+    deselect()
     map.flyTo({ center: [place.lng, place.lat], zoom: Math.max(map.getZoom(), 9), speed: 0.9 })
     setDraftAt(place.lng, place.lat, place.label)
-  }, [setDraftAt])
+  }, [setDraftAt, deselect])
 
   const handleSave = useCallback(async (data: PinDraftData) => {
     if (!draft) return
@@ -188,6 +226,50 @@ export default function GlobeView() {
       setSaving(false)
     }
   }, [draft, clearDraft])
+
+  const handlePanelSave = useCallback(async (fields: { name: string; whenText: string; body: string }) => {
+    if (!selectedId) return
+    setSavingPanel(true)
+    setError(null)
+    try {
+      const payload: Record<string, unknown> = { ...fields }
+      if (stagedCoords) { payload.lng = stagedCoords.lng; payload.lat = stagedCoords.lat }
+      const res = await fetch(`/api/globe/residence/${selectedId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}))
+        throw new Error(b.detail || b.error || `HTTP ${res.status}`)
+      }
+      await loadPins()
+      deselect()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not save the pin.')
+    } finally {
+      setSavingPanel(false)
+    }
+  }, [selectedId, stagedCoords, loadPins, deselect])
+
+  const handlePanelDelete = useCallback(async () => {
+    if (!selectedId) return
+    setSavingPanel(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/globe/residence/${selectedId}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}))
+        throw new Error(b.detail || b.error || `HTTP ${res.status}`)
+      }
+      await loadPins()
+      deselect()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not delete the pin.')
+    } finally {
+      setSavingPanel(false)
+    }
+  }, [selectedId, loadPins, deselect])
 
   return (
     <div className="nocturne relative h-screen w-screen overflow-hidden">
@@ -257,6 +339,21 @@ export default function GlobeView() {
           onCancel={() => setModalOpen(false)}
         />
       )}
+
+      {selectedId && (() => {
+        const sel = pins.find((p) => p.relationship_id === selectedId)
+        if (!sel) return null
+        return (
+          <PinEditPanel
+            pin={sel}
+            relocated={stagedCoords !== null}
+            saving={savingPanel}
+            onSave={handlePanelSave}
+            onDelete={handlePanelDelete}
+            onClose={deselect}
+          />
+        )
+      })()}
     </div>
   )
 }
