@@ -14,6 +14,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ProposalCard, type MemoryCardData } from './ProposalCard'
+import { useUiChrome } from './UiChromeContext'
 
 type ConversationTurn = { role: 'user' | 'assistant'; content: string }
 
@@ -52,6 +53,7 @@ const OPENING: ThreadEntry = {
 }
 
 export default function CaptureAssistant() {
+  const { assistantSuppressed } = useUiChrome()
   const [open, setOpen] = useState(false)
   const [thread, setThread] = useState<ThreadEntry[]>([OPENING])
   const [input, setInput] = useState('')
@@ -168,6 +170,14 @@ export default function CaptureAssistant() {
       submit()
     }
   }
+
+  // Step aside while a focused panel (e.g. the globe pin editor) is open:
+  // the FAB is fixed at z-50 and would overlap such panels, hiding their
+  // controls (it was covering the pin panel's Delete button). The assistant
+  // stays available everywhere else, including the globe itself.
+  // (Guard is after all hooks: this component persists across navigation,
+  // so hooks must run unconditionally to satisfy rules-of-hooks.)
+  if (assistantSuppressed) return null
 
   return (
     <>

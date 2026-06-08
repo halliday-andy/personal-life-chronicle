@@ -19,6 +19,7 @@ import 'mapbox-gl/dist/mapbox-gl.css'
 import FindLocationBox, { RetrievedPlace } from './FindLocationBox'
 import PinModal, { PinDraftData } from './PinModal'
 import PinEditPanel from './PinEditPanel'
+import { useUiChrome } from '../UiChromeContext'
 
 interface Pin {
   relationship_id: string
@@ -58,8 +59,17 @@ export default function GlobeView() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [stagedCoords, setStagedCoords] = useState<{ lng: number; lat: number } | null>(null)
   const [savingPanel, setSavingPanel] = useState(false)
+  const { setAssistantSuppressed } = useUiChrome()
 
   const hasPins = pins.length > 0
+
+  // Suppress the global CaptureAssistant FAB only while the pin editor is
+  // open — it's fixed z-50 and would overlap the panel (it was hiding the
+  // Delete button). The assistant stays available on the globe otherwise.
+  useEffect(() => {
+    setAssistantSuppressed(selectedId !== null)
+    return () => setAssistantSuppressed(false)
+  }, [selectedId, setAssistantSuppressed])
 
   const loadPins = useCallback(async () => {
     try {
