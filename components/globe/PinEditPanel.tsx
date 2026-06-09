@@ -25,6 +25,9 @@ export default function PinEditPanel({
   pin,
   relocated,
   saving,
+  position,
+  total,
+  onMove,
   onSave,
   onDelete,
   onClose,
@@ -32,6 +35,9 @@ export default function PinEditPanel({
   pin: EditablePin
   relocated: boolean
   saving: boolean
+  position: number   // 0-based index in the residence sequence
+  total: number
+  onMove: (dir: -1 | 1) => void
   onSave: (fields: { name: string; whenText: string; body: string }) => void
   onDelete: () => void
   onClose: () => void
@@ -56,11 +62,35 @@ export default function PinEditPanel({
   return (
     <aside className="glass absolute right-4 top-4 bottom-4 z-30 flex w-[min(380px,92vw)] flex-col rounded-2xl p-5 text-[var(--ink)]">
       <div className="flex items-start justify-between">
-        <p className="text-xs uppercase tracking-[0.18em] text-[var(--ink-dim)]">Residence</p>
+        <p className="text-xs uppercase tracking-[0.18em] text-[var(--ink-dim)]">
+          Residence{total > 1 ? ` · stop ${position + 1} of ${total}` : ''}
+        </p>
         <button onClick={onClose} disabled={saving} className="text-lg leading-none text-[var(--ink-dim)] hover:text-[var(--ink)] disabled:opacity-50">
           ✕
         </button>
       </div>
+
+      {total > 1 && (
+        <div className="mt-3 flex items-center gap-2">
+          <span className="text-xs text-[var(--ink-dim)]">Order</span>
+          <button
+            onClick={() => onMove(-1)}
+            disabled={saving || position === 0}
+            title="Move earlier"
+            className="rounded-lg border border-[var(--glass-border)] px-2.5 py-1 text-sm text-[var(--ink-dim)] hover:text-[var(--ink)] disabled:opacity-30"
+          >
+            ↑ Earlier
+          </button>
+          <button
+            onClick={() => onMove(1)}
+            disabled={saving || position === total - 1}
+            title="Move later"
+            className="rounded-lg border border-[var(--glass-border)] px-2.5 py-1 text-sm text-[var(--ink-dim)] hover:text-[var(--ink)] disabled:opacity-30"
+          >
+            ↓ Later
+          </button>
+        </div>
+      )}
 
       <label className="mt-3 block text-xs text-[var(--ink-dim)]">Place name</label>
       <input

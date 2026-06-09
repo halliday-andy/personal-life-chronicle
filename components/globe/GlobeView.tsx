@@ -264,6 +264,35 @@ export default function GlobeView() {
     }
   }, [selectedId, stagedCoords, loadPins, deselect])
 
+  // Move the selected pin one slot earlier/later in the sequence by
+  // swapping it with its neighbour and re-sequencing the whole chain.
+  const handleMove = useCallback(async (dir: -1 | 1) => {
+    if (!selectedId) return
+    const idx = pins.findIndex((p) => p.relationship_id === selectedId)
+    const swap = idx + dir
+    if (idx < 0 || swap < 0 || swap >= pins.length) return
+    const order = pins.map((p) => p.relationship_id)
+    ;[order[idx], order[swap]] = [order[swap], order[idx]]
+    setSavingPanel(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/globe/residence/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderedIds: order }),
+      })
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}))
+        throw new Error(b.detail || b.error || `HTTP ${res.status}`)
+      }
+      await loadPins()   // selection (selectedId) persists across the reload
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not reorder.')
+    } finally {
+      setSavingPanel(false)
+    }
+  }, [selectedId, pins, loadPins])
+
   const handlePanelDelete = useCallback(async () => {
     if (!selectedId) return
     setSavingPanel(true)
@@ -354,13 +383,17 @@ export default function GlobeView() {
       )}
 
       {selectedId && (() => {
-        const sel = pins.find((p) => p.relationship_id === selectedId)
+        const idx = pins.findIndex((p) => p.relationship_id === selectedId)
+        const sel = pins[idx]
         if (!sel) return null
         return (
           <PinEditPanel
             pin={sel}
             relocated={stagedCoords !== null}
             saving={savingPanel}
+            position={idx}
+            total={pins.length}
+            onMove={handleMove}
             onSave={handlePanelSave}
             onDelete={handlePanelDelete}
             onClose={deselect}
