@@ -46,6 +46,7 @@ interface PostBody {
   label?: string      // the place name the user confirmed in the UI
   whenText?: string   // optional free-text date ("early 70s")
   body?: string       // optional verbatim narrative
+  position?: number | null  // sequence slot; null/omitted = append at the end
 }
 
 export async function POST(request: NextRequest) {
@@ -60,13 +61,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const { lng, lat, label, whenText, body } = payload
+  const { lng, lat, label, whenText, body, position } = payload
   if (
     typeof lng !== 'number' || typeof lat !== 'number' ||
     Number.isNaN(lng) || Number.isNaN(lat) ||
     lng < -180 || lng > 180 || lat < -90 || lat > 90
   ) {
     return NextResponse.json({ error: 'lng/lat must be valid coordinates' }, { status: 400 })
+  }
+  // Optional sequence slot. Must be a non-negative integer when present;
+  // null/undefined means "append at the end".
+  const pos =
+    position === null || position === undefined ? null : Math.trunc(position)
+  if (pos !== null && (!Number.isFinite(pos) || pos < 0)) {
+    return NextResponse.json({ error: 'position must be a non-negative integer' }, { status: 400 })
   }
 
   const admin = createAdminClient()
@@ -100,6 +108,7 @@ export async function POST(request: NextRequest) {
     p_country_code: countryCode,
     p_when_text: whenText?.trim() || null,
     p_body_text: body?.trim() || null,
+    p_position: pos,
   })
   if (error) {
     return NextResponse.json({ error: 'Failed to place pin', detail: error.message }, { status: 500 })
@@ -117,6 +126,7 @@ export async function POST(request: NextRequest) {
       lat,
       when_text: whenText?.trim() || null,
       has_memory: Boolean(row?.memory_id),
+      sort_order: row?.sort_order ?? null,
     },
   })
 }

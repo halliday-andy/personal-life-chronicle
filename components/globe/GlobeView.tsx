@@ -219,7 +219,7 @@ export default function GlobeView() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           lng: draft.lng, lat: draft.lat, label: draft.label,
-          whenText: data.whenText, body: data.body,
+          whenText: data.whenText, body: data.body, position: data.position,
         }),
       })
       if (!res.ok) {
@@ -227,15 +227,17 @@ export default function GlobeView() {
         throw new Error(b.detail || b.error || `HTTP ${res.status}`)
       }
       const { pin } = await res.json()
+      // An insert shifts other pins' sort_order, so reload the whole chain
+      // rather than appending; the bloom is keyed off the new place id.
       bloomIdRef.current = pin.place_entity_id
-      setPins((prev) => [...prev, pin])
+      await loadPins()
       clearDraft()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not place the pin.')
     } finally {
       setSaving(false)
     }
-  }, [draft, clearDraft])
+  }, [draft, clearDraft, loadPins])
 
   const handlePanelSave = useCallback(async (fields: { name: string; whenText: string; body: string }) => {
     if (!selectedId) return
@@ -345,6 +347,7 @@ export default function GlobeView() {
         <PinModal
           placeLabel={draft.label || 'This place'}
           saving={saving}
+          existingPins={pins.map((p) => ({ name: p.name }))}
           onSave={handleSave}
           onCancel={() => setModalOpen(false)}
         />

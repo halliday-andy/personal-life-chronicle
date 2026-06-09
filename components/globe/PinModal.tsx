@@ -22,21 +22,27 @@ const GHOST_TEXTS = [
 export interface PinDraftData {
   whenText: string
   body: string
+  position: number | null   // where in the residence sequence; null = append
 }
 
 export default function PinModal({
   placeLabel,
   saving,
+  existingPins,
   onSave,
   onCancel,
 }: {
   placeLabel: string
   saving: boolean
+  existingPins: { name: string }[]   // current residences, in sequence
   onSave: (data: PinDraftData) => void
   onCancel: () => void
 }) {
   const [body, setBody] = useState('')
   const [whenText, setWhenText] = useState('')
+  // Sequence slot: 0 = before the first pin, i = after existingPins[i-1].
+  // Default = after the last pin (the most recent residence).
+  const [position, setPosition] = useState<number>(existingPins.length)
   const ghost = useMemo(() => GHOST_TEXTS[Math.floor(Math.random() * GHOST_TEXTS.length)], [])
 
   return (
@@ -75,6 +81,26 @@ export default function PinModal({
           className="mt-1 w-full rounded-xl border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] placeholder-[var(--ink-dim)]/70 outline-none focus:border-[var(--ember-soft)]"
         />
 
+        {existingPins.length > 0 && (
+          <>
+            <label className="mt-4 block text-sm text-[var(--ink-dim)]">Where does this fall in your life?</label>
+            <select
+              value={position}
+              onChange={(e) => setPosition(Number(e.target.value))}
+              disabled={saving}
+              className="mt-1 w-full rounded-xl border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--ember-soft)]"
+            >
+              <option value={0}>Before {existingPins[0].name} (earliest)</option>
+              {existingPins.map((p, i) => (
+                <option key={i} value={i + 1}>
+                  After {p.name}
+                  {i === existingPins.length - 1 ? ' (most recent)' : ''}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
+
         <div className="mt-6 flex items-center justify-end gap-3">
           <button
             type="button"
@@ -86,7 +112,7 @@ export default function PinModal({
           </button>
           <button
             type="button"
-            onClick={() => onSave({ whenText, body })}
+            onClick={() => onSave({ whenText, body, position: existingPins.length ? position : null })}
             disabled={saving}
             className="rounded-lg bg-[var(--ember)] px-5 py-2 text-sm font-medium text-[#241500] shadow-[0_0_20px_rgba(244,177,74,0.45)] hover:bg-[var(--ember-soft)] disabled:opacity-60"
           >
