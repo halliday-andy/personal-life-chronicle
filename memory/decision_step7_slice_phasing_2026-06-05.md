@@ -37,6 +37,8 @@ First real use immediately hit the need to **relocate a pin and correct a recoll
 
 ## Deferred (explicitly)
 
+- **Multi-photo gallery per pin (Andy, 2026-06-10, after first Slice 2 use):** the edit panel should eventually allow attaching *multiple* photos to a residence, while the pin/detail-card photo stays single — it's whichever is flagged primary. Schema already supports this (`entity_media` many-per-entity + `is_primary`); the one-image limit lives only in `attachPinImage`'s replace-on-attach behaviour, so the change is additive: append non-primary rows, add a gallery + "make primary" UI in the edit panel. Pairs with the also-deferred image preprocessing (client-side HEIC→JPEG conversion + ~2MB compression — HEIC uploads work today but only render in Safari).
+
 - Multi-home / seasonal-domicile **concurrent** display — special pin + connector graphics for families maintaining several simultaneous domiciles used seasonally/intermittently. See `feature_residential_globe_onboarding.md` §5.6 (the high-net-worth multi-home case).
 - **Bucket-list / aspirational pin type** — see [[project_lc_future_pin_types]].
 
