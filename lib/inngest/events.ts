@@ -39,4 +39,13 @@ export type Events = {
       user_id: string
     }
   }
+  // A residence pin's recollection was created or edited — run the
+  // globe modal extraction (Step 7 Slice 2).
+  'globe/pin.saved': {
+    data: {
+      user_id: string
+      relationship_id: string
+      memory_id: string
+    }
+  }
 }

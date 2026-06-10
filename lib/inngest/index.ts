@@ -14,3 +14,4 @@ export {
   chronicleDigesterOnEntityMerged,
   chronicleDigesterSweep,
 } from './agents/chronicle-digester'
+export { globeExtractionAgent } from './agents/globe-extraction-agent'

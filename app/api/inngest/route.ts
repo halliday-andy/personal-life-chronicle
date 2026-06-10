@@ -13,6 +13,7 @@ import {
   chronicleDigesterOnMemoryIngested,
   chronicleDigesterOnEntityMerged,
   chronicleDigesterSweep,
+  globeExtractionAgent,
 } from '@/lib/inngest'
 
 export const { GET, POST, PUT } = serve({
@@ -30,5 +31,6 @@ export const { GET, POST, PUT } = serve({
     chronicleDigesterOnMemoryIngested,
     chronicleDigesterOnEntityMerged,
     chronicleDigesterSweep,
+    globeExtractionAgent,
   ],
 })
