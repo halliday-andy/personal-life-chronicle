@@ -248,6 +248,14 @@ through `memory/ingested`, so Entity Agent resolution of these stubs is
 future work. Verify scripts that run TS libs use the `npx tsx` temp-runner
 pattern (established by `verify-6d-tools.mjs`).
 
+**Workflow rule (bug hit 2026-06-10):** never run `npm run build` while
+Andy's dev server is live — both write `.next/`, and the prod build
+clobbers the dev chunk cache (symptom: dynamic-import pages hang on
+their loading state, e.g. /globe stuck on "Spinning up your globe…").
+Fix is kill dev server → `rm -rf .next` → restart. To verify a build,
+either ask/check first (`lsof -iTCP:3001 -sTCP:LISTEN`) or rely on
+`tsc --noEmit` + the dev server's own compile output instead.
+
 **Class-of-bug note (repeat of the 4b lesson, new variant):** the first
 extraction-proof run failed because the "skip path" fixture fell back to
 *another fixture's* memory id (`bare.memory_id ?? rich.memory_id`) when
