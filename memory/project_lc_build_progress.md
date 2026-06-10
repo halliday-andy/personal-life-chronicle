@@ -178,6 +178,53 @@ Residential globe **walking skeleton** — the create-and-view loop. Phasing + d
 
 **Next: Slice 4 (edit/relocate/delete)** — flagged highest-value after first real use immediately needed pin correction.
 
+## Step 7 Slice 4a — what got built (2026-06-07)
+
+Select / edit / relocate / delete a residence pin. Migration
+`20260605140000_globe_slice4_edit_delete.sql` + the `[relationshipId]`
+route (GET text / PATCH edit+relocate / DELETE).
+
+| Piece | Detail |
+|---|---|
+| Drafts-on-create | `create_residence_pin` now writes `is_draft=true` so globe recollections are editable in place until finalized. Raw Vault invariant preserved: a *finalized* owner edit writes the prior `content_raw` into `memory_revisions` before overwriting. |
+| Edit / relocate | `update_residence_pin` edits name/subtype/country/geom/when/body. Selected pin is draggable on the globe (relocate); the right-side `PinEditPanel` edits text fields. |
+| Delete | `delete_residence_pin` — atomic hard delete (memory → relationship → place, place only if unreferenced), with an explicit 3s "can't be undone" confirm in the panel. |
+| Chrome fix | CaptureAssistant FAB suppressed only while the pin editor is open (it was overlapping the Delete button). |
+| Verify | `scripts/verify-globe-slice4.mjs` — PASS. |
+
+## Step 7 Slice 4b — what got built (2026-06-09)
+
+Finishing the editing slice: explicit sequence (insert before/after +
+reorder) and returning/intra-metro detection. Drag-to-refine precision
+was already delivered in 4a (draft + selected pins are draggable), so 4b
+is the sequence + proximity work. Two migrations (both applied + verified
+via the paste-into-Supabase loop while direct DB access was being set up).
+
+| Piece | Detail |
+|---|---|
+| Sequence schema | `20260609000000_globe_slice4b_sequence.sql`: `relationships.sort_order` (backfilled from placement order); `get_residence_pins` orders by it; `create_residence_pin` gains `p_position` (NULL=append, k=insert at index k shifting later pins up); `reorder_residence_pins(user, ordered_ids[])` — atomic, ownership- + coverage-guarded. Proof: `scripts/verify-globe-slice4b.mjs`. |
+| Insert UX | `PinModal` asks "Where does this fall in your life?" (before earliest / after any pin / most recent default) → `position` to POST. GlobeView reloads the whole chain after save (an insert shifts others). |
+| Reorder UX | `PinEditPanel` shows "stop N of M" + ↑ Earlier / ↓ Later controls → `POST /api/globe/residence/reorder`. Selection persists across the reload. |
+| Detection | `20260609010000_globe_slice4b_proximity.sql`: `nearest_residence(user, lng, lat, exclude_rel)` (PostGIS `ST_Distance` on geography). `lib/globe/proximity.ts` classifies: "returning" <1.5 km, "intra_metro" <25 km, else none. POST + PATCH(relocate) return `proximity`; GlobeView shows an auto-dismiss toast. Proof: `scripts/verify-globe-proximity.mjs`. |
+
+**Build decision — proximity in SQL, not app JS.** PostGIS `ST_Distance`
+on the geom we already store is both more accurate and testable through
+the existing RPC-based verify pattern; the route only owns the threshold
+classification.
+
+**Verify-script gotcha (class of bug).** `verify-globe-proximity.mjs`
+first asserted an absolute distance (London→Madrid >1000 km) and FAILED
+because Andy has *real* residences — one ~103 km from London — that
+`nearest_residence` correctly returned. Lesson: verify scripts run
+against the live shared DB with real data; assert only **relative**
+properties between the script's *own* fixtures (or distances to points
+it created), never absolute distances/counts that assume an empty DB.
+
+**Slice 4 remaining → folded into later slices:** "returning vs
+intra-metro" now *detects* and hints, but distinct pin/arc *styling* for
+the cases is deferred (relates to Slice 3 place types). Image + AI
+extraction = Slice 2; place types = Slice 3; sidekick/clustering = 5+.
+
 ## How to apply
 
 When starting work on Step 6 or Step 7, this is the file to read first. It captures the actual state of the codebase and the decisions that aren't documented elsewhere. Cross-reference `LC_Development_Sequence.md` for the canonical step definitions.
