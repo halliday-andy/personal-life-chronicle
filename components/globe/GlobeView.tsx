@@ -20,6 +20,13 @@ import FindLocationBox, { RetrievedPlace } from './FindLocationBox'
 import PinModal, { PinDraftData } from './PinModal'
 import PinEditPanel from './PinEditPanel'
 import { useUiChrome } from '../UiChromeContext'
+import type { ProximityHint } from '@/lib/globe/proximity'
+
+function hintText(h: ProximityHint): string {
+  return h.kind === 'returning'
+    ? `Near ${h.name}, where you’ve lived before — returning?`
+    : `A local move — about ${h.distanceKm} km from ${h.name}.`
+}
 
 interface Pin {
   relationship_id: string
@@ -59,7 +66,15 @@ export default function GlobeView() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [stagedCoords, setStagedCoords] = useState<{ lng: number; lat: number } | null>(null)
   const [savingPanel, setSavingPanel] = useState(false)
+  const [hint, setHint] = useState<ProximityHint | null>(null)
   const { setAssistantSuppressed } = useUiChrome()
+
+  // Proximity hints are advisory — auto-dismiss after a few seconds.
+  useEffect(() => {
+    if (!hint) return
+    const t = setTimeout(() => setHint(null), 7000)
+    return () => clearTimeout(t)
+  }, [hint])
 
   const hasPins = pins.length > 0
 
@@ -226,12 +241,13 @@ export default function GlobeView() {
         const b = await res.json().catch(() => ({}))
         throw new Error(b.detail || b.error || `HTTP ${res.status}`)
       }
-      const { pin } = await res.json()
+      const { pin, proximity } = await res.json()
       // An insert shifts other pins' sort_order, so reload the whole chain
       // rather than appending; the bloom is keyed off the new place id.
       bloomIdRef.current = pin.place_entity_id
       await loadPins()
       clearDraft()
+      setHint(proximity ?? null)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not place the pin.')
     } finally {
@@ -255,8 +271,10 @@ export default function GlobeView() {
         const b = await res.json().catch(() => ({}))
         throw new Error(b.detail || b.error || `HTTP ${res.status}`)
       }
+      const body = await res.json().catch(() => ({}))
       await loadPins()
       deselect()
+      setHint(body.proximity ?? null)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not save the pin.')
     } finally {
@@ -369,6 +387,20 @@ export default function GlobeView() {
       {error && (
         <div className="absolute bottom-6 right-6 z-30 rounded-lg bg-rose-900/70 px-3 py-2 text-sm text-rose-100">
           {error}
+        </div>
+      )}
+
+      {hint && (
+        <div className="glass absolute bottom-6 left-1/2 z-30 flex -translate-x-1/2 items-center gap-3 rounded-xl px-4 py-2.5 text-sm text-[var(--ink)]">
+          <span className="text-[var(--ember-soft)]">◍</span>
+          <span>{hintText(hint)}</span>
+          <button
+            onClick={() => setHint(null)}
+            className="ml-1 text-[var(--ink-dim)] hover:text-[var(--ink)]"
+            aria-label="Dismiss"
+          >
+            ✕
+          </button>
         </div>
       )}
 

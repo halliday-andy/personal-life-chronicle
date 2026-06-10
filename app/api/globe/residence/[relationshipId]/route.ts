@@ -16,6 +16,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createUserClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { reverseGeocode } from '@/lib/globe/geocoding'
+import { proximityHint } from '@/lib/globe/proximity'
 
 async function getUser() {
   const { data: { user } } = await createUserClient().auth.getUser()
@@ -94,7 +95,14 @@ export async function PATCH(request: NextRequest, { params }: { params: { relati
     return NextResponse.json({ error: 'Failed to update pin', detail: error.message }, { status: 500 })
   }
   const row = Array.isArray(data) ? data[0] : data
-  return NextResponse.json({ ok: true, relocated: row?.relocated ?? false, memoryId: row?.memory_id ?? null })
+
+  // On a relocate, flag if the pin landed near another residence.
+  const proximity =
+    lng !== null && lat !== null
+      ? await proximityHint(admin, user.id, lng, lat, params.relationshipId)
+      : null
+
+  return NextResponse.json({ ok: true, relocated: row?.relocated ?? false, memoryId: row?.memory_id ?? null, proximity })
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { relationshipId: string } }) {

@@ -20,6 +20,7 @@ import { createClient as createUserClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ensureSelfEntity } from '@/lib/globe/self-entity'
 import { reverseGeocode } from '@/lib/globe/geocoding'
+import { proximityHint } from '@/lib/globe/proximity'
 
 function displayNameFor(user: { user_metadata?: Record<string, unknown>; email?: string }): string {
   const meta = user.user_metadata ?? {}
@@ -115,6 +116,10 @@ export async function POST(request: NextRequest) {
   }
 
   const row = Array.isArray(data) ? data[0] : data
+
+  // Non-blocking: was this placed near a place already on the globe?
+  const proximity = await proximityHint(admin, user.id, lng, lat, row?.relationship_id ?? null)
+
   return NextResponse.json({
     pin: {
       relationship_id: row?.relationship_id,
@@ -128,5 +133,6 @@ export async function POST(request: NextRequest) {
       has_memory: Boolean(row?.memory_id),
       sort_order: row?.sort_order ?? null,
     },
+    proximity,
   })
 }
