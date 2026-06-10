@@ -43,6 +43,14 @@ proof → commit. Andy can still paste SQL manually if he prefers, but it's
 no longer required. See [[feedback_lc_memory_dual_write]] for the
 parallel rule that memory writes hit both mirrors.
 
+**Safety checkpoint (2026-06-09):** before applying any migration that
+ALTERS or DROPS existing data, STOP and get Andy's explicit approval
+first. Additive/reversible changes (CREATE … IF NOT EXISTS, ADD COLUMN
+nullable, CREATE OR REPLACE FUNCTION, new RPCs) may be applied without
+the gate; when unsure, treat as destructive and ask. Canonical statement
+is in the project `CLAUDE.md` ("Migration Safety Checkpoint"). Removable
+later if it proves superfluous.
+
 **Verify-script caution:** proofs run against the live shared DB with
 real data — assert only relative properties between a script's own
 fixtures, never absolute counts/distances that assume an empty database

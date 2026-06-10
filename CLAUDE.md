@@ -19,6 +19,27 @@ This protocol was established with Opus 4.7 in April 2026 after the mirror fell 
 
 ---
 
+## Critical Protocol: Migration Safety Checkpoint
+
+Migrations can be applied directly via `scripts/db-apply.mjs` (see
+`memory/reference_lc_migration_apply.md`). **Before applying any
+migration that ALTERS OR DROPS EXISTING DATA, STOP and get Andy's
+explicit approval first.** This includes: `DROP TABLE/COLUMN/FUNCTION` of
+something in use, `ALTER COLUMN` type changes that rewrite data,
+`UPDATE`/`DELETE` against existing rows, destructive backfills, and
+`NOT NULL`/constraint additions that can fail on existing data.
+
+Additive, reversible changes may be applied without the gate: `CREATE
+TABLE/INDEX ... IF NOT EXISTS`, `ADD COLUMN` (nullable), `CREATE OR
+REPLACE FUNCTION`, new RPCs, idempotent seed inserts. **When unsure,
+treat it as destructive and ask.** Always show the migration and run its
+verify proof regardless.
+
+Established 2026-06-09 at Andy's request when direct DB apply was enabled;
+removable later if it proves superfluous.
+
+---
+
 ## Project Identity
 
 **Life Chronicle / MemRec** — a personal memory collection and chronicle system. Users record memories through voice and text interviews; the system organizes them across 10 life dimensions, builds synthesis outputs (relationship portraits, period narratives, wisdom distillations), and presents them back through a navigable life journey.
