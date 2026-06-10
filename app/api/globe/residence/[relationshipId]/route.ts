@@ -1,8 +1,9 @@
 /**
  * Single residence pin — edit / relocate / delete (Step 7 Slice 4a).
  *
- *   GET    — the pin's recollection text (for the edit panel; coords/name/
- *            when are already in the GlobeView pins list).
+ *   GET    — the pin's recollection text, image (signed URL), and any
+ *            AI-extracted facts (for the detail card and edit panel;
+ *            coords/name/when are already in the GlobeView pins list).
  *   PATCH  — edit name / when / recollection and/or relocate. The client
  *            sends the FULL field set on save (so an unchanged body isn't
  *            mistaken for "cleared"). On a coordinate change the route
@@ -17,7 +18,7 @@ import { createClient as createUserClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { reverseGeocode } from '@/lib/globe/geocoding'
 import { proximityHint } from '@/lib/globe/proximity'
-import { removePinImage } from '@/lib/globe/pin-image'
+import { getPinImage, removePinImage } from '@/lib/globe/pin-image'
 
 async function getUser() {
   const { data: { user } } = await createUserClient().auth.getUser()
@@ -30,7 +31,7 @@ export async function GET(_req: NextRequest, { params }: { params: { relationshi
 
   const admin = createAdminClient()
   const { data: rel } = await admin
-    .from('relationships').select('object_id, user_id').eq('id', params.relationshipId).maybeSingle()
+    .from('relationships').select('object_id, user_id, metadata').eq('id', params.relationshipId).maybeSingle()
   if (!rel || rel.user_id !== user.id) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
@@ -47,7 +48,22 @@ export async function GET(_req: NextRequest, { params }: { params: { relationshi
       .from('memories').select('id, content_raw, is_draft').eq('id', link.memory_id).single()
     if (mem) { body = mem.content_raw ?? ''; memoryId = mem.id; isDraft = mem.is_draft }
   }
-  return NextResponse.json({ memoryId, body, isDraft })
+
+  const image = await getPinImage(admin, user.id, rel.object_id)
+
+  // AI-extracted facts (Slice 2 extraction job writes these; null until then).
+  const meta = (rel.metadata ?? {}) as Record<string, unknown>
+  const extraction = (meta.globe_extraction ?? null) as Record<string, unknown> | null
+  const facts = extraction
+    ? {
+        residence_type: (meta.residence_type as string | null) ?? null,
+        move_reason: (meta.move_reason as string | null) ?? null,
+        household_composition: (extraction.household_composition as string | null) ?? null,
+        rough_temporal_range: (extraction.rough_temporal_range as string | null) ?? null,
+      }
+    : null
+
+  return NextResponse.json({ memoryId, body, isDraft, image, facts })
 }
 
 interface PatchBody {

@@ -19,6 +19,7 @@ import 'mapbox-gl/dist/mapbox-gl.css'
 import FindLocationBox, { RetrievedPlace } from './FindLocationBox'
 import PinModal, { PinDraftData } from './PinModal'
 import PinEditPanel from './PinEditPanel'
+import PinDetailCard from './PinDetailCard'
 import { useUiChrome } from '../UiChromeContext'
 import type { ProximityHint } from '@/lib/globe/proximity'
 
@@ -64,6 +65,9 @@ export default function GlobeView() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  // Pin click opens the read view (detail card); Edit escalates to the
+  // edit panel, which is also what arms drag-to-relocate.
+  const [editMode, setEditMode] = useState(false)
   const [stagedCoords, setStagedCoords] = useState<{ lng: number; lat: number } | null>(null)
   const [savingPanel, setSavingPanel] = useState(false)
   const [hint, setHint] = useState<ProximityHint | null>(null)
@@ -124,16 +128,19 @@ export default function GlobeView() {
   const deselect = useCallback(() => {
     selectedIdRef.current = null
     setSelectedId(null)
+    setEditMode(false)
     setStagedCoords(null)
   }, [])
 
-  // Select an existing pin for editing (and clear any in-progress new pin).
+  // Select an existing pin — opens the detail card (and clears any
+  // in-progress new pin).
   const selectPin = useCallback((relId: string) => {
     draftMarkerRef.current?.remove()
     setDraft(null)
     setModalOpen(false)
     selectedIdRef.current = relId
     setSelectedId(relId)
+    setEditMode(false)
     setStagedCoords(null)
   }, [])
 
@@ -194,12 +201,12 @@ export default function GlobeView() {
     pinMarkersRef.current.forEach((m) => m.remove())
     pinMarkersRef.current = []
     pins.forEach((p) => {
-      const isSel = p.relationship_id === selectedId
+      const isSel = p.relationship_id === selectedId && editMode // draggable only while editing
       const el = document.createElement('div')
       el.className =
         'globe-pin' +
         (bloomIdRef.current === p.place_entity_id ? ' globe-pin-bloom' : '') +
-        (isSel ? ' globe-pin-selected' : '')
+        (p.relationship_id === selectedId ? ' globe-pin-selected' : '')
       el.title = p.name
       el.addEventListener('click', (ev) => { ev.stopPropagation(); selectPin(p.relationship_id) })
       const marker = new mapboxgl.Marker({ element: el, draggable: isSel }).setLngLat([p.lng, p.lat]).addTo(map)
@@ -214,7 +221,7 @@ export default function GlobeView() {
     bloomIdRef.current = null
     const src = map.getSource('arcs') as mapboxgl.GeoJSONSource | undefined
     src?.setData(lineFeature(pins))
-  }, [pins, ready, selectedId, selectPin])
+  }, [pins, ready, selectedId, editMode, selectPin])
 
   const handleRetrieve = useCallback((place: RetrievedPlace) => {
     const map = mapRef.current
@@ -418,7 +425,7 @@ export default function GlobeView() {
         const idx = pins.findIndex((p) => p.relationship_id === selectedId)
         const sel = pins[idx]
         if (!sel) return null
-        return (
+        return editMode ? (
           <PinEditPanel
             pin={sel}
             relocated={stagedCoords !== null}
@@ -428,6 +435,14 @@ export default function GlobeView() {
             onMove={handleMove}
             onSave={handlePanelSave}
             onDelete={handlePanelDelete}
+            onClose={deselect}
+          />
+        ) : (
+          <PinDetailCard
+            pin={sel}
+            position={idx}
+            total={pins.length}
+            onEdit={() => setEditMode(true)}
             onClose={deselect}
           />
         )
