@@ -225,6 +225,41 @@ intra-metro" now *detects* and hints, but distinct pin/arc *styling* for
 the cases is deferred (relates to Slice 3 place types). Image + AI
 extraction = Slice 2; place types = Slice 3; sidekick/clustering = 5+.
 
+## Step 7 Slice 2 — what got built (2026-06-10)
+
+Richness slice: pin detail card, single image per pin, Claude extraction
+of the modal text. **No SQL migration** — `media` + `entity_media`
+(is_primary) already covered images (see
+`decision_step7_image_storage_2026-06-04.md`), extraction fields go in
+`relationships.metadata` (per the prep-migration decision), and the
+`globe_modal_extraction` assumption_type was already in the 6d CHECK.
+Three commits: 5db2b8c (2a images), dc6fc89 (2b detail card), 650c2f9
+(2c extraction).
+
+| Piece | Detail |
+|---|---|
+| Image storage (2a) | Private `pin_images` bucket created via `scripts/setup-pin-images-bucket.mjs` (idempotent; 5MB cap, image MIME types — Storage API, not SQL, to dodge `storage.objects` ownership issues). `lib/globe/pin-image.ts`: one image per pin; object at `users/<uid>/pins/<entity>/…`; `media.uri` stores the storage PATH, reads mint 1h signed URLs. Server-proxy `POST/DELETE /api/globe/residence/[id]/image` (no client-direct Storage → no storage RLS needed yet). Pin DELETE clears the image first so the entity_media CASCADE can't orphan media rows/bytes. Proof: `verify-globe-pin-image.mjs`. |
+| Detail card (2b) | `PinDetailCard` (bottom-center read view): recollection, photo with add/replace/remove, extracted-fact chips. **Pin click → detail card; Edit button → PinEditPanel**; drag-to-relocate arms only in edit mode. Single-pin GET now returns `image` (signed URL) + `facts`. |
+| Extraction (2c) | `globe/pin.saved` event from POST-with-narrative and PATCH-with-body; `globe-extraction-agent` (Inngest) → `lib/globe/extraction.ts` runs spec §6.3 via forced tool call (sonnet-4-5). Writes `relationships.metadata`: `residence_type` + `move_reason` top-level (the period-summary SQL reads `metadata->>'move_reason'`), full payload under `globe_extraction`; logs to assumption_log (`globe_modal_extraction`, agent=`capture_agent`). Re-runs overwrite (latest text wins); audit trail is the log. Proof: `verify-globe-extraction.mjs` (asserts Raw Vault: content_raw byte-identical after extraction). |
+
+**Stubs awaiting later slices:** `mentioned_people` / `mentioned_organisations`
+stay inside `metadata.globe_extraction` — globe memories don't flow
+through `memory/ingested`, so Entity Agent resolution of these stubs is
+future work. Verify scripts that run TS libs use the `npx tsx` temp-runner
+pattern (established by `verify-6d-tools.mjs`).
+
+**Class-of-bug note (repeat of the 4b lesson, new variant):** the first
+extraction-proof run failed because the "skip path" fixture fell back to
+*another fixture's* memory id (`bare.memory_id ?? rich.memory_id`) when
+the bare pin had none. Lesson: when a fixture's field can legitimately be
+NULL, never paper over it with a fallback to a sibling fixture — probe
+with an explicitly nonexistent id instead.
+
+**Slice 2 remaining/deferred:** the spec's separate "small on-globe image
+overlay card" was folded into the detail card (one surface for MVP).
+Ghost-text guidance (§6.1) had already shipped in Slice 1's modal.
+**Next: Slice 3 (place types) or Slice 5+ (sidekick context mode).**
+
 ## How to apply
 
 When starting work on Step 6 or Step 7, this is the file to read first. It captures the actual state of the codebase and the decisions that aren't documented elsewhere. Cross-reference `LC_Development_Sequence.md` for the canonical step definitions.

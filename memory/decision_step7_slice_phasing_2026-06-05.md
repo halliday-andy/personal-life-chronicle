@@ -1,7 +1,7 @@
 # Decision: Step 7 phased into build slices (residential globe)
 
 **Date:** 2026-06-05
-**Status:** Agreed with Andy. **Slice 1 SHIPPED 2026-06-05** (create-and-view loop working, reviewed live, globe look approved). **Slice 4 (edit/relocate/delete) is the next build.** Supersedes the all-at-once 7a–7j sequencing in `feature_residential_globe_onboarding.md` §12. Slice 1 build details: `project_lc_build_progress.md`.
+**Status:** Agreed with Andy. **Slice 1 SHIPPED 2026-06-05**, **Slice 4a SHIPPED 2026-06-07**, **Slice 4b SHIPPED 2026-06-09**, **Slice 2 SHIPPED 2026-06-10** (detail card + pin image + Claude extraction; no SQL migration needed). **Slice 3 (place types) is the main slice remaining.** Supersedes the all-at-once 7a–7j sequencing in `feature_residential_globe_onboarding.md` §12. Build details per slice: `project_lc_build_progress.md`.
 **Owner:** Andy Halliday (product), in a resumed session reviewing the design from a fresh standpoint.
 
 ---
