@@ -3,10 +3,14 @@
  * Apply Supabase migrations directly from this repo over a Postgres
  * connection, so DDL can be applied without the dashboard copy-paste loop.
  *
- * Requires SUPABASE_DB_URL in .env.local — the project's Postgres
- * connection string WITH password (Supabase → Project Settings →
- * Database → Connection string → URI; the pooler URI is fine). It is
- * git-ignored and never committed.
+ * Requires, in .env.local (git-ignored, never committed):
+ *   SUPABASE_DB_URL — the project's Postgres connection URI (from the
+ *     dashboard "Connect" button; the pooler URI is fine). The password
+ *     in it may be left as a placeholder.
+ *   SUPABASE_DB_PASSWORD — the raw database password, on its own line,
+ *     pasted EXACTLY as-is (no percent-encoding). When present it is
+ *     passed to the driver directly, so special characters in the
+ *     password (%, @, :, …) never have to be URI-escaped. Recommended.
  *
  * Usage:
  *   node scripts/db-apply.mjs                 # apply all pending migrations
@@ -53,10 +57,27 @@ try {
 const allMigrations = () =>
   readdirSync(migrationsDir).filter((f) => f.endsWith('.sql')).sort()
 
-const client = new Client({
-  connectionString: DB_URL,
-  ssl: /supabase\.(co|com)/.test(DB_URL) ? { rejectUnauthorized: false } : undefined,
-})
+// Build the connection config. If a raw password is supplied separately,
+// parse the URI for host/user/db and pass the password to the driver
+// directly — this sidesteps URI percent-encoding for special characters.
+const ssl = /supabase\.(co|com)/.test(DB_URL) ? { rejectUnauthorized: false } : undefined
+const rawPassword = process.env.SUPABASE_DB_PASSWORD
+let clientConfig
+if (rawPassword) {
+  const u = new URL(DB_URL)
+  clientConfig = {
+    host: u.hostname,
+    port: u.port ? Number(u.port) : 5432,
+    user: decodeURIComponent(u.username),
+    database: u.pathname.replace(/^\//, '') || 'postgres',
+    password: rawPassword,
+    ssl,
+  }
+} else {
+  clientConfig = { connectionString: DB_URL, ssl }
+}
+
+const client = new Client(clientConfig)
 await client.connect()
 
 await client.query(`
