@@ -43,6 +43,11 @@ export default function PinDetailCard({
   const [image, setImage] = useState<PinImageInfo | null>(null)
   const [facts, setFacts] = useState<PinFacts | null>(null)
   const [loading, setLoading] = useState(true)
+  // A failed load must look like a failure, never like an empty pin —
+  // otherwise a dead server reads as "no recollection yet" (data-loss scare,
+  // 2026-06-10) and invites edits that could overwrite real content.
+  const [loadError, setLoadError] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
   const [imageBusy, setImageBusy] = useState(false)
   const [imageError, setImageError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -50,8 +55,9 @@ export default function PinDetailCard({
   useEffect(() => {
     let active = true
     setLoading(true)
+    setLoadError(false)
     fetch(`/api/globe/residence/${pin.relationship_id}`)
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
       .then((d) => {
         if (!active) return
         setBody(d.body ?? '')
@@ -59,9 +65,9 @@ export default function PinDetailCard({
         setFacts(d.facts ?? null)
         setLoading(false)
       })
-      .catch(() => { if (active) setLoading(false) })
+      .catch(() => { if (active) { setLoadError(true); setLoading(false) } })
     return () => { active = false }
-  }, [pin.relationship_id])
+  }, [pin.relationship_id, reloadKey])
 
   const handleFile = useCallback(async (file: File) => {
     setImageBusy(true)
@@ -142,6 +148,17 @@ export default function PinDetailCard({
         </div>
       </div>
 
+      {loadError ? (
+        <div className="mt-3 flex items-center gap-3 rounded-xl border border-rose-400/30 bg-rose-950/30 px-4 py-3 text-sm text-rose-200">
+          <span>Couldn’t load this pin’s details — your recollection and photo are safe, but the connection failed.</span>
+          <button
+            onClick={() => setReloadKey((k) => k + 1)}
+            className="ml-auto shrink-0 rounded-lg border border-rose-400/40 px-3 py-1 text-xs hover:bg-rose-900/40"
+          >
+            Retry
+          </button>
+        </div>
+      ) : (
       <div className="mt-3 flex gap-4">
         <div className="shrink-0">
           {image ? (
@@ -199,6 +216,7 @@ export default function PinDetailCard({
           )}
         </div>
       </div>
+      )}
 
       {imageError && <p className="mt-2 text-xs text-rose-300">{imageError}</p>}
     </div>

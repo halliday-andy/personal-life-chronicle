@@ -46,18 +46,25 @@ export default function PinEditPanel({
   const [whenText, setWhenText] = useState(pin.when_text ?? '')
   const [body, setBody] = useState('')
   const [loading, setLoading] = useState(true)
+  // If the recollection fails to load, Save MUST stay disabled: saving the
+  // panel's empty textarea would overwrite the real recollection (PATCH
+  // sends the full field set). Near-miss on 2026-06-10 when a dead dev
+  // server made a rich pin render as empty.
+  const [loadError, setLoadError] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   // Load the recollection text for this pin.
   useEffect(() => {
     let active = true
     setLoading(true)
+    setLoadError(false)
     fetch(`/api/globe/residence/${pin.relationship_id}`)
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
       .then((d) => { if (active) { setBody(d.body ?? ''); setLoading(false) } })
-      .catch(() => { if (active) setLoading(false) })
+      .catch(() => { if (active) { setLoadError(true); setLoading(false) } })
     return () => { active = false }
-  }, [pin.relationship_id])
+  }, [pin.relationship_id, reloadKey])
 
   return (
     <aside className="glass absolute right-4 top-4 bottom-4 z-30 flex w-[min(380px,92vw)] flex-col rounded-2xl p-5 text-[var(--ink)]">
@@ -113,10 +120,22 @@ export default function PinEditPanel({
       <textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
-        disabled={saving || loading}
+        disabled={saving || loading || loadError}
         placeholder={loading ? 'Loading…' : 'Add a memory of this place…'}
         className="mt-1 min-h-[8rem] flex-1 resize-none rounded-lg border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm leading-relaxed text-[var(--ink)] placeholder-[var(--ink-dim)]/70 outline-none focus:border-[var(--ember-soft)]"
       />
+
+      {loadError && (
+        <div className="mt-2 flex items-center gap-2 rounded-lg border border-rose-400/30 bg-rose-950/30 px-3 py-2 text-xs text-rose-200">
+          <span>Couldn’t load the recollection — editing is locked so nothing gets overwritten.</span>
+          <button
+            onClick={() => setReloadKey((k) => k + 1)}
+            className="ml-auto shrink-0 rounded border border-rose-400/40 px-2 py-0.5 hover:bg-rose-900/40"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {relocated && (
         <p className="mt-2 text-xs text-[var(--ember-soft)]">Pin moved — Save to keep the new location.</p>
@@ -125,7 +144,7 @@ export default function PinEditPanel({
       <div className="mt-4 flex items-center gap-2">
         <button
           onClick={() => onSave({ name, whenText, body })}
-          disabled={saving || loading}
+          disabled={saving || loading || loadError}
           className="rounded-lg bg-[var(--ember)] px-4 py-2 text-sm font-medium text-[#241500] hover:bg-[var(--ember-soft)] disabled:opacity-60"
         >
           {saving ? 'Saving…' : 'Save'}
