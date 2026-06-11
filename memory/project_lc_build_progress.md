@@ -225,6 +225,23 @@ intra-metro" now *detects* and hints, but distinct pin/arc *styling* for
 the cases is deferred (relates to Slice 3 place types). Image + AI
 extraction = Slice 2; place types = Slice 3; sidekick/clustering = 5+.
 
+## Overnight session 2026-06-11 (Andy-authorized autonomous package)
+
+Two agreed-but-deferred items shipped while Andy slept (his "go", with
+Slice 3 explicitly held back for the joint owned-vs-visited decision):
+
+| Piece | Detail |
+|---|---|
+| Directional arcs (`699346f`) | Arc source is now per-leg segments (`seq`-tagged). Faint ember chevrons along every leg at rest; selecting a pin brightens its inbound leg ("approached from", opacity .95/width 2.8) over its outbound ("egressed to", .55/2.2) via `arcs-active` + `arc-chevrons-active` layers with case-expressions on `seq`. |
+| Image preprocessing (`70fca2b`) | `lib/globe/image-preprocess.ts` — client-side HEIC→JPEG (heic2any, lazy dynamic import) + compression toward the 2MB memo target (max 2048px, quality 0.85→0.6 stepped). Wired into PinDetailCard upload. Animated GIFs pass through. |
+
+Verified by `tsc --noEmit` + clean dev-server compile. **Morning manual
+checks for Andy:** (1) look at the arcs — resting chevron subtlety and
+the inbound/outbound emphasis are taste calls; (2) upload a real iPhone
+HEIC in Chrome and confirm it renders. Note: `npm run lint` turns out to
+be unconfigured in this repo (next lint prompts for interactive setup) —
+tsc is the only static gate; configuring ESLint is a candidate chore.
+
 ## Step 7 Slice 2 — what got built (2026-06-10)
 
 Richness slice: pin detail card, single image per pin, Claude extraction
