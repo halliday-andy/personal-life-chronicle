@@ -42,6 +42,52 @@ interface Pin {
 
 const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? ''
 
+// Densified great-circle path between two pins. A bare 2-point segment
+// breaks down on the globe projection: the line layer and the
+// symbol-along-line placement disagree about where a long straight
+// segment lies (chevrons float off the arc, zoom-dependent) and the
+// segment cuts away from the pins instead of hugging the sphere.
+// Interpolating along the great circle gives every layer the same
+// geometry at every zoom — and renders as a true flight path.
+function greatCirclePath(a: [number, number], b: [number, number]): [number, number][] {
+  const toRad = Math.PI / 180
+  const toDeg = 180 / Math.PI
+  const toVec = ([lng, lat]: [number, number]) => {
+    const φ = lat * toRad
+    const λ = lng * toRad
+    return [Math.cos(φ) * Math.cos(λ), Math.cos(φ) * Math.sin(λ), Math.sin(φ)]
+  }
+  const v1 = toVec(a)
+  const v2 = toVec(b)
+  const dot = Math.min(1, Math.max(-1, v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]))
+  const ω = Math.acos(dot) // angular distance
+  if (ω < 1e-9) return [a, b]
+  // ~1 vertex per 0.75° of arc, capped — intra-metro legs stay light,
+  // transatlantic legs get enough points to curve smoothly.
+  const steps = Math.min(128, Math.max(8, Math.ceil(ω * toDeg / 0.75)))
+  const sinω = Math.sin(ω)
+  const pts: [number, number][] = []
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps
+    const c1 = Math.sin((1 - t) * ω) / sinω
+    const c2 = Math.sin(t * ω) / sinω
+    const x = c1 * v1[0] + c2 * v2[0]
+    const y = c1 * v1[1] + c2 * v2[1]
+    const z = c1 * v1[2] + c2 * v2[2]
+    pts.push([Math.atan2(y, x) * toDeg, Math.atan2(z, Math.hypot(x, y)) * toDeg])
+  }
+  pts[0] = [...a]
+  pts[steps] = [...b]
+  // Unwrap longitudes so a path crossing the antimeridian stays
+  // continuous for the renderer instead of jumping ±360.
+  for (let i = 1; i < pts.length; i++) {
+    const d = pts[i][0] - pts[i - 1][0]
+    if (d > 180) pts[i][0] -= 360
+    else if (d < -180) pts[i][0] += 360
+  }
+  return pts
+}
+
 // One feature per life-path leg (pin i → pin i+1), tagged with its
 // sequence index so the selected pin's inbound/outbound legs can be
 // styled independently. Chevrons render along each leg pointing from
@@ -55,10 +101,10 @@ function arcSegments(pins: Pin[]): GeoJSON.FeatureCollection {
       properties: { seq: i },
       geometry: {
         type: 'LineString',
-        coordinates: [
+        coordinates: greatCirclePath(
           [pins[i].lng, pins[i].lat],
           [pins[i + 1].lng, pins[i + 1].lat],
-        ],
+        ),
       },
     })
   }
