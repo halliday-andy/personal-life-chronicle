@@ -42,13 +42,31 @@ interface Pin {
 
 const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? ''
 
-function lineFeature(pins: Pin[]): GeoJSON.Feature {
-  return {
-    type: 'Feature',
-    properties: {},
-    geometry: { type: 'LineString', coordinates: pins.map((p) => [p.lng, p.lat]) },
+// One feature per life-path leg (pin i → pin i+1), tagged with its
+// sequence index so the selected pin's inbound/outbound legs can be
+// styled independently. Chevrons render along each leg pointing from
+// earlier residence to later one — the line's coordinate order IS the
+// direction of the move.
+function arcSegments(pins: Pin[]): GeoJSON.FeatureCollection {
+  const features: GeoJSON.Feature[] = []
+  for (let i = 0; i < pins.length - 1; i++) {
+    features.push({
+      type: 'Feature',
+      properties: { seq: i },
+      geometry: {
+        type: 'LineString',
+        coordinates: [
+          [pins[i].lng, pins[i].lat],
+          [pins[i + 1].lng, pins[i + 1].lat],
+        ],
+      },
+    })
   }
+  return { type: 'FeatureCollection', features }
 }
+
+// Filter that matches no segment (resting state for the active layers).
+const NO_SEGMENT: mapboxgl.FilterSpecification = ['==', ['get', 'seq'], -999]
 
 export default function GlobeView() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -177,13 +195,58 @@ export default function GlobeView() {
     })
 
     map.on('load', () => {
-      map.addSource('arcs', { type: 'geojson', data: lineFeature([]) })
+      map.addSource('arcs', { type: 'geojson', data: arcSegments([]) })
       map.addLayer({
         id: 'arcs',
         type: 'line',
         source: 'arcs',
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: { 'line-color': '#f4b14a', 'line-width': 1.6, 'line-opacity': 0.55, 'line-blur': 0.4 },
+      })
+      // Selected pin's legs: inbound ("approached from") brighter than
+      // outbound ("egressed to"). Paint expressions are set on selection.
+      map.addLayer({
+        id: 'arcs-active',
+        type: 'line',
+        source: 'arcs',
+        filter: NO_SEGMENT,
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': '#f4b14a', 'line-width': 2.4, 'line-opacity': 0.85 },
+      })
+      // Faint chevrons along every leg — direction at a glance without
+      // arrowhead clutter on the resting globe.
+      map.addLayer({
+        id: 'arc-chevrons',
+        type: 'symbol',
+        source: 'arcs',
+        layout: {
+          'symbol-placement': 'line',
+          'symbol-spacing': 110,
+          'text-field': '›',
+          'text-size': 14,
+          'text-keep-upright': false,
+          'text-rotation-alignment': 'map',
+          'text-allow-overlap': true,
+          'text-ignore-placement': true,
+        },
+        paint: { 'text-color': '#f4b14a', 'text-opacity': 0.4 },
+      })
+      map.addLayer({
+        id: 'arc-chevrons-active',
+        type: 'symbol',
+        source: 'arcs',
+        filter: NO_SEGMENT,
+        layout: {
+          'symbol-placement': 'line',
+          'symbol-spacing': 80,
+          'text-field': '›',
+          'text-size': 18,
+          'text-keep-upright': false,
+          'text-rotation-alignment': 'map',
+          'text-allow-overlap': true,
+          'text-ignore-placement': true,
+        },
+        paint: { 'text-color': '#f4b14a', 'text-opacity': 0.95 },
       })
       map.resize()
       setReady(true)
@@ -228,7 +291,30 @@ export default function GlobeView() {
     })
     bloomIdRef.current = null
     const src = map.getSource('arcs') as mapboxgl.GeoJSONSource | undefined
-    src?.setData(lineFeature(pins))
+    src?.setData(arcSegments(pins))
+
+    // Directional emphasis for the selected pin: its inbound leg
+    // (seq = idx-1, "approached from") renders brighter than its
+    // outbound leg (seq = idx, "egressed to").
+    const idx = pins.findIndex((p) => p.relationship_id === selectedId)
+    const activeFilter: mapboxgl.FilterSpecification =
+      idx >= 0
+        ? ['any', ['==', ['get', 'seq'], idx - 1], ['==', ['get', 'seq'], idx]]
+        : NO_SEGMENT
+    const inOut = (inbound: number, outbound: number): mapboxgl.ExpressionSpecification =>
+      ['case', ['==', ['get', 'seq'], idx - 1], inbound, outbound]
+    for (const layer of ['arcs-active', 'arc-chevrons-active'] as const) {
+      if (map.getLayer(layer)) map.setFilter(layer, activeFilter)
+    }
+    if (idx >= 0) {
+      if (map.getLayer('arcs-active')) {
+        map.setPaintProperty('arcs-active', 'line-opacity', inOut(0.95, 0.55))
+        map.setPaintProperty('arcs-active', 'line-width', inOut(2.8, 2.2))
+      }
+      if (map.getLayer('arc-chevrons-active')) {
+        map.setPaintProperty('arc-chevrons-active', 'text-opacity', inOut(0.95, 0.6))
+      }
+    }
   }, [pins, ready, selectedId, editMode, selectPin])
 
   const handleRetrieve = useCallback((place: RetrievedPlace) => {
