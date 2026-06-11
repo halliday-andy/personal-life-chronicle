@@ -37,18 +37,24 @@ export async function GET(_req: NextRequest, { params }: { params: { relationshi
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
-  const { data: link } = await admin
-    .from('memory_entities').select('memory_id').eq('entity_id', rel.object_id).eq('role', 'location')
-    .limit(1).maybeSingle()
+  // The pin's OWN recollection: the globe-authored memory only, oldest
+  // first — same scoping as update/delete_residence_pin. Other memories
+  // that mention this place (capture assistant, interview) are not the
+  // pin's overview text and must never be shown or edited here.
+  const { data: mem } = await admin
+    .from('memories')
+    .select('id, content_raw, is_draft, created_at, memory_entities!inner(entity_id, role)')
+    .eq('memory_entities.entity_id', rel.object_id)
+    .eq('memory_entities.role', 'location')
+    .eq('capture_mode', 'globe_onboarding')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle()
 
-  let body = ''
-  let memoryId: string | null = null
-  let isDraft: boolean | null = null
-  if (link) {
-    const { data: mem } = await admin
-      .from('memories').select('id, content_raw, is_draft').eq('id', link.memory_id).single()
-    if (mem) { body = mem.content_raw ?? ''; memoryId = mem.id; isDraft = mem.is_draft }
-  }
+  const body = mem?.content_raw ?? ''
+  const memoryId = mem?.id ?? null
+  const isDraft = mem?.is_draft ?? null
 
   const image = await getPinImage(admin, user.id, rel.object_id)
 
