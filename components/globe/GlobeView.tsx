@@ -71,6 +71,7 @@ export default function GlobeView() {
   const [stagedCoords, setStagedCoords] = useState<{ lng: number; lat: number } | null>(null)
   const [savingPanel, setSavingPanel] = useState(false)
   const [hint, setHint] = useState<ProximityHint | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const { setAssistantSuppressed } = useUiChrome()
 
   // Proximity hints are advisory — auto-dismiss after a few seconds.
@@ -79,6 +80,13 @@ export default function GlobeView() {
     const t = setTimeout(() => setHint(null), 7000)
     return () => clearTimeout(t)
   }, [hint])
+
+  // Save confirmations auto-dismiss too.
+  useEffect(() => {
+    if (!notice) return
+    const t = setTimeout(() => setNotice(null), 4000)
+    return () => clearTimeout(t)
+  }, [notice])
 
   const hasPins = pins.length > 0
 
@@ -280,14 +288,18 @@ export default function GlobeView() {
       }
       const body = await res.json().catch(() => ({}))
       await loadPins()
-      deselect()
+      // Land back on the (refreshed) detail card rather than vanishing —
+      // seeing the updated recollection is the save confirmation.
+      setEditMode(false)
+      setStagedCoords(null)
+      setNotice(`Saved — ${fields.name || 'your place'} is up to date.`)
       setHint(body.proximity ?? null)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not save the pin.')
     } finally {
       setSavingPanel(false)
     }
-  }, [selectedId, stagedCoords, loadPins, deselect])
+  }, [selectedId, stagedCoords, loadPins])
 
   // Move the selected pin one slot earlier/later in the sequence by
   // swapping it with its neighbour and re-sequencing the whole chain.
@@ -394,6 +406,13 @@ export default function GlobeView() {
       {error && (
         <div className="absolute bottom-6 right-6 z-30 rounded-lg bg-rose-900/70 px-3 py-2 text-sm text-rose-100">
           {error}
+        </div>
+      )}
+
+      {notice && (
+        <div className="glass absolute right-6 top-20 z-30 flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm text-[var(--ink)]">
+          <span className="text-[var(--ember-soft)]">✓</span>
+          <span>{notice}</span>
         </div>
       )}
 

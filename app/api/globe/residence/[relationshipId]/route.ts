@@ -19,7 +19,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { reverseGeocode } from '@/lib/globe/geocoding'
 import { proximityHint } from '@/lib/globe/proximity'
 import { getPinImage, removePinImage } from '@/lib/globe/pin-image'
-import { inngest } from '@/lib/inngest/client'
+import { sendEventQuick } from '@/lib/inngest/send-quick'
 
 async function getUser() {
   const { data: { user } } = await createUserClient().auth.getUser()
@@ -118,14 +118,10 @@ export async function PATCH(request: NextRequest, { params }: { params: { relati
   // panel sends the full field set, so this re-runs on every save with a
   // non-empty body — latest text wins, acceptable for MVP).
   if (p.body?.trim() && row?.memory_id) {
-    try {
-      await inngest.send({
-        name: 'globe/pin.saved',
-        data: { user_id: user.id, relationship_id: params.relationshipId, memory_id: row.memory_id },
-      })
-    } catch (sendErr) {
-      console.warn('[globe] inngest.send failed (edit still saved)', sendErr)
-    }
+    await sendEventQuick({
+      name: 'globe/pin.saved',
+      data: { user_id: user.id, relationship_id: params.relationshipId, memory_id: row.memory_id },
+    })
   }
 
   // On a relocate, flag if the pin landed near another residence.

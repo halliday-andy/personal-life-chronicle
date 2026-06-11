@@ -19,7 +19,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createUserClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ensureSelfEntity } from '@/lib/globe/self-entity'
-import { inngest } from '@/lib/inngest/client'
+import { sendEventQuick } from '@/lib/inngest/send-quick'
 import { reverseGeocode } from '@/lib/globe/geocoding'
 import { proximityHint } from '@/lib/globe/proximity'
 
@@ -121,14 +121,10 @@ export async function POST(request: NextRequest) {
   // Async extraction of the narrative into structured fields (Slice 2).
   // Save never waits on Claude; a send failure must not fail the pin.
   if (row?.memory_id && row?.relationship_id) {
-    try {
-      await inngest.send({
-        name: 'globe/pin.saved',
-        data: { user_id: user.id, relationship_id: row.relationship_id, memory_id: row.memory_id },
-      })
-    } catch (sendErr) {
-      console.warn('[globe] inngest.send failed (pin still saved)', sendErr)
-    }
+    await sendEventQuick({
+      name: 'globe/pin.saved',
+      data: { user_id: user.id, relationship_id: row.relationship_id, memory_id: row.memory_id },
+    })
   }
 
   // Non-blocking: was this placed near a place already on the globe?
