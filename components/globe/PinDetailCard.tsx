@@ -10,6 +10,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { preprocessPinImage } from '@/lib/globe/image-preprocess'
 
 export interface PinFacts {
   residence_type: string | null
@@ -73,8 +74,11 @@ export default function PinDetailCard({
     setImageBusy(true)
     setImageError(null)
     try {
+      // HEIC→JPEG + compression toward ~2MB happens client-side so every
+      // browser can render what lands in storage.
+      const prepared = await preprocessPinImage(file)
       const form = new FormData()
-      form.append('file', file)
+      form.append('file', prepared)
       const res = await fetch(`/api/globe/residence/${pin.relationship_id}/image`, {
         method: 'POST',
         body: form,
