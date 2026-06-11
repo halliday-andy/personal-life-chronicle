@@ -248,6 +248,20 @@ through `memory/ingested`, so Entity Agent resolution of these stubs is
 future work. Verify scripts that run TS libs use the `npx tsx` temp-runner
 pattern (established by `verify-6d-tools.mjs`).
 
+**Incident + class-of-bug (2026-06-10 evening, near-miss data loss):**
+Andy's long-open globe tab hit a dead dev server (the background `npm
+run dev` task had been killed); pin clicks then rendered his richest pin
+(RAF Mildenhall — full recollection + photo) as *empty* ("No
+recollection yet", "Add a photo"), because PinDetailCard/PinEditPanel
+swallowed fetch errors into their empty defaults. DB was fully intact —
+read-path only. The dangerous part: Save from the empty-looking edit
+panel would have PATCHed an empty body over the real recollection (the
+panel sends the full field set). Fixed in `d7b0b2c`: load failures now
+render an explicit error + Retry, and the edit panel locks textarea +
+Save until a load succeeds. **Rule: any UI whose Save writes back a
+loaded field set must hard-disable Save while the load is failed or
+pending — a failed read must never present as empty content.**
+
 **Workflow rule (bug hit 2026-06-10):** never run `npm run build` while
 Andy's dev server is live — both write `.next/`, and the prod build
 clobbers the dev chunk cache (symptom: dynamic-import pages hang on
