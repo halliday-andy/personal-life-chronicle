@@ -262,6 +262,20 @@ Save until a load succeeds. **Rule: any UI whose Save writes back a
 loaded field set must hard-disable Save while the load is failed or
 pending — a failed read must never present as empty content.**
 
+**Follow-on (same evening):** a save took 20+s because the Inngest dev
+server was ALSO down — `await inngest.send` burned ~6s in connect
+timeouts inside the PATCH. Fixed in `ac8cf39`: `lib/inngest/send-quick.ts`
+(`sendEventQuick`) races sends against a 1.5s deadline (late sends still
+deliver), and panel saves now land back on the refreshed detail card
+with a "Saved" toast instead of closing silently. Operational note: the
+globe extraction pipeline needs the Inngest dev server on 8288
+(`npx inngest-cli@latest dev`); events sent while it's down are lost
+(warn-logged only) — the pin re-extracts on its next save. Also fixed a
+self-inflicted investigation error: `memory_revisions` keys revisions by
+`source_memory_id`, NOT `memory_id` — supabase-js returns empty (not an
+error surfaced) when filtering a nonexistent column if you don't check
+`error`; always check it.
+
 **Workflow rule (bug hit 2026-06-10):** never run `npm run build` while
 Andy's dev server is live — both write `.next/`, and the prod build
 clobbers the dev chunk cache (symptom: dynamic-import pages hang on
