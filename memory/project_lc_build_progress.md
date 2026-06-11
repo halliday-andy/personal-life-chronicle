@@ -242,6 +242,21 @@ HEIC in Chrome and confirm it renders. Note: `npm run lint` turns out to
 be unconfigured in this repo (next lint prompts for interactive setup) —
 tsc is the only static gate; configuring ESLint is a candidate chore.
 
+## Morning fixes 2026-06-11 (after Andy's first look at the overnight work)
+
+| Piece | Detail |
+|---|---|
+| Great-circle arcs (`2fbf103`) | Andy's screenshot showed chevrons floating off the arcs and arcs detaching from pins, zoom-dependent. Cause: 2-point legs — the line layer and symbol-along-line placement disagree about where a long straight segment lies on the globe projection. Fix: densify each leg along the great circle (~1 vertex/0.75°, cap 128, antimeridian unwrap). Line, chevrons, and pins now share one geometry at every zoom. |
+| Pin memory scoping (`0df2c7a`, migration `20260611100000`) | **Class-of-bug caught by Andy's "add a second recollection" question:** update_residence_pin resolved the pin's memory via unordered `LIMIT 1` over all role=location links, and delete_residence_pin deleted EVERY memory linked to the place. Edit/delete/GET now all scope to `capture_mode='globe_onboarding'` oldest-first. Proof: `scripts/verify-globe-pin-memory-scoping.mjs` (fixture = pin + extra freeform memory on same place; edit hits only globe memory; delete spares the extra). **Rule: any "the pin's X" lookup must scope by capture_mode + deterministic order, never bare LIMIT 1.** |
+| ESLint configured (`eccfe05`) | `.eslintrc.json` with next/core-web-vitals (deps were already present, config never created). First full run: zero warnings. Static gates are now tsc + eslint. |
+
+**Additional recollections per pin (answered for Andy 2026-06-11):** the
+supported path today is the Capture Assistant (FAB) — a new memory that
+mentions the place gets entity-linked to it but stays out of the pin's
+overview text (which is exclusively the globe_onboarding memory, per the
+scoping fix above). A per-pin "linked recollections" list on the detail
+card is the natural Slice 5 / Recollections-surface feature.
+
 ## Step 7 Slice 2 — what got built (2026-06-10)
 
 Richness slice: pin detail card, single image per pin, Claude extraction
