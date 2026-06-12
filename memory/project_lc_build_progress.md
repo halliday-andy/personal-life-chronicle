@@ -242,6 +242,21 @@ HEIC in Chrome and confirm it renders. Note: `npm run lint` turns out to
 be unconfigured in this repo (next lint prompts for interactive setup) —
 tsc is the only static gate; configuring ESLint is a candidate chore.
 
+## Globe drafts decision — finalize on save (2026-06-13, Andy option 1)
+
+Slice 4a's **drafts-on-create is reverted**: globe recollections are
+written final (`is_draft=false`) at creation, and a body save via
+`update_residence_pin` finalizes any legacy draft in place (no revision
+for the finalizing save itself; subsequent edits revise via
+memory_revisions as before). Rationale: the globe save IS the owner's
+authorship — nothing ever finalized the drafts, so each pin sat in
+"awaiting review" limbo (the Zaragoza draft; surfaced when Memories
+said "1 draft awaiting review" while Review said "nothing waiting").
+Migration `20260613120000_globe_finalize_on_save.sql` (+ 1-row backfill,
+Andy-approved); proof `verify-globe-finalize-on-save.mjs`; commit
+`3b064d1`. Related UI fix `a0009c8`: /review shows a draft-memories
+banner so the two surfaces can't contradict each other.
+
 ## Photo scoping decision (2026-06-13, Andy)
 
 **Two photo scopes, never mixed:** the globe pin's gallery is
