@@ -115,6 +115,11 @@ export default async function MemoriesPage({
             </Link>
             <span className="text-stone-300">|</span>
             <span className="text-sm font-medium text-stone-700">Memories</span>
+            <nav className="ml-2 flex items-center gap-2.5 text-xs text-stone-400">
+              <Link href="/entities" className="hover:text-stone-900 transition-colors">Entities</Link>
+              <Link href="/review" className="hover:text-stone-900 transition-colors">Review</Link>
+              <Link href="/globe" className="hover:text-stone-900 transition-colors">Globe</Link>
+            </nav>
           </div>
           <span className="text-xs text-stone-400">
             {entityFilter
@@ -194,12 +199,26 @@ function FilterBanner({
           · {resultCount} {resultCount === 1 ? 'memory' : 'memories'}
         </span>
       </span>
-      <Link
-        href="/memories"
-        className="ml-auto text-xs text-stone-500 hover:text-stone-900 transition-colors"
-      >
-        × clear filter
-      </Link>
+      <span className="ml-auto flex shrink-0 items-center gap-3 text-xs">
+        <Link
+          href="/entities"
+          className="text-stone-600 hover:text-stone-900 underline transition-colors"
+        >
+          Manage in Entities
+        </Link>
+        <Link
+          href="/review"
+          className="text-stone-600 hover:text-stone-900 underline transition-colors"
+        >
+          Review queue
+        </Link>
+        <Link
+          href="/memories"
+          className="text-stone-500 hover:text-stone-900 transition-colors"
+        >
+          × clear filter
+        </Link>
+      </span>
     </div>
   )
 }
