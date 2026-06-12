@@ -370,6 +370,20 @@ export default function MemoryCard({ m }: { m: MemoryRow }) {
         </p>
       )}
 
+      {/* Photos placeholder — memory-level photos attach HERE via the
+          memory_media table (already in schema: memory_id, media_id,
+          caption, sort_order), deliberately separate from the globe
+          pin's entity_media gallery so recollection photos never
+          clutter the pin's photo set. Decided with Andy 2026-06-13;
+          build is queued as a task. */}
+      <div
+        className="mt-2 flex items-center gap-1.5 text-[11px] text-stone-300"
+        title="Photos for this recollection will attach here — separate from any place's pin gallery on the globe. Coming soon."
+      >
+        <span aria-hidden>📷</span>
+        <span className="italic">Photos — coming soon</span>
+      </div>
+
       {/* Private notes panel — owner-only commentary, available on
           drafts and finals alike (private_notes is not Raw-Vault-bound). */}
       <PrivateNotesPanel
