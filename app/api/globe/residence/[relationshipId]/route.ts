@@ -56,6 +56,24 @@ export async function GET(_req: NextRequest, { params }: { params: { relationshi
   const memoryId = mem?.id ?? null
   const isDraft = mem?.is_draft ?? null
 
+  // Other recollections that reference this place (capture assistant,
+  // interviews, strolls) — read-only context on the detail card. The
+  // pin's own overview memory is excluded.
+  let linkedQuery = admin
+    .from('memories')
+    .select('id, content_raw, created_at, capture_mode, memory_entities!inner(entity_id)')
+    .eq('memory_entities.entity_id', rel.object_id)
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(20)
+  if (memoryId) linkedQuery = linkedQuery.neq('id', memoryId)
+  const { data: linkedRows } = await linkedQuery
+  const linked = (linkedRows ?? []).map((r) => ({
+    id: r.id,
+    excerpt: (r.content_raw ?? '').slice(0, 240),
+    created_at: r.created_at,
+  }))
+
   const image = await getPinImage(admin, user.id, rel.object_id)
 
   // AI-extracted facts (Slice 2 extraction job writes these; null until then).
@@ -70,7 +88,7 @@ export async function GET(_req: NextRequest, { params }: { params: { relationshi
       }
     : null
 
-  return NextResponse.json({ memoryId, body, isDraft, image, facts })
+  return NextResponse.json({ memoryId, body, isDraft, image, facts, linked })
 }
 
 interface PatchBody {

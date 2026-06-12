@@ -25,6 +25,12 @@ export interface PinImageInfo {
   filename: string | null
 }
 
+export interface LinkedRecollection {
+  id: string
+  excerpt: string
+  created_at: string
+}
+
 const label = (s: string) => s.replace(/_/g, ' ')
 
 export default function PinDetailCard({
@@ -43,6 +49,7 @@ export default function PinDetailCard({
   const [body, setBody] = useState('')
   const [image, setImage] = useState<PinImageInfo | null>(null)
   const [facts, setFacts] = useState<PinFacts | null>(null)
+  const [linked, setLinked] = useState<LinkedRecollection[]>([])
   const [loading, setLoading] = useState(true)
   // A failed load must look like a failure, never like an empty pin —
   // otherwise a dead server reads as "no recollection yet" (data-loss scare,
@@ -64,6 +71,7 @@ export default function PinDetailCard({
         setBody(d.body ?? '')
         setImage(d.image ?? null)
         setFacts(d.facts ?? null)
+        setLinked(d.linked ?? [])
         setLoading(false)
       })
       .catch(() => { if (active) { setLoadError(true); setLoading(false) } })
@@ -216,6 +224,22 @@ export default function PinDetailCard({
                   {c}
                 </span>
               ))}
+            </div>
+          )}
+          {linked.length > 0 && (
+            <div className="mt-3 border-t border-[var(--glass-border)] pt-2">
+              <p className="text-xs uppercase tracking-[0.18em] text-[var(--ink-dim)]">
+                More recollections here · {linked.length}
+              </p>
+              <ul className="mt-1.5 max-h-24 space-y-1.5 overflow-y-auto">
+                {linked.map((r) => (
+                  <li key={r.id} className="text-xs leading-relaxed text-[var(--ink)]/80">
+                    <span className="mr-1.5 text-[var(--ember-soft)]">◆</span>
+                    {r.excerpt}
+                    {r.excerpt.length >= 240 ? '…' : ''}
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </div>
