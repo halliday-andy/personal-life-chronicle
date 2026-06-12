@@ -154,13 +154,15 @@ export default function GlobeView() {
 
   const hasPins = pins.length > 0
 
-  // Suppress the global CaptureAssistant FAB only while the pin editor is
-  // open — it's fixed z-50 and would overlap the panel (it was hiding the
-  // Delete button). The assistant stays available on the globe otherwise.
+  // Suppress the global CaptureAssistant FAB only while the pin EDIT
+  // panel is open — it's fixed z-50 and would overlap the panel (it was
+  // hiding the Delete button). With just the detail card open (bottom
+  // center) the FAB stays available, so a selected pin can be the
+  // subject of a capture-assistant recollection.
   useEffect(() => {
-    setAssistantSuppressed(selectedId !== null)
+    setAssistantSuppressed(selectedId !== null && editMode)
     return () => setAssistantSuppressed(false)
-  }, [selectedId, setAssistantSuppressed])
+  }, [selectedId, editMode, setAssistantSuppressed])
 
   const loadPins = useCallback(async () => {
     try {
