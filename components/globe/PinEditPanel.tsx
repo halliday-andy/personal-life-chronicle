@@ -10,13 +10,21 @@
  * staged coordinates in the save via the parent's onSave.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { preprocessPinImage } from '@/lib/globe/image-preprocess'
 
 export interface EditablePin {
   relationship_id: string
   name: string
   when_text: string | null
   has_memory: boolean
+}
+
+interface GalleryImage {
+  media_id: string
+  url: string
+  filename: string | null
+  is_primary: boolean
 }
 
 const CONFIRM_MS = 3000
@@ -53,18 +61,49 @@ export default function PinEditPanel({
   const [loadError, setLoadError] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [images, setImages] = useState<GalleryImage[]>([])
+  const [galleryBusy, setGalleryBusy] = useState(false)
+  const [galleryError, setGalleryError] = useState<string | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
 
-  // Load the recollection text for this pin.
+  // Load the recollection text + photo gallery for this pin.
   useEffect(() => {
     let active = true
     setLoading(true)
     setLoadError(false)
     fetch(`/api/globe/residence/${pin.relationship_id}`)
       .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
-      .then((d) => { if (active) { setBody(d.body ?? ''); setLoading(false) } })
+      .then((d) => { if (active) { setBody(d.body ?? ''); setImages(d.images ?? []); setLoading(false) } })
       .catch(() => { if (active) { setLoadError(true); setLoading(false) } })
     return () => { active = false }
   }, [pin.relationship_id, reloadKey])
+
+  // Gallery actions are immediate (not staged with Save): every verb
+  // returns the full refreshed gallery, primary first.
+  async function galleryCall(run: () => Promise<Response>) {
+    setGalleryBusy(true)
+    setGalleryError(null)
+    try {
+      const res = await run()
+      const d = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(d.detail || d.error || `HTTP ${res.status}`)
+      setImages(d.images ?? [])
+    } catch (e) {
+      setGalleryError(e instanceof Error ? e.message : 'Photo action failed.')
+    } finally {
+      setGalleryBusy(false)
+      if (fileRef.current) fileRef.current.value = ''
+    }
+  }
+
+  async function handleAddPhoto(file: File) {
+    await galleryCall(async () => {
+      const prepared = await preprocessPinImage(file)
+      const form = new FormData()
+      form.append('file', prepared)
+      return fetch(`/api/globe/residence/${pin.relationship_id}/image`, { method: 'POST', body: form })
+    })
+  }
 
   return (
     <aside className="glass absolute right-4 top-4 bottom-4 z-30 flex w-[min(380px,92vw)] flex-col rounded-2xl p-5 text-[var(--ink)]">
@@ -134,6 +173,91 @@ export default function PinEditPanel({
           >
             Retry
           </button>
+        </div>
+      )}
+
+      {/* Photo gallery — many per pin, one primary (the globe photo).
+          Actions apply immediately, independent of Save. */}
+      {!loadError && (
+        <div className="mt-3">
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAddPhoto(f) }}
+          />
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-[var(--ink-dim)]">
+              Photos{images.length > 0 ? ` · ${images.length}` : ''}
+            </span>
+            <button
+              onClick={() => fileRef.current?.click()}
+              disabled={saving || loading || galleryBusy}
+              className="rounded-lg border border-[var(--glass-border)] px-2.5 py-1 text-xs text-[var(--ink-dim)] hover:text-[var(--ink)] disabled:opacity-40"
+            >
+              {galleryBusy ? 'Working…' : '+ Add photo'}
+            </button>
+          </div>
+          {images.length > 0 && (
+            <div className="mt-2 grid grid-cols-4 gap-2">
+              {images.map((img) => (
+                <div key={img.media_id} className="group relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- signed, short-lived URL */}
+                  <img
+                    src={img.url}
+                    alt={img.filename ?? 'Pin photo'}
+                    className={`h-16 w-full rounded-lg object-cover ${
+                      img.is_primary
+                        ? 'ring-2 ring-[var(--ember)]'
+                        : 'border border-[var(--glass-border)] opacity-80'
+                    }`}
+                  />
+                  {img.is_primary && (
+                    <span className="absolute left-1 top-1 rounded bg-black/60 px-1 text-[10px] leading-4 text-[var(--ember-soft)]">
+                      ★ pin photo
+                    </span>
+                  )}
+                  <div className="absolute inset-x-0 bottom-0 hidden justify-center gap-2 rounded-b-lg bg-black/65 py-0.5 group-hover:flex">
+                    {!img.is_primary && (
+                      <button
+                        onClick={() =>
+                          galleryCall(() =>
+                            fetch(`/api/globe/residence/${pin.relationship_id}/image`, {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ media_id: img.media_id }),
+                            }),
+                          )
+                        }
+                        disabled={galleryBusy}
+                        title="Make this the pin photo"
+                        className="text-[10px] text-[var(--ink)] hover:text-[var(--ember-soft)] disabled:opacity-50"
+                      >
+                        ★ primary
+                      </button>
+                    )}
+                    <button
+                      onClick={() =>
+                        galleryCall(() =>
+                          fetch(
+                            `/api/globe/residence/${pin.relationship_id}/image?media_id=${encodeURIComponent(img.media_id)}`,
+                            { method: 'DELETE' },
+                          ),
+                        )
+                      }
+                      disabled={galleryBusy}
+                      title="Remove this photo"
+                      className="text-[10px] text-rose-300 hover:text-rose-200 disabled:opacity-50"
+                    >
+                      ✕ remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {galleryError && <p className="mt-1 text-xs text-rose-300">{galleryError}</p>}
         </div>
       )}
 

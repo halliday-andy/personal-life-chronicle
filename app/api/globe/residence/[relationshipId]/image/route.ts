@@ -1,8 +1,16 @@
 /**
- * Residence pin image (Step 7 Slice 2) — single image per pin.
+ * Residence pin images (Step 7 Slice 2; gallery 2026-06-12) — multiple
+ * photos per pin, exactly one primary (the globe/detail-card photo).
  *
- *   POST   — multipart upload (`file` field); replaces any existing image.
- *   DELETE — remove the pin's image (link + media row + storage object).
+ *   POST   — multipart upload (`file` field). Appends to the gallery;
+ *            first image (or `primary=true` form field) becomes primary,
+ *            demoting — never deleting — the previous one.
+ *   PUT    — JSON { media_id }: make that image the primary.
+ *   DELETE — ?media_id=… removes that image; without it, removes the
+ *            primary (newest remaining image is promoted).
+ *
+ * All verbs return { images } — the pin's full gallery, primary first —
+ * so the client can swap state in one round trip.
  *
  * Server-proxy pattern (decision_step7_image_storage_2026-06-04.md): the
  * client never touches Storage directly; ownership, MIME, and size are
@@ -13,8 +21,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createUserClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
-  attachPinImage,
-  removePinImage,
+  addPinImage,
+  listPinImages,
+  removePinImageById,
+  setPrimaryPinImage,
   MAX_PIN_IMAGE_BYTES,
   PIN_IMAGE_MIME_TYPES,
 } from '@/lib/globe/pin-image'
@@ -36,10 +46,12 @@ export async function POST(request: NextRequest, { params }: { params: { relatio
   if (!owned) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   let file: File | null = null
+  let makePrimary = false
   try {
     const form = await request.formData()
     const f = form.get('file')
     if (f instanceof File) file = f
+    makePrimary = form.get('primary') === 'true'
   } catch {
     return NextResponse.json({ error: 'Expected multipart form data' }, { status: 400 })
   }
@@ -51,25 +63,51 @@ export async function POST(request: NextRequest, { params }: { params: { relatio
     return NextResponse.json({ error: 'Image too large (5MB max)' }, { status: 413 })
   }
 
+  const admin = createAdminClient()
   try {
-    const image = await attachPinImage(createAdminClient(), {
+    const image = await addPinImage(admin, {
       userId: owned.userId,
       entityId: owned.entityId,
       bytes: Buffer.from(await file.arrayBuffer()),
       mimeType: file.type,
       filename: file.name || null,
+      makePrimary,
     })
-    return NextResponse.json({ image })
+    const images = await listPinImages(admin, owned.userId, owned.entityId)
+    return NextResponse.json({ image, images })
   } catch (e) {
     const detail = e instanceof Error ? e.message : 'unknown'
     return NextResponse.json({ error: 'Image upload failed', detail }, { status: 500 })
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { relationshipId: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: { relationshipId: string } }) {
   const owned = await ownedPlaceEntity(params.relationshipId)
   if (!owned) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const removed = await removePinImage(createAdminClient(), owned.userId, owned.entityId)
-  return NextResponse.json({ ok: true, removed })
+  let mediaId: string | null = null
+  try {
+    const body = (await request.json()) as { media_id?: unknown }
+    if (typeof body.media_id === 'string') mediaId = body.media_id
+  } catch {
+    return NextResponse.json({ error: 'Body must be JSON' }, { status: 400 })
+  }
+  if (!mediaId) return NextResponse.json({ error: 'media_id is required' }, { status: 400 })
+
+  const admin = createAdminClient()
+  const ok = await setPrimaryPinImage(admin, owned.userId, owned.entityId, mediaId)
+  if (!ok) return NextResponse.json({ error: 'Image not found on this pin' }, { status: 404 })
+  const images = await listPinImages(admin, owned.userId, owned.entityId)
+  return NextResponse.json({ ok: true, images })
+}
+
+export async function DELETE(request: NextRequest, { params }: { params: { relationshipId: string } }) {
+  const owned = await ownedPlaceEntity(params.relationshipId)
+  if (!owned) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  const mediaId = request.nextUrl.searchParams.get('media_id')
+  const admin = createAdminClient()
+  const removed = await removePinImageById(admin, owned.userId, owned.entityId, mediaId)
+  const images = await listPinImages(admin, owned.userId, owned.entityId)
+  return NextResponse.json({ ok: true, removed, images })
 }

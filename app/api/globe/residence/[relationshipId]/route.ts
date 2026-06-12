@@ -18,7 +18,7 @@ import { createClient as createUserClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { reverseGeocode } from '@/lib/globe/geocoding'
 import { proximityHint } from '@/lib/globe/proximity'
-import { getPinImage, removePinImage } from '@/lib/globe/pin-image'
+import { listPinImages, removeAllPinImages } from '@/lib/globe/pin-image'
 import { sendEventQuick } from '@/lib/inngest/send-quick'
 
 async function getUser() {
@@ -74,7 +74,10 @@ export async function GET(_req: NextRequest, { params }: { params: { relationshi
     created_at: r.created_at,
   }))
 
-  const image = await getPinImage(admin, user.id, rel.object_id)
+  // Full gallery, primary first; `image` (the primary) kept for the
+  // detail card, `images` powers the edit-panel gallery.
+  const images = await listPinImages(admin, user.id, rel.object_id)
+  const image = images[0] ?? null
 
   // AI-extracted facts (Slice 2 extraction job writes these; null until then).
   const meta = (rel.metadata ?? {}) as Record<string, unknown>
@@ -88,7 +91,7 @@ export async function GET(_req: NextRequest, { params }: { params: { relationshi
       }
     : null
 
-  return NextResponse.json({ memoryId, body, isDraft, image, facts, linked })
+  return NextResponse.json({ memoryId, body, isDraft, image, images, facts, linked })
 }
 
 interface PatchBody {
@@ -163,12 +166,12 @@ export async function DELETE(_req: NextRequest, { params }: { params: { relation
 
   const admin = createAdminClient()
 
-  // Clear the pin image first: the entity_media CASCADE on pin delete
-  // would otherwise orphan the media row and the storage bytes.
+  // Clear the pin's images first: the entity_media CASCADE on pin delete
+  // would otherwise orphan the media rows and the storage bytes.
   const { data: rel } = await admin
     .from('relationships').select('object_id, user_id').eq('id', params.relationshipId).maybeSingle()
   if (rel && rel.user_id === user.id) {
-    await removePinImage(admin, user.id, rel.object_id)
+    await removeAllPinImages(admin, user.id, rel.object_id)
   }
 
   const { error } = await admin.rpc('delete_residence_pin', {

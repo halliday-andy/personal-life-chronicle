@@ -23,6 +23,7 @@ export interface PinImageInfo {
   media_id: string
   url: string
   filename: string | null
+  is_primary?: boolean
 }
 
 export interface LinkedRecollection {
@@ -48,6 +49,7 @@ export default function PinDetailCard({
 }) {
   const [body, setBody] = useState('')
   const [image, setImage] = useState<PinImageInfo | null>(null)
+  const [imageCount, setImageCount] = useState(0)
   const [facts, setFacts] = useState<PinFacts | null>(null)
   const [linked, setLinked] = useState<LinkedRecollection[]>([])
   const [loading, setLoading] = useState(true)
@@ -70,6 +72,7 @@ export default function PinDetailCard({
         if (!active) return
         setBody(d.body ?? '')
         setImage(d.image ?? null)
+        setImageCount(d.images?.length ?? (d.image ? 1 : 0))
         setFacts(d.facts ?? null)
         setLinked(d.linked ?? [])
         setLoading(false)
@@ -83,10 +86,13 @@ export default function PinDetailCard({
     setImageError(null)
     try {
       // HEIC→JPEG + compression toward ~2MB happens client-side so every
-      // browser can render what lands in storage.
+      // browser can render what lands in storage. From the card, a new
+      // upload always becomes the pin photo (primary); a previous photo
+      // is demoted into the gallery, not deleted.
       const prepared = await preprocessPinImage(file)
       const form = new FormData()
       form.append('file', prepared)
+      form.append('primary', 'true')
       const res = await fetch(`/api/globe/residence/${pin.relationship_id}/image`, {
         method: 'POST',
         body: form,
@@ -94,6 +100,7 @@ export default function PinDetailCard({
       const d = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(d.detail || d.error || `HTTP ${res.status}`)
       setImage(d.image ?? null)
+      setImageCount(d.images?.length ?? (d.image ? 1 : 0))
     } catch (e) {
       setImageError(e instanceof Error ? e.message : 'Upload failed.')
     } finally {
@@ -106,9 +113,14 @@ export default function PinDetailCard({
     setImageBusy(true)
     setImageError(null)
     try {
+      // No media_id = remove the primary; the newest remaining gallery
+      // image (if any) is promoted server-side.
       const res = await fetch(`/api/globe/residence/${pin.relationship_id}/image`, { method: 'DELETE' })
+      const d = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      setImage(null)
+      const next = (d.images ?? [])[0] ?? null
+      setImage(next)
+      setImageCount(d.images?.length ?? 0)
     } catch (e) {
       setImageError(e instanceof Error ? e.message : 'Could not remove the photo.')
     } finally {
@@ -175,6 +187,11 @@ export default function PinDetailCard({
         <div className="shrink-0">
           {image ? (
             <div className="group relative">
+              {imageCount > 1 && (
+                <span className="absolute -right-1.5 -top-1.5 z-10 rounded-full bg-[var(--ember)] px-1.5 text-[10px] font-medium leading-4 text-[#241500]">
+                  +{imageCount - 1}
+                </span>
+              )}
               {/* eslint-disable-next-line @next/next/no-img-element -- signed, short-lived URL; next/image can't optimize it */}
               <img
                 src={image.url}
