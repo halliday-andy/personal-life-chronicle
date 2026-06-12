@@ -126,20 +126,132 @@ function normaliseName(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, ' ')
 }
 
-function nameMatch(a: string, b: string): number {
+// Common institutional/geographic abbreviations, expanded at token level
+// before comparison. Conservative set: every entry is unambiguous in a
+// place/organization name. (Task #38; the live failure was AFB ↔
+// "Air Force Base" silently duplicating Lockbourne, 2026-06-12.)
+const TOKEN_EXPANSIONS: Record<string, string[]> = {
+  afb: ['air', 'force', 'base'],
+  raf: ['royal', 'air', 'force'],
+  st: ['saint'],
+  mt: ['mount'],
+  ft: ['fort'],
+  univ: ['university'],
+  intl: ['international'],
+  natl: ['national'],
+}
+
+function expandedTokens(name: string): string[] {
+  return normaliseName(name)
+    .replace(/[.,'()]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .flatMap((t) => TOKEN_EXPANSIONS[t] ?? [t])
+}
+
+// Jaro-Winkler similarity (0..1) — catches single-name typos like
+// "Lapidus" vs "Lapides" that containment can never see.
+function jaroWinkler(s1: string, s2: string): number {
+  if (s1 === s2) return 1
+  const len1 = s1.length
+  const len2 = s2.length
+  if (!len1 || !len2) return 0
+  const matchWindow = Math.max(0, Math.floor(Math.max(len1, len2) / 2) - 1)
+  const m1: boolean[] = new Array(len1).fill(false)
+  const m2: boolean[] = new Array(len2).fill(false)
+  let matches = 0
+  for (let i = 0; i < len1; i++) {
+    const lo = Math.max(0, i - matchWindow)
+    const hi = Math.min(len2 - 1, i + matchWindow)
+    for (let j = lo; j <= hi; j++) {
+      if (!m2[j] && s1[i] === s2[j]) {
+        m1[i] = true
+        m2[j] = true
+        matches++
+        break
+      }
+    }
+  }
+  if (matches === 0) return 0
+  let transpositions = 0
+  let k = 0
+  for (let i = 0; i < len1; i++) {
+    if (!m1[i]) continue
+    while (!m2[k]) k++
+    if (s1[i] !== s2[k]) transpositions++
+    k++
+  }
+  const jaro =
+    (matches / len1 + matches / len2 + (matches - transpositions / 2) / matches) / 3
+  // Winkler prefix boost (max 4 chars)
+  let prefix = 0
+  for (let i = 0; i < Math.min(4, len1, len2) && s1[i] === s2[i]; i++) prefix++
+  return jaro + prefix * 0.1 * (1 - jaro)
+}
+
+/**
+ * Name-match score between an extracted name and a candidate, 0..1.
+ * Bands consumed by resolution: ≥0.95 auto-link; 0.7–0.95 create with a
+ * merge proposal (owner confirms); <0.7 treated as no match.
+ *
+ * Exported for direct verification (scripts/verify-entity-matching.mjs).
+ */
+export function scoreNameMatch(a: string, b: string): number {
   const na = normaliseName(a)
   const nb = normaliseName(b)
   if (na === nb) return 1.0
-  // Containment: "Nancy" inside "Nancy Halliday" or vice versa
-  if (na.includes(nb) || nb.includes(na)) {
-    const shorter = Math.min(na.length, nb.length)
-    const longer = Math.max(na.length, nb.length)
-    return 0.7 + 0.2 * (shorter / longer) // 0.7–0.9 range
+
+  let score = 0
+
+  // Abbreviation-expanded equality: "Lockbourne AFB" ≡ "Lockbourne Air
+  // Force Base". Just below the auto-link band stays for safety until
+  // the expansion table has more mileage — lands as a merge proposal.
+  const ta = expandedTokens(a)
+  const tb = expandedTokens(b)
+  if (ta.length && ta.join(' ') === tb.join(' ')) return 0.97
+
+  // Containment ("Nancy" ⊂ "Nancy Halliday"), guarded so micro-names
+  // can't false-positive ("Leo" ⊂ "Leola Lapidus" must NOT match):
+  // the contained name needs ≥4 chars and a word boundary.
+  if (na.length >= 4 || nb.length >= 4) {
+    const [shorter, longer] = na.length <= nb.length ? [na, nb] : [nb, na]
+    const boundary = new RegExp(`(^| )${shorter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}( |$)`)
+    if (shorter.length >= 4 && boundary.test(longer)) {
+      score = Math.max(score, 0.7 + 0.2 * (shorter.length / longer.length))
+    }
   }
-  return 0
+
+  // Token-subset on expanded tokens: every token of one name appears in
+  // the other ("lockbourne air force base" ⊂ "lockbourne air force base
+  // columbus ohio"). Needs ≥2 tokens on the smaller side so a lone
+  // common word can't bridge unrelated names.
+  const [small, large] = ta.length <= tb.length ? [ta, tb] : [tb, ta]
+  if (small.length >= 2 && small.every((t) => large.includes(t))) {
+    score = Math.max(score, 0.75 + 0.15 * (small.length / large.length))
+  }
+
+  // Whole-string edit similarity for typos ("leola lapidus" vs "leola
+  // lapides"). High bar; scales into the merge-proposal band only.
+  const jw = jaroWinkler(na, nb)
+  if (jw >= 0.92) {
+    score = Math.max(score, 0.7 + ((jw - 0.92) / 0.08) * 0.2)
+  }
+
+  return score
 }
 
-async function resolveAgainstExisting(
+// Institutions blur the place/organization line — the extraction prompt
+// itself types military bases either way ("Loring Air Force Base →
+// organization … also a place"), and a 2026-06-12 replay showed the same
+// Lockbourne text extracting as 'place' one run and 'organization' the
+// next. Resolution must search both types or the type roll of the dice
+// silently duplicates the entity.
+function candidateTypes(type: EntityType): EntityType[] {
+  return type === 'place' || type === 'organization' ? ['place', 'organization'] : [type]
+}
+
+// Exported for direct verification with fixture entities (task #38).
+export async function resolveAgainstExisting(
   supabase: ReturnType<typeof getAgentSupabase>,
   user_id: string,
   type: EntityType,
@@ -149,19 +261,19 @@ async function resolveAgainstExisting(
     .from('entities')
     .select('id, type, canonical_name, aliases')
     .eq('user_id', user_id)
-    .eq('type', type)
+    .in('type', candidateTypes(type))
   if (error) {
     return { match: null, confidence: 0, rationale: `lookup error: ${error.message}` }
   }
   const candidates = (data ?? []) as ExistingEntity[]
   let best: { entity: ExistingEntity; confidence: number; via: string } | null = null
   for (const e of candidates) {
-    const canonScore = nameMatch(extracted_name, e.canonical_name)
+    const canonScore = scoreNameMatch(extracted_name, e.canonical_name)
     if (canonScore > 0 && (!best || canonScore > best.confidence)) {
       best = { entity: e, confidence: canonScore, via: `canonical_name "${e.canonical_name}"` }
     }
     for (const alias of e.aliases ?? []) {
-      const aliasScore = nameMatch(extracted_name, alias)
+      const aliasScore = scoreNameMatch(extracted_name, alias)
       if (aliasScore > 0 && (!best || aliasScore > best.confidence)) {
         best = { entity: e, confidence: aliasScore, via: `alias "${alias}"` }
       }
