@@ -48,6 +48,12 @@ export interface EntityProposal {
   resolution_action: EntityResolutionAction
   match_confidence: number // 0–1
   match_details: string
+
+  /** When resolution_action='created_with_merge_proposal': the existing
+   *  entity this one may duplicate, so the UI can offer link-vs-create
+   *  in-flow (task #39), and the review_queue row backing the proposal. */
+  merge_candidate?: { entity_id: string; canonical_name: string } | null
+  review_queue_id?: string | null
 }
 
 export interface EntityResult {
@@ -322,6 +328,8 @@ export async function runEntity(input: AgentCoreInput): Promise<EntityResult> {
     let action: EntityResolutionAction = 'skipped'
     let match_confidence = 0
     let match_details = ''
+    let merge_candidate: { entity_id: string; canonical_name: string } | null = null
+    let review_queue_id: string | null = null
 
     // First check entities created earlier in this same run.
     const seenId = justInsertedThisRun.get(key)
@@ -361,7 +369,7 @@ export async function runEntity(input: AgentCoreInput): Promise<EntityResult> {
             const newId: string = insertRes.data.id
             resolved_entity_id = newId
             justInsertedThisRun.set(key, newId)
-            await supabase.from('review_queue').insert({
+            const rqRes = await supabase.from('review_queue').insert({
               user_id: input.user_id,
               item_type: 'entity_merge_proposal',
               item_id: newId,
@@ -375,16 +383,19 @@ export async function runEntity(input: AgentCoreInput): Promise<EntityResult> {
                 rationale,
               },
               priority: 3,
-            })
+            }).select('id').single()
+            review_queue_id = rqRes.data?.id ?? null
             action = 'created_with_merge_proposal'
             match_confidence = confidence
             match_details = `${rationale}; queued for merge review`
+            merge_candidate = { entity_id: match.id, canonical_name: match.canonical_name }
           }
         } else {
           // Preview mode: don't write anything, just describe what we'd do.
           action = 'created_with_merge_proposal'
           match_confidence = confidence
           match_details = `${rationale}; would queue merge review with ${match.canonical_name}`
+          merge_candidate = { entity_id: match.id, canonical_name: match.canonical_name }
         }
       } else {
         // No meaningful match — create new.
@@ -495,6 +506,8 @@ export async function runEntity(input: AgentCoreInput): Promise<EntityResult> {
       resolution_action: action,
       match_confidence,
       match_details,
+      merge_candidate,
+      review_queue_id,
     })
   }
 

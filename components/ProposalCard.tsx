@@ -41,6 +41,10 @@ interface EntityProposal {
   resolution_action: string
   match_confidence: number
   context?: string
+  /** Present when resolution_action='created_with_merge_proposal' —
+   *  powers the in-flow link-vs-create choice (task #39). */
+  merge_candidate?: { entity_id: string; canonical_name: string } | null
+  review_queue_id?: string | null
 }
 
 interface MemoryProposalData {
@@ -220,6 +224,79 @@ export function ProposalCard({ initial }: { initial: MemoryCardData }) {
     }
   }
 
+  // In-flow duplicate resolution (task #39): the entity agent created a
+  // new entity but flagged a likely existing match. The user decides
+  // here, on the card, instead of archaeologising a review backlog.
+  async function handleLinkToExisting(ent: EntityProposal) {
+    if (!ent.resolved_entity_id || !ent.merge_candidate) return
+    setBusy(`merge-${ent.resolved_entity_id}`)
+    setError(null)
+    try {
+      const res = await fetch(`/api/entity/${ent.resolved_entity_id}/merge-into`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_id: ent.merge_candidate.entity_id }),
+      })
+      if (!res.ok) throw new Error((await res.json())?.error ?? 'Merge failed')
+      // The merge_entities function re-points links and closes the queue
+      // row; reflect the surviving entity on the chip.
+      setEntities((list) =>
+        list.map((x) =>
+          x.resolved_entity_id === ent.resolved_entity_id
+            ? {
+                ...x,
+                resolved_entity_id: ent.merge_candidate!.entity_id,
+                extracted_name: ent.merge_candidate!.canonical_name,
+                resolution_action: 'linked_existing',
+                merge_candidate: null,
+                review_queue_id: null,
+              }
+            : x,
+        ),
+      )
+      router.refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  async function handleKeepSeparate(ent: EntityProposal) {
+    if (!ent.review_queue_id) {
+      // Nothing queued (preview-mode data) — just clear the prompt.
+      setEntities((list) =>
+        list.map((x) =>
+          x.resolved_entity_id === ent.resolved_entity_id
+            ? { ...x, merge_candidate: null, review_queue_id: null }
+            : x,
+        ),
+      )
+      return
+    }
+    setBusy(`keep-${ent.resolved_entity_id}`)
+    setError(null)
+    try {
+      const res = await fetch(`/api/review-queue/${ent.review_queue_id}/resolve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resolution: 'rejected', note: 'Kept separate from proposal card' }),
+      })
+      if (!res.ok) throw new Error((await res.json())?.error ?? 'Failed')
+      setEntities((list) =>
+        list.map((x) =>
+          x.resolved_entity_id === ent.resolved_entity_id
+            ? { ...x, resolution_action: 'created_new', merge_candidate: null, review_queue_id: null }
+            : x,
+        ),
+      )
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error')
+    } finally {
+      setBusy(null)
+    }
+  }
+
   // ── Resolved-state renderings ───────────────────────────────────
 
   if (status === 'accepted') {
@@ -356,6 +433,39 @@ export function ProposalCard({ initial }: { initial: MemoryCardData }) {
           ))}
         </div>
       )}
+
+      {/* In-flow duplicate prompts (task #39): one strip per entity the
+          agent suspects duplicates an existing one. */}
+      {!editing &&
+        entities
+          .filter((e) => e.resolution_action === 'created_with_merge_proposal' && e.merge_candidate)
+          .map((e) => (
+            <div
+              key={`dup-${e.resolved_entity_id}`}
+              className="flex flex-wrap items-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-[11px] text-sky-900"
+            >
+              <span>
+                Is <strong>{e.extracted_name}</strong> the same as your existing{' '}
+                <strong>{e.merge_candidate!.canonical_name}</strong>?
+              </span>
+              <span className="ml-auto flex gap-1.5">
+                <button
+                  onClick={() => handleLinkToExisting(e)}
+                  disabled={busy !== null}
+                  className="rounded-md bg-sky-700 px-2 py-0.5 text-white hover:bg-sky-800 disabled:opacity-50"
+                >
+                  {busy === `merge-${e.resolved_entity_id}` ? 'Linking…' : 'Same — link them'}
+                </button>
+                <button
+                  onClick={() => handleKeepSeparate(e)}
+                  disabled={busy !== null}
+                  className="rounded-md border border-sky-300 px-2 py-0.5 text-sky-800 hover:bg-sky-100 disabled:opacity-50"
+                >
+                  {busy === `keep-${e.resolved_entity_id}` ? 'Keeping…' : 'Different — keep separate'}
+                </button>
+              </span>
+            </div>
+          ))}
 
       {/* Orchestrator-routed-passage hint, when applicable */}
       {!editing &&
