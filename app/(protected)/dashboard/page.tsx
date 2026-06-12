@@ -42,7 +42,7 @@ export default async function DashboardPage() {
   // Once Step 13 lands and RLS is active, this can flip back to the
   // user-scoped client.
   const admin = createAdminClient()
-  const [memoriesRes, draftsRes, cardsRes, reviewRes, entitiesRes] = await Promise.all([
+  const [memoriesRes, draftsRes, cardsRes, reviewRes, entitiesRes, pinsRes] = await Promise.all([
     admin
       .from('memories')
       .select('*', { count: 'exact', head: true })
@@ -65,11 +65,17 @@ export default async function DashboardPage() {
       .from('entities')
       .select('type')
       .eq('user_id', user.id),
+    admin
+      .from('relationships')
+      .select('id, relationship_types!inner(code)', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('relationship_types.code', 'lived_at'),
   ])
   const totalMemories = memoriesRes.count ?? 0
   const draftCount = draftsRes.count ?? 0
   const finalisedCount = totalMemories - draftCount
   const cardCount = cardsRes.count ?? 0
+  const pinCount = pinsRes.count ?? 0
 
   const entityRows = (entitiesRes.data ?? []) as { type: string }[]
   const entityCount = entityRows.length
@@ -112,7 +118,20 @@ export default async function DashboardPage() {
         <h1 className="text-xl font-semibold text-stone-900">Welcome back</h1>
         <p className="mt-1 text-sm text-stone-500">Your life chronicle is waiting.</p>
 
-        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Link
+            href="/globe"
+            className="block rounded-xl border border-stone-800 bg-stone-900 p-5 hover:border-stone-600 hover:shadow-md transition-all"
+          >
+            <p className="text-xs font-medium text-amber-400/80 uppercase tracking-wide">Life Globe</p>
+            <p className="mt-1 text-2xl font-semibold text-stone-50">{pinCount}</p>
+            <p className="mt-2 text-xs text-stone-400">
+              {pinCount === 0
+                ? 'Place the first pin where your life began'
+                : `residence${pinCount === 1 ? '' : 's'} on your globe`}
+            </p>
+            <p className="mt-2 text-xs text-amber-400/90">Open the globe →</p>
+          </Link>
           <div className="bg-white rounded-xl border border-stone-200 p-5">
             <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Phase 0</p>
             <p className="mt-1 text-sm font-medium text-stone-700">Ontology Bootstrap</p>

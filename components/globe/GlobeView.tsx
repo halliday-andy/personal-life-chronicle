@@ -503,6 +503,14 @@ export default function GlobeView() {
         </div>
       )}
 
+      {/* Way home — the globe is full-screen chrome with no app shell */}
+      <a
+        href="/dashboard"
+        className="glass absolute right-6 top-6 z-20 rounded-xl px-3 py-2 text-sm text-[var(--ink-dim)] hover:text-[var(--ink)]"
+      >
+        ← Dashboard
+      </a>
+
       {/* Opening prompt on an empty globe */}
       {ready && !hasPins && !draft && (
         <div className="pointer-events-none absolute inset-x-0 bottom-28 z-10 flex flex-col items-center px-6 text-center">
