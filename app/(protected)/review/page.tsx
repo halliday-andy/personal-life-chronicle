@@ -40,13 +40,25 @@ export default async function ReviewPage() {
   const admin = createAdminClient()
 
   // --- Fetch open queue rows ----------------------------------------
-  const { data: rqRaw, error: rqErr } = await admin
-    .from('review_queue')
-    .select('id, item_type, item_id, context_json, priority, surfaced_at, resolved_at')
-    .eq('user_id', user.id)
-    .is('resolved_at', null)
-    .order('surfaced_at', { ascending: false })
-    .limit(500)
+  // Draft memories are a separate store (memories.is_draft, accepted on
+  // /memories) but the dashboard calls them "awaiting review" — surface
+  // their count here too so the two pages can never contradict each
+  // other ("1 draft awaiting review" vs "nothing waiting", 2026-06-13).
+  const [{ data: rqRaw, error: rqErr }, draftsRes] = await Promise.all([
+    admin
+      .from('review_queue')
+      .select('id, item_type, item_id, context_json, priority, surfaced_at, resolved_at')
+      .eq('user_id', user.id)
+      .is('resolved_at', null)
+      .order('surfaced_at', { ascending: false })
+      .limit(500),
+    admin
+      .from('memories')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('is_draft', true),
+  ])
+  const draftCount = draftsRes.count ?? 0
 
   const rows = (rqRaw ?? []) as unknown as RawRow[]
 
@@ -128,6 +140,21 @@ export default async function ReviewPage() {
       </header>
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+        {draftCount > 0 && (
+          <Link
+            href="/memories"
+            className="mb-4 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 hover:border-amber-300 transition-colors"
+          >
+            <span className="rounded-full bg-amber-100 border border-amber-200 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide">
+              Draft
+            </span>
+            <span>
+              {draftCount} draft {draftCount === 1 ? 'memory' : 'memories'} awaiting acceptance —
+              accept or decline in Memories
+            </span>
+            <span className="ml-auto text-xs text-amber-700">Open Memories →</span>
+          </Link>
+        )}
         {rqErr ? (
           <div className="rounded-lg border border-red-200 bg-red-50 text-red-800 px-4 py-3 text-sm">
             Failed to load review queue: {rqErr.message}
