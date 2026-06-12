@@ -242,6 +242,20 @@ HEIC in Chrome and confirm it renders. Note: `npm run lint` turns out to
 be unconfigured in this repo (next lint prompts for interactive setup) —
 tsc is the only static gate; configuring ESLint is a candidate chore.
 
+## Photo scoping decision (2026-06-13, Andy)
+
+**Two photo scopes, never mixed:** the globe pin's gallery is
+*entity-level* (`entity_media` on the place, path
+`users/<uid>/pins/<entity_id>/`); photos belonging to an individual
+recollection are *memory-level* (`memory_media` — already in the
+initial schema with caption + sort_order) and will live on the
+/memories card, NOT in the pin gallery. Placeholder shipped on
+MemoryCard (`19f86f3`, "Photos — coming soon"); full design recorded
+in session task #3 ("Memory-level photos in /memories") — path-scope
+separation is what keeps the galleries from cross-contaminating.
+NB: session task lists don't persist — rebuild task from this note if
+it's gone when the work starts.
+
 ## Linked-recollections navigation (2026-06-13, Andy's morning feedback)
 
 Andy: excerpts weren't expandable, the edit panel gave no hint the
