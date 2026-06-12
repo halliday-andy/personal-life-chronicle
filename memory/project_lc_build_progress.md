@@ -242,6 +242,18 @@ HEIC in Chrome and confirm it renders. Note: `npm run lint` turns out to
 be unconfigured in this repo (next lint prompts for interactive setup) —
 tsc is the only static gate; configuring ESLint is a candidate chore.
 
+## Linked-recollections navigation (2026-06-13, Andy's morning feedback)
+
+Andy: excerpts weren't expandable, the edit panel gave no hint the
+extra recollections existed, and nothing navigated to full text. Fix
+(`338d2b3`): detail-card excerpts expand in place (▸/▾, full text,
+scrollable); both card and edit panel link to `/memories?entity=<place>`
+(the existing Step 6e list with entity filter). **Design line drawn:**
+the globe panel edits only the pin's own overview memory; other
+recollections are *viewed* from the globe but *edited* in the
+Recollections surface (Raw Vault: finalized memories revise via
+The Stroll pathway C, not a second editor on the globe).
+
 ## Overnight session 2026-06-12/13 (third package — bypass permissions granted)
 
 Andy enabled bypass-permissions mode and said go. Slice 3 deliberately
