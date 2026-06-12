@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc --noEmit)",
+      "Bash(npm run lint)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(node scripts/verify-*)",
+      "Bash(node scripts/db-apply.mjs --status)",
+      "Bash(./scripts/dev-up.sh)",
+      "mcp__Claude_in_Chrome__read_console_messages",
+      "mcp__Claude_in_Chrome__tabs_context_mcp"
+    ]
+  }
+}
