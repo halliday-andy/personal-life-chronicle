@@ -71,6 +71,8 @@ export async function GET(_req: NextRequest, { params }: { params: { relationshi
   const linked = (linkedRows ?? []).map((r) => ({
     id: r.id,
     excerpt: (r.content_raw ?? '').slice(0, 240),
+    // Full text so the card can expand in place (≤20 rows, cheap).
+    text: r.content_raw ?? '',
     created_at: r.created_at,
   }))
 

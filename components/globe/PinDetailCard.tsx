@@ -29,6 +29,7 @@ export interface PinImageInfo {
 export interface LinkedRecollection {
   id: string
   excerpt: string
+  text: string
   created_at: string
 }
 
@@ -41,7 +42,7 @@ export default function PinDetailCard({
   onEdit,
   onClose,
 }: {
-  pin: { relationship_id: string; name: string; when_text: string | null; place_subtype: string | null }
+  pin: { relationship_id: string; place_entity_id: string; name: string; when_text: string | null; place_subtype: string | null }
   position: number   // 0-based index in the residence sequence
   total: number
   onEdit: () => void
@@ -52,6 +53,7 @@ export default function PinDetailCard({
   const [imageCount, setImageCount] = useState(0)
   const [facts, setFacts] = useState<PinFacts | null>(null)
   const [linked, setLinked] = useState<LinkedRecollection[]>([])
+  const [expandedId, setExpandedId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   // A failed load must look like a failure, never like an empty pin —
   // otherwise a dead server reads as "no recollection yet" (data-loss scare,
@@ -245,17 +247,41 @@ export default function PinDetailCard({
           )}
           {linked.length > 0 && (
             <div className="mt-3 border-t border-[var(--glass-border)] pt-2">
-              <p className="text-xs uppercase tracking-[0.18em] text-[var(--ink-dim)]">
-                More recollections here · {linked.length}
-              </p>
-              <ul className="mt-1.5 max-h-24 space-y-1.5 overflow-y-auto">
-                {linked.map((r) => (
-                  <li key={r.id} className="text-xs leading-relaxed text-[var(--ink)]/80">
-                    <span className="mr-1.5 text-[var(--ember-soft)]">◆</span>
-                    {r.excerpt}
-                    {r.excerpt.length >= 240 ? '…' : ''}
-                  </li>
-                ))}
+              <div className="flex items-baseline justify-between gap-2">
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--ink-dim)]">
+                  More recollections here · {linked.length}
+                </p>
+                <a
+                  href={`/memories?entity=${pin.place_entity_id}`}
+                  className="shrink-0 text-xs text-[var(--ember-soft)] hover:text-[var(--ember)]"
+                >
+                  View all in Recollections →
+                </a>
+              </div>
+              <ul className="mt-1.5 max-h-40 space-y-1.5 overflow-y-auto">
+                {linked.map((r) => {
+                  const expanded = expandedId === r.id
+                  const truncated = r.text.length > r.excerpt.length || r.excerpt.length >= 240
+                  return (
+                    <li key={r.id} className="text-xs leading-relaxed text-[var(--ink)]/80">
+                      <button
+                        onClick={() => setExpandedId(expanded ? null : r.id)}
+                        className="w-full text-left hover:text-[var(--ink)]"
+                        title={expanded ? 'Collapse' : 'Read the full recollection'}
+                      >
+                        <span className="mr-1.5 text-[var(--ember-soft)]">{expanded ? '▾' : '▸'}</span>
+                        {expanded ? (
+                          <span className="whitespace-pre-wrap">{r.text}</span>
+                        ) : (
+                          <>
+                            {r.excerpt}
+                            {truncated ? '…' : ''}
+                          </>
+                        )}
+                      </button>
+                    </li>
+                  )
+                })}
               </ul>
             </div>
           )}

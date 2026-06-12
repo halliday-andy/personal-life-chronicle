@@ -15,6 +15,7 @@ import { preprocessPinImage } from '@/lib/globe/image-preprocess'
 
 export interface EditablePin {
   relationship_id: string
+  place_entity_id: string
   name: string
   when_text: string | null
   has_memory: boolean
@@ -62,6 +63,7 @@ export default function PinEditPanel({
   const [reloadKey, setReloadKey] = useState(0)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [images, setImages] = useState<GalleryImage[]>([])
+  const [linkedCount, setLinkedCount] = useState(0)
   const [galleryBusy, setGalleryBusy] = useState(false)
   const [galleryError, setGalleryError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -73,7 +75,7 @@ export default function PinEditPanel({
     setLoadError(false)
     fetch(`/api/globe/residence/${pin.relationship_id}`)
       .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
-      .then((d) => { if (active) { setBody(d.body ?? ''); setImages(d.images ?? []); setLoading(false) } })
+      .then((d) => { if (active) { setBody(d.body ?? ''); setImages(d.images ?? []); setLinkedCount(d.linked?.length ?? 0); setLoading(false) } })
       .catch(() => { if (active) { setLoadError(true); setLoading(false) } })
     return () => { active = false }
   }, [pin.relationship_id, reloadKey])
@@ -259,6 +261,19 @@ export default function PinEditPanel({
           )}
           {galleryError && <p className="mt-1 text-xs text-rose-300">{galleryError}</p>}
         </div>
+      )}
+
+      {/* Other memories that mention this place — edited in the
+          Recollections surface, not here (this panel owns only the
+          pin's overview text). */}
+      {!loadError && linkedCount > 0 && (
+        <a
+          href={`/memories?entity=${pin.place_entity_id}`}
+          className="mt-2 block text-xs text-[var(--ember-soft)] hover:text-[var(--ember)]"
+        >
+          ◆ {linkedCount} more recollection{linkedCount === 1 ? '' : 's'} mention
+          {linkedCount === 1 ? 's' : ''} this place — view in Recollections →
+        </a>
       )}
 
       {relocated && (
