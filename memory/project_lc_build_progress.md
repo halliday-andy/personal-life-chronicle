@@ -242,6 +242,17 @@ HEIC in Chrome and confirm it renders. Note: `npm run lint` turns out to
 be unconfigured in this repo (next lint prompts for interactive setup) —
 tsc is the only static gate; configuring ESLint is a candidate chore.
 
+## Dev-stack operations rule (2026-06-11, after the stack died twice)
+
+**Never run `npm run dev` or `npx inngest-cli dev` as Claude background
+tasks** — they die when the session's tasks are stopped, which twice
+left Andy's open globe tab failing pin-detail loads hours later. Use
+`scripts/dev-up.sh` (commit `2f2fe56`): detached double-fork to launchd,
+idempotent per port, logs in /tmp/lc-{next,inngest}-dev.log. At session
+start, check ports 3001/8288 and run dev-up.sh if needed. Trade-off:
+detached servers' logs are in those /tmp files, not in a harness task —
+`tail` them when debugging.
+
 ## Morning fixes 2026-06-11 (after Andy's first look at the overnight work)
 
 | Piece | Detail |
