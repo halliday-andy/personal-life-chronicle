@@ -11,6 +11,7 @@
  */
 
 import { useMemo, useState } from 'react'
+import { PIN_TYPES, pinTypeMeta, SPINE_CODE } from '@/lib/globe/pin-types'
 
 const GHOST_TEXTS = [
   'What kind of place was it? Who lived there? Why did you move here?',
@@ -22,28 +23,35 @@ const GHOST_TEXTS = [
 export interface PinDraftData {
   whenText: string
   body: string
-  position: number | null   // where in the residence sequence; null = append
+  position: number | null   // spine sequence slot; null = append / N/A for markers
+  typeCode: string
+  anchorId: string | null   // marker → a primary residence (null = standalone)
 }
 
 export default function PinModal({
   placeLabel,
   saving,
-  existingPins,
+  primaries,
   onSave,
   onCancel,
 }: {
   placeLabel: string
   saving: boolean
-  existingPins: { name: string }[]   // current residences, in sequence
+  primaries: { relationship_id: string; name: string }[]  // primary residences, in sequence
   onSave: (data: PinDraftData) => void
   onCancel: () => void
 }) {
   const [body, setBody] = useState('')
   const [whenText, setWhenText] = useState('')
-  // Sequence slot: 0 = before the first pin, i = after existingPins[i-1].
-  // Default = after the last pin (the most recent residence).
-  const [position, setPosition] = useState<number>(existingPins.length)
+  const [typeCode, setTypeCode] = useState<string>(SPINE_CODE)
+  // Sequence slot (spine only): 0 = before the first, i = after primaries[i-1].
+  const [position, setPosition] = useState<number>(primaries.length)
+  // Anchor (markers only): a primary residence relationship_id, or '' = standalone.
+  const [anchorId, setAnchorId] = useState<string>(primaries[0]?.relationship_id ?? '')
   const ghost = useMemo(() => GHOST_TEXTS[Math.floor(Math.random() * GHOST_TEXTS.length)], [])
+
+  const isSpine = typeCode === SPINE_CODE
+  const meta = pinTypeMeta(typeCode)
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
@@ -54,13 +62,25 @@ export default function PinModal({
       />
       <div className="glass relative z-10 w-full max-w-lg rounded-2xl p-6 text-[var(--ink)]">
         <p className="text-xs uppercase tracking-[0.18em] text-[var(--ink-dim)]">
-          A place you lived
+          A place in your life
         </p>
         <h2 className="nocturne-display mt-1 text-3xl font-medium leading-tight">
           {placeLabel}
         </h2>
 
-        <label className="mt-5 block text-sm text-[var(--ink-dim)]">Your memory of it</label>
+        <label className="mt-5 block text-sm text-[var(--ink-dim)]">What kind of place?</label>
+        <select
+          value={typeCode}
+          onChange={(e) => setTypeCode(e.target.value)}
+          disabled={saving}
+          className="mt-1 w-full rounded-xl border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--ember-soft)]"
+        >
+          {PIN_TYPES.map((t) => (
+            <option key={t.code} value={t.code}>{t.label}</option>
+          ))}
+        </select>
+
+        <label className="mt-4 block text-sm text-[var(--ink-dim)]">Your memory of it</label>
         <textarea
           autoFocus
           value={body}
@@ -81,7 +101,8 @@ export default function PinModal({
           className="mt-1 w-full rounded-xl border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] placeholder-[var(--ink-dim)]/70 outline-none focus:border-[var(--ember-soft)]"
         />
 
-        {existingPins.length > 0 && (
+        {/* Contextual placement: spine → sequence slot; markers → anchor. */}
+        {isSpine && primaries.length > 0 && (
           <>
             <label className="mt-4 block text-sm text-[var(--ink-dim)]">Where does this fall in your life?</label>
             <select
@@ -90,14 +111,34 @@ export default function PinModal({
               disabled={saving}
               className="mt-1 w-full rounded-xl border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--ember-soft)]"
             >
-              <option value={0}>Before {existingPins[0].name} (earliest)</option>
-              {existingPins.map((p, i) => (
-                <option key={i} value={i + 1}>
+              <option value={0}>Before {primaries[0].name} (earliest)</option>
+              {primaries.map((p, i) => (
+                <option key={p.relationship_id} value={i + 1}>
                   After {p.name}
-                  {i === existingPins.length - 1 ? ' (most recent)' : ''}
+                  {i === primaries.length - 1 ? ' (most recent)' : ''}
                 </option>
               ))}
             </select>
+          </>
+        )}
+
+        {!isSpine && primaries.length > 0 && (
+          <>
+            <label className="mt-4 block text-sm text-[var(--ink-dim)]">{meta.anchorPrompt}</label>
+            <select
+              value={anchorId}
+              onChange={(e) => setAnchorId(e.target.value)}
+              disabled={saving}
+              className="mt-1 w-full rounded-xl border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--ember-soft)]"
+            >
+              {primaries.map((p) => (
+                <option key={p.relationship_id} value={p.relationship_id}>{p.name}</option>
+              ))}
+              <option value="">Not sure / standalone</option>
+            </select>
+            <p className="mt-1 text-xs text-[var(--ink-dim)]/80">
+              Connects this with a dashed line to that home.
+            </p>
           </>
         )}
 
@@ -112,7 +153,13 @@ export default function PinModal({
           </button>
           <button
             type="button"
-            onClick={() => onSave({ whenText, body, position: existingPins.length ? position : null })}
+            onClick={() => onSave({
+              whenText,
+              body,
+              position: isSpine && primaries.length ? position : null,
+              typeCode,
+              anchorId: isSpine ? null : (anchorId || null),
+            })}
             disabled={saving}
             className="rounded-lg bg-[var(--ember)] px-5 py-2 text-sm font-medium text-[#241500] shadow-[0_0_20px_rgba(244,177,74,0.45)] hover:bg-[var(--ember-soft)] disabled:opacity-60"
           >

@@ -11,6 +11,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { preprocessPinImage } from '@/lib/globe/image-preprocess'
+import { pinTypeMeta } from '@/lib/globe/pin-types'
 
 export interface PinFacts {
   residence_type: string | null
@@ -42,9 +43,9 @@ export default function PinDetailCard({
   onEdit,
   onClose,
 }: {
-  pin: { relationship_id: string; place_entity_id: string; name: string; when_text: string | null; place_subtype: string | null }
-  position: number   // 0-based index in the residence sequence
-  total: number
+  pin: { relationship_id: string; place_entity_id: string; name: string; when_text: string | null; place_subtype: string | null; type_code: string | null }
+  position: number   // 0-based index in the SPINE sequence; -1 for off-spine markers
+  total: number      // number of primary residences (spine length)
   onEdit: () => void
   onClose: () => void
 }) {
@@ -151,8 +152,10 @@ export default function PinDetailCard({
 
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-[var(--ink-dim)]">
-            Residence{total > 1 ? ` · stop ${position + 1} of ${total}` : ''}
+          <p className="flex items-center gap-1.5 text-xs uppercase tracking-[0.18em] text-[var(--ink-dim)]">
+            <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: pinTypeMeta(pin.type_code).color }} />
+            {pinTypeMeta(pin.type_code).label}
+            {position >= 0 && total > 1 ? ` · stop ${position + 1} of ${total}` : ''}
           </p>
           <h2 className="nocturne-display mt-0.5 text-2xl font-medium leading-tight">{pin.name}</h2>
           {pin.when_text && <p className="mt-0.5 text-sm text-[var(--ember-soft)]">{pin.when_text}</p>}

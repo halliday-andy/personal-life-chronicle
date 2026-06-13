@@ -12,6 +12,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { preprocessPinImage } from '@/lib/globe/image-preprocess'
+import { PIN_TYPES, pinTypeMeta, SPINE_CODE } from '@/lib/globe/pin-types'
 
 export interface EditablePin {
   relationship_id: string
@@ -19,6 +20,8 @@ export interface EditablePin {
   name: string
   when_text: string | null
   has_memory: boolean
+  type_code: string | null
+  anchor_residence_id: string | null
 }
 
 interface GalleryImage {
@@ -36,6 +39,7 @@ export default function PinEditPanel({
   saving,
   position,
   total,
+  primaries,
   onMove,
   onSave,
   onDelete,
@@ -44,16 +48,19 @@ export default function PinEditPanel({
   pin: EditablePin
   relocated: boolean
   saving: boolean
-  position: number   // 0-based index in the residence sequence
-  total: number
+  position: number   // 0-based index in the SPINE; -1 for off-spine markers
+  total: number      // number of primary residences
+  primaries: { relationship_id: string; name: string }[]
   onMove: (dir: -1 | 1) => void
-  onSave: (fields: { name: string; whenText: string; body: string }) => void
+  onSave: (fields: { name: string; whenText: string; body: string; typeCode: string; anchorId: string | null }) => void
   onDelete: () => void
   onClose: () => void
 }) {
   const [name, setName] = useState(pin.name)
   const [whenText, setWhenText] = useState(pin.when_text ?? '')
   const [body, setBody] = useState('')
+  const [typeCode, setTypeCode] = useState(pin.type_code ?? SPINE_CODE)
+  const [anchorId, setAnchorId] = useState(pin.anchor_residence_id ?? '')
   const [loading, setLoading] = useState(true)
   // If the recollection fails to load, Save MUST stay disabled: saving the
   // panel's empty textarea would overwrite the real recollection (PATCH
@@ -110,15 +117,18 @@ export default function PinEditPanel({
   return (
     <aside className="glass absolute right-4 top-4 bottom-4 z-30 flex w-[min(380px,92vw)] flex-col rounded-2xl p-5 text-[var(--ink)]">
       <div className="flex items-start justify-between">
-        <p className="text-xs uppercase tracking-[0.18em] text-[var(--ink-dim)]">
-          Residence{total > 1 ? ` · stop ${position + 1} of ${total}` : ''}
+        <p className="flex items-center gap-1.5 text-xs uppercase tracking-[0.18em] text-[var(--ink-dim)]">
+          <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: pinTypeMeta(typeCode).color }} />
+          {pinTypeMeta(typeCode).label}
+          {position >= 0 && total > 1 ? ` · stop ${position + 1} of ${total}` : ''}
         </p>
         <button onClick={onClose} disabled={saving} className="text-lg leading-none text-[var(--ink-dim)] hover:text-[var(--ink)] disabled:opacity-50">
           ✕
         </button>
       </div>
 
-      {total > 1 && (
+      {/* Reorder applies only to the residential spine. */}
+      {position >= 0 && total > 1 && (
         <div className="mt-3 flex items-center gap-2">
           <span className="text-xs text-[var(--ink-dim)]">Order</span>
           <button
@@ -156,6 +166,37 @@ export default function PinEditPanel({
         placeholder="e.g. 1959 to 1960"
         className="mt-1 w-full rounded-lg border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] placeholder-[var(--ink-dim)]/70 outline-none focus:border-[var(--ember-soft)]"
       />
+
+      <label className="mt-3 block text-xs text-[var(--ink-dim)]">Type of place</label>
+      <select
+        value={typeCode}
+        onChange={(e) => setTypeCode(e.target.value)}
+        disabled={saving}
+        className="mt-1 w-full rounded-lg border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--ember-soft)]"
+      >
+        {PIN_TYPES.map((t) => (
+          <option key={t.code} value={t.code}>{t.label}</option>
+        ))}
+      </select>
+
+      {typeCode !== SPINE_CODE && primaries.length > 0 && (
+        <>
+          <label className="mt-3 block text-xs text-[var(--ink-dim)]">{pinTypeMeta(typeCode).anchorPrompt}</label>
+          <select
+            value={anchorId}
+            onChange={(e) => setAnchorId(e.target.value)}
+            disabled={saving}
+            className="mt-1 w-full rounded-lg border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--ember-soft)]"
+          >
+            {primaries
+              .filter((p) => p.relationship_id !== pin.relationship_id)
+              .map((p) => (
+                <option key={p.relationship_id} value={p.relationship_id}>{p.name}</option>
+              ))}
+            <option value="">Not sure / standalone</option>
+          </select>
+        </>
+      )}
 
       <label className="mt-3 block text-xs text-[var(--ink-dim)]">Recollection</label>
       <textarea
@@ -282,7 +323,11 @@ export default function PinEditPanel({
 
       <div className="mt-4 flex items-center gap-2">
         <button
-          onClick={() => onSave({ name, whenText, body })}
+          onClick={() => onSave({
+            name, whenText, body,
+            typeCode,
+            anchorId: typeCode === SPINE_CODE ? null : (anchorId || null),
+          })}
           disabled={saving || loading || loadError}
           className="rounded-lg bg-[var(--ember)] px-4 py-2 text-sm font-medium text-[#241500] hover:bg-[var(--ember-soft)] disabled:opacity-60"
         >

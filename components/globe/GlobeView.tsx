@@ -471,6 +471,7 @@ export default function GlobeView() {
         body: JSON.stringify({
           lng: draft.lng, lat: draft.lat, label: draft.label,
           whenText: data.whenText, body: data.body, position: data.position,
+          typeCode: data.typeCode, anchorId: data.anchorId,
         }),
       })
       if (!res.ok) {
@@ -491,7 +492,7 @@ export default function GlobeView() {
     }
   }, [draft, clearDraft, loadPins])
 
-  const handlePanelSave = useCallback(async (fields: { name: string; whenText: string; body: string }) => {
+  const handlePanelSave = useCallback(async (fields: { name: string; whenText: string; body: string; typeCode: string; anchorId: string | null }) => {
     if (!selectedId) return
     setSavingPanel(true)
     setError(null)
@@ -526,10 +527,13 @@ export default function GlobeView() {
   // swapping it with its neighbour and re-sequencing the whole chain.
   const handleMove = useCallback(async (dir: -1 | 1) => {
     if (!selectedId) return
-    const idx = pins.findIndex((p) => p.relationship_id === selectedId)
+    // Reorder operates on the residential spine only (the RPC rejects
+    // marker ids); build the ordered list from primary residences.
+    const spine = pins.filter((p) => p.type_code === SPINE_CODE)
+    const idx = spine.findIndex((p) => p.relationship_id === selectedId)
     const swap = idx + dir
-    if (idx < 0 || swap < 0 || swap >= pins.length) return
-    const order = pins.map((p) => p.relationship_id)
+    if (idx < 0 || swap < 0 || swap >= spine.length) return
+    const order = spine.map((p) => p.relationship_id)
     ;[order[idx], order[swap]] = [order[swap], order[idx]]
     setSavingPanel(true)
     setError(null)
@@ -710,23 +714,30 @@ export default function GlobeView() {
         <PinModal
           placeLabel={draft.label || 'This place'}
           saving={saving}
-          existingPins={pins.map((p) => ({ name: p.name }))}
+          primaries={pins
+            .filter((p) => p.type_code === SPINE_CODE)
+            .map((p) => ({ relationship_id: p.relationship_id, name: p.name }))}
           onSave={handleSave}
           onCancel={() => setModalOpen(false)}
         />
       )}
 
       {selectedId && (() => {
-        const idx = pins.findIndex((p) => p.relationship_id === selectedId)
-        const sel = pins[idx]
+        const sel = pins.find((p) => p.relationship_id === selectedId)
         if (!sel) return null
+        // Position/total are SPINE-relative: a marker is off-spine (-1) and
+        // shows no "stop N of M" or reorder controls.
+        const spine = pins.filter((p) => p.type_code === SPINE_CODE)
+        const spinePos = spine.findIndex((p) => p.relationship_id === selectedId)
+        const primaries = spine.map((p) => ({ relationship_id: p.relationship_id, name: p.name }))
         return editMode ? (
           <PinEditPanel
             pin={sel}
             relocated={stagedCoords !== null}
             saving={savingPanel}
-            position={idx}
-            total={pins.length}
+            position={spinePos}
+            total={spine.length}
+            primaries={primaries}
             onMove={handleMove}
             onSave={handlePanelSave}
             onDelete={handlePanelDelete}
@@ -735,8 +746,8 @@ export default function GlobeView() {
         ) : (
           <PinDetailCard
             pin={sel}
-            position={idx}
-            total={pins.length}
+            position={spinePos}
+            total={spine.length}
             onEdit={() => setEditMode(true)}
             onClose={deselect}
           />
