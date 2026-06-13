@@ -259,11 +259,16 @@ tethers). Phases tracked as tasks #4–#7.
 - **Phase 2 DONE (`a3b00b5`)** — POST/PATCH `/api/globe/residence` thread
   `typeCode`+`anchorId`; proximity hint primary-only; PATCH omitting typeCode
   leaves type/anchor untouched. tsc+lint clean.
-- **Phase 3 NEXT (task #6)** — GlobeView: split spine vs markers; per-type pin
-  styles; commute line (workplace, tier 2) + dashed tethers (tier 3); legend.
-  Deferred to live review with Andy (visual/taste layer).
-- **Phase 4 (task #7)** — PinModal type+anchor selector; PinEditPanel type
-  dropdown + anchor; PinDetailCard type chip.
+- **Phase 3 DONE (`c9d2051`)** — GlobeView splits `lived_at` spine vs markers;
+  spine keeps glowing chevron arcs (directional emphasis now indexed against the
+  spine); markers render per-type pins + great-circle tether to anchor: workplace
+  = commute line (tier 2 solid cyan glow), others = dashed dim tethers (tier 3).
+  Per-type pin CSS in globals.css; collapsible legend (6 pins + 3 line tiers).
+  tsc+lint clean. **Not visually exercisable until Phase 4** — no UI to create a
+  typed pin yet, so all existing pins are still `lived_at`.
+- **Phase 4 NEXT (task #7)** — PinModal type+anchor selector; PinEditPanel type
+  dropdown + anchor; PinDetailCard type chip. This is what makes types visible/
+  creatable; Andy should place one of each type to review Phase 3 styling live.
 
 **Discriminator note:** globe pins carry `metadata.globe_pin=true` (set on
 create). `get_residence_pins` returns all `lived_at` by code (legacy pins need
