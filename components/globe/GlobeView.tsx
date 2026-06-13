@@ -38,6 +38,22 @@ interface Pin {
   lat: number
   when_text: string | null
   has_memory: boolean
+  type_code: string | null         // 'lived_at' = spine; others are markers
+  anchor_residence_id: string | null  // marker → its primary residence
+}
+
+const SPINE_CODE = 'lived_at'
+
+// Per-type pin CSS modifier (base .globe-pin = primary residence).
+function pinTypeClass(typeCode: string | null): string {
+  switch (typeCode) {
+    case 'worked_at': return ' globe-pin--workplace'
+    case 'owned_residence_at': return ' globe-pin--second'
+    case 'lived_briefly_at': return ' globe-pin--short'
+    case 'vacationed_at': return ' globe-pin--vacation'
+    case 'traveled_for_work_to': return ' globe-pin--work-travel'
+    default: return '' // lived_at / unknown → base ember
+  }
 }
 
 const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? ''
@@ -114,6 +130,37 @@ function arcSegments(pins: Pin[]): GeoJSON.FeatureCollection {
 // Filter that matches no segment (resting state for the active layers).
 const NO_SEGMENT: mapboxgl.FilterSpecification = ['==', ['get', 'seq'], -999]
 
+// Tethers: a marker's great-circle line back to the primary residence it
+// anchors to. Workplace tethers are the "commute line" (tier 2); the rest
+// are dashed trip tethers (tier 3). Markers with no anchor draw nothing.
+function tetherFeatures(
+  markers: Pin[],
+  byId: Map<string, Pin>,
+): { commute: GeoJSON.FeatureCollection; trip: GeoJSON.FeatureCollection } {
+  const commute: GeoJSON.Feature[] = []
+  const trip: GeoJSON.Feature[] = []
+  for (const m of markers) {
+    if (!m.anchor_residence_id) continue
+    const anchor = byId.get(m.anchor_residence_id)
+    if (!anchor) continue
+    const feature: GeoJSON.Feature = {
+      type: 'Feature',
+      properties: { rel: m.relationship_id },
+      geometry: {
+        type: 'LineString',
+        coordinates: greatCirclePath([m.lng, m.lat], [anchor.lng, anchor.lat]),
+      },
+    }
+    ;(m.type_code === 'worked_at' ? commute : trip).push(feature)
+  }
+  return {
+    commute: { type: 'FeatureCollection', features: commute },
+    trip: { type: 'FeatureCollection', features: trip },
+  }
+}
+
+const EMPTY_FC: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] }
+
 export default function GlobeView() {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
@@ -136,6 +183,7 @@ export default function GlobeView() {
   const [savingPanel, setSavingPanel] = useState(false)
   const [hint, setHint] = useState<ProximityHint | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [legendOpen, setLegendOpen] = useState(false)
   const { setAssistantSuppressed } = useUiChrome()
 
   // Proximity hints are advisory — auto-dismiss after a few seconds.
@@ -243,6 +291,33 @@ export default function GlobeView() {
     })
 
     map.on('load', () => {
+      // Tethers first, so the residential spine always draws on top of them.
+      // Tier 3 — dashed, dim, no glow: trips that aren't a change of residence.
+      map.addSource('trip-tethers', { type: 'geojson', data: EMPTY_FC })
+      map.addLayer({
+        id: 'trip-tethers',
+        type: 'line',
+        source: 'trip-tethers',
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: {
+          'line-color': '#cdb78a',
+          'line-width': 1,
+          'line-opacity': 0.4,
+          'line-dasharray': [2, 2.5],
+        },
+      })
+      // Tier 2 — commute line (home → workplace): solid, weightier, cool,
+      // a soft glow. Superior to trip tethers, subordinate to the spine.
+      map.addSource('commute-lines', { type: 'geojson', data: EMPTY_FC })
+      map.addLayer({
+        id: 'commute-lines',
+        type: 'line',
+        source: 'commute-lines',
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': '#5fc6dc', 'line-width': 1.5, 'line-opacity': 0.7, 'line-blur': 0.3 },
+      })
+
+      // Tier 1 — the residential spine (lived_at), solid glowing chevron arcs.
       map.addSource('arcs', { type: 'geojson', data: arcSegments([]) })
       map.addLayer({
         id: 'arcs',
@@ -313,10 +388,17 @@ export default function GlobeView() {
     }
   }, [loadPins, setDraftAt, deselect])
 
-  // Re-render pin markers + arc whenever pins change.
+  // Re-render pin markers + arcs + tethers whenever pins change.
   useEffect(() => {
     if (!ready) return
     const map = mapRef.current!
+
+    // The connected glowing spine is the primary-residence sequence only;
+    // every other type is a marker that tethers to its anchor primary.
+    const spine = pins.filter((p) => p.type_code === SPINE_CODE)
+    const markers = pins.filter((p) => p.type_code !== SPINE_CODE)
+    const byId = new Map(pins.map((p) => [p.relationship_id, p]))
+
     pinMarkersRef.current.forEach((m) => m.remove())
     pinMarkersRef.current = []
     pins.forEach((p) => {
@@ -324,6 +406,7 @@ export default function GlobeView() {
       const el = document.createElement('div')
       el.className =
         'globe-pin' +
+        pinTypeClass(p.type_code) +
         (bloomIdRef.current === p.place_entity_id ? ' globe-pin-bloom' : '') +
         (p.relationship_id === selectedId ? ' globe-pin-selected' : '')
       el.title = p.name
@@ -338,13 +421,17 @@ export default function GlobeView() {
       pinMarkersRef.current.push(marker)
     })
     bloomIdRef.current = null
-    const src = map.getSource('arcs') as mapboxgl.GeoJSONSource | undefined
-    src?.setData(arcSegments(pins))
 
-    // Directional emphasis for the selected pin: its inbound leg
-    // (seq = idx-1, "approached from") renders brighter than its
-    // outbound leg (seq = idx, "egressed to").
-    const idx = pins.findIndex((p) => p.relationship_id === selectedId)
+    const arcSrc = map.getSource('arcs') as mapboxgl.GeoJSONSource | undefined
+    arcSrc?.setData(arcSegments(spine))
+    const { commute, trip } = tetherFeatures(markers, byId)
+    ;(map.getSource('commute-lines') as mapboxgl.GeoJSONSource | undefined)?.setData(commute)
+    ;(map.getSource('trip-tethers') as mapboxgl.GeoJSONSource | undefined)?.setData(trip)
+
+    // Directional emphasis for a selected SPINE pin: its inbound leg
+    // (seq = idx-1, "approached from") renders brighter than its outbound
+    // leg (seq = idx, "egressed to"). Markers have no spine legs.
+    const idx = spine.findIndex((p) => p.relationship_id === selectedId)
     const activeFilter: mapboxgl.FilterSpecification =
       idx >= 0
         ? ['any', ['==', ['get', 'seq'], idx - 1], ['==', ['get', 'seq'], idx]]
@@ -510,6 +597,53 @@ export default function GlobeView() {
       >
         ← Dashboard
       </a>
+
+      {/* Legend — keys the six pin types + three line tiers. Collapsed
+          by default so it never competes with the globe. */}
+      {hasPins && (
+        <div className="glass absolute bottom-6 left-6 z-20 rounded-xl text-xs text-[var(--ink-dim)]">
+          <button
+            onClick={() => setLegendOpen((o) => !o)}
+            className="flex w-full items-center gap-2 px-3 py-2 text-[var(--ink)] hover:text-[var(--ember-soft)]"
+          >
+            <span className="text-[var(--ember-soft)]">{legendOpen ? '▾' : '▸'}</span>
+            Legend
+          </button>
+          {legendOpen && (
+            <div className="space-y-1.5 px-3 pb-3">
+              {([
+                ['globe-pin', 'Primary residence'],
+                ['globe-pin globe-pin--workplace', 'Workplace'],
+                ['globe-pin globe-pin--second', 'Second residence'],
+                ['globe-pin globe-pin--short', 'Short-term stay'],
+                ['globe-pin globe-pin--vacation', 'Vacation'],
+                ['globe-pin globe-pin--work-travel', 'Professional travel'],
+              ] as const).map(([cls, label]) => (
+                <div key={label} className="flex items-center gap-2.5">
+                  <span className="relative inline-flex h-3.5 w-3.5 items-center justify-center">
+                    <span className={`${cls} !cursor-default`} style={{ position: 'static' }} />
+                  </span>
+                  <span>{label}</span>
+                </div>
+              ))}
+              <div className="mt-2 space-y-1.5 border-t border-[var(--glass-border)] pt-2">
+                <div className="flex items-center gap-2.5">
+                  <span className="inline-block h-0 w-6 border-t-2 border-[var(--ember)]" style={{ boxShadow: '0 0 6px var(--ember)' }} />
+                  <span>Residential transit ›</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <span className="inline-block h-0 w-6 border-t-2" style={{ borderColor: '#5fc6dc' }} />
+                  <span>Commute (home → work)</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <span className="inline-block h-0 w-6 border-t border-dashed" style={{ borderColor: '#cdb78a' }} />
+                  <span>Trip / temporary</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Opening prompt on an empty globe */}
       {ready && !hasPins && !draft && (

@@ -92,6 +92,51 @@ body {
   transform: scale(1.25);
 }
 
+/* ── Per-type pin styling (Slice 3) ───────────────────────────────────
+   Base .globe-pin is the Primary residence (bright ember). Modifiers
+   recolor/reshape per type; they sit BEFORE .globe-pin-selected so the
+   selection ring still wins when a typed pin is selected. */
+
+/* Workplace — cool cyan, square-rounded, the most prominent marker
+   (the work/employment relationship carries weight). */
+.globe-pin--workplace {
+  width: 15px;
+  height: 15px;
+  border-radius: 4px;
+  background: radial-gradient(circle at 35% 30%, #b6f1fb, #4fb6cc);
+  box-shadow: 0 0 0 2px rgba(7, 11, 24, 0.85), 0 0 14px 3px rgba(79, 182, 204, 0.7);
+}
+
+/* Second residence — ember, double ring: a second home you returned to. */
+.globe-pin--second {
+  box-shadow:
+    0 0 0 2px rgba(7, 11, 24, 0.85),
+    0 0 0 4px rgba(247, 201, 120, 0.35),
+    0 0 12px 2px rgba(244, 177, 74, 0.5);
+}
+
+/* Short-term stay — smaller, dimmer ember dot (a brief interlude). */
+.globe-pin--short {
+  width: 10px;
+  height: 10px;
+  background: radial-gradient(circle at 35% 30%, #f7d9a8, #d99b46);
+  box-shadow: 0 0 0 2px rgba(7, 11, 24, 0.85), 0 0 8px 1px rgba(244, 177, 74, 0.4);
+}
+
+/* Vacation — warm rose, leisure. */
+.globe-pin--vacation {
+  background: radial-gradient(circle at 35% 30%, #ffc8d6, #ef8aa6);
+  box-shadow: 0 0 0 2px rgba(7, 11, 24, 0.85), 0 0 12px 2px rgba(239, 138, 166, 0.55);
+}
+
+/* Professional travel — cooler desaturated slate (work-trip, subdued). */
+.globe-pin--work-travel {
+  width: 12px;
+  height: 12px;
+  background: radial-gradient(circle at 35% 30%, #c7d2ec, #8a9bc0);
+  box-shadow: 0 0 0 2px rgba(7, 11, 24, 0.85), 0 0 9px 1px rgba(138, 155, 192, 0.45);
+}
+
 /* Selected pin — ring + lift, and it becomes draggable for relocation. */
 .globe-pin-selected {
   cursor: grab;
