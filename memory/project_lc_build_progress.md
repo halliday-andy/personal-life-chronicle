@@ -242,6 +242,34 @@ HEIC in Chrome and confirm it renders. Note: `npm run lint` turns out to
 be unconfigured in this repo (next lint prompts for interactive setup) —
 tsc is the only static gate; configuring ESLint is a candidate chore.
 
+## Step 7 Slice 3 — in progress (2026-06-12, autonomous under bypass)
+
+Canonical design: `docs/plans/2026-06-12-globe-place-types-design.md`.
+Six pin types; Model A (only `lived_at` is the connected spine; others
+are anchored markers); three line tiers (spine ▸ commute line ▸ dashed
+tethers). Phases tracked as tasks #4–#7.
+
+- **Phase 1 DONE (`68ad485`)** — migration `20260613130000_globe_place_types.sql`:
+  new codes `vacationed_at`/`traveled_for_work_to`; `relationships.anchor_residence_id`
+  (nullable, ON DELETE SET NULL); `create`/`update_residence_pin` gain
+  `p_type_code`+`p_anchor_residence_id`; `get_residence_pins` widened to all six
+  types returning `type_code`+`anchor_residence_id`, scoped by `metadata.globe_pin`
+  so non-globe relationships can't masquerade as pins. `reorder`/`nearest_residence`
+  already spine-only. Additive (no gate). Proof `verify-globe-place-types.mjs` 9/9.
+- **Phase 2 DONE (`a3b00b5`)** — POST/PATCH `/api/globe/residence` thread
+  `typeCode`+`anchorId`; proximity hint primary-only; PATCH omitting typeCode
+  leaves type/anchor untouched. tsc+lint clean.
+- **Phase 3 NEXT (task #6)** — GlobeView: split spine vs markers; per-type pin
+  styles; commute line (workplace, tier 2) + dashed tethers (tier 3); legend.
+  Deferred to live review with Andy (visual/taste layer).
+- **Phase 4 (task #7)** — PinModal type+anchor selector; PinEditPanel type
+  dropdown + anchor; PinDetailCard type chip.
+
+**Discriminator note:** globe pins carry `metadata.globe_pin=true` (set on
+create). `get_residence_pins` returns all `lived_at` by code (legacy pins need
+no backfill) but markers only when flagged — future employment edges from the
+entity pipeline therefore won't appear as pins.
+
 ## Finalised-memory deletion + duplicate cleanup (2026-06-13/later, Andy)
 
 Owner can now delete a **finalised** memory (previously only drafts
