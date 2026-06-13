@@ -242,6 +242,28 @@ HEIC in Chrome and confirm it renders. Note: `npm run lint` turns out to
 be unconfigured in this repo (next lint prompts for interactive setup) —
 tsc is the only static gate; configuring ESLint is a candidate chore.
 
+## Finalised-memory deletion + duplicate cleanup (2026-06-13/later, Andy)
+
+Owner can now delete a **finalised** memory (previously only drafts
+could be deleted via Decline). `DELETE /api/memory/[id]?confirm=final`
++ a subtle two-click "Delete" on final `MemoryCard`s. Rationale: the
+Raw Vault invariant binds agents/synthesis, **not the owner's right to
+curate their own record** (remove duplicates, test entries). Cascade
+(memory_entities/dimensions/revisions removed; linked entities
+preserved) proven by `scripts/verify-memory-delete-final.mjs`. Commit
+`5a73d36`.
+
+Used it to resolve the Winter Carnival / ski-jump **duplicate**: two
+near-identical finalised memories existed — `451541f4` (May 20,
+"Leola Lapides" correct, richer: "high school girlfriend" + Berkeley)
+and `54771fbc` (May 22, "Leola Lapidus" typo, sparser). Per Andy,
+deleted the typo version, kept the correct one. The `Leola Lapides`
+entity carries aliases `["Leo","Leola Lapidus"]` — "Lapidus" correctly
+folded as alias (no duplicate entity), confirming the #38 matcher fix.
+**Latent hygiene note:** the `"Leo"` alias is junk from the May-22
+substring false-positive (pre-#38); harmless but could mis-match a real
+"Leo" — left in place, flagged for Andy.
+
 ## Globe drafts decision — finalize on save (2026-06-13, Andy option 1)
 
 Slice 4a's **drafts-on-create is reverted**: globe recollections are
