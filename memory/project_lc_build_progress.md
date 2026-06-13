@@ -266,9 +266,21 @@ tethers). Phases tracked as tasks #4–#7.
   Per-type pin CSS in globals.css; collapsible legend (6 pins + 3 line tiers).
   tsc+lint clean. **Not visually exercisable until Phase 4** — no UI to create a
   typed pin yet, so all existing pins are still `lived_at`.
-- **Phase 4 NEXT (task #7)** — PinModal type+anchor selector; PinEditPanel type
-  dropdown + anchor; PinDetailCard type chip. This is what makes types visible/
-  creatable; Andy should place one of each type to review Phase 3 styling live.
+- **Phase 4 DONE (`e68f43e`)** — `lib/globe/pin-types.ts` is the shared source of
+  truth (six types' labels/colors/anchor prompts). PinModal: type selector +
+  contextual picker (spine→sequence slot, marker→"which home?" anchor). PinEditPanel:
+  type dropdown (re-classify) + anchor selector; reorder controls spine-only.
+  PinDetailCard: colored type chip. GlobeView threads typeCode+anchorId through
+  create+edit, passes spine-relative position/primaries, handleMove reorders spine
+  only. tsc+lint clean.
+- **Phase 5 (Andy's manual proof)** — place one of each type in the live app;
+  confirm pin styles, commute line (workplace→home), dashed tethers, re-typing,
+  the type chip, and the when_text time phrase. Then the deferred shared-nav-header
+  refactor (agreed: globe opts out via usePathname null-render; do it as a clean
+  unit after Slice 3; attribute to Opus 4.8; chip task_fb6157e1 exists).
+
+**Slice 3 build (Phases 1–4) COMPLETE** — all gated + committed. Only the manual
+live proof remains before Slice 3 is fully closed.
 
 **Discriminator note:** globe pins carry `metadata.globe_pin=true` (set on
 create). `get_residence_pins` returns all `lived_at` by code (legacy pins need
