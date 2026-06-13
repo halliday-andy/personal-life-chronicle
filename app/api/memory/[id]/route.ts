@@ -1,10 +1,15 @@
 /**
  * Memory resource endpoints.
  *
- *   DELETE /api/memory/[id] — Decline a draft memory. Hard-deletes. ON DELETE
- *     CASCADE on memory_dimensions and memory_entities cleans up link rows.
- *     Capture_submissions and entities are preserved (entities may be linked
- *     from other memories; submissions are lineage records).
+ *   DELETE /api/memory/[id] — Hard-delete a memory. Drafts delete freely
+ *     (the Decline action). Finalised memories additionally require
+ *     ?confirm=final — owner curation (duplicates, test entries) decided
+ *     with Andy 2026-06-13; the Raw Vault invariant binds agents and
+ *     synthesis, not the owner's right to remove their own record.
+ *     ON DELETE CASCADE covers memory_dimensions, memory_entities,
+ *     memory_media, and memory_revisions; assumption_log refs SET NULL.
+ *     Capture_submissions and entities are preserved (entities may be
+ *     linked from other memories; submissions are lineage records).
  *
  *   PATCH /api/memory/[id] — Edit memory fields.
  *
@@ -50,14 +55,14 @@ async function authAndOwn(memoryId: string): Promise<
   return { ok: true, userId: user.id, memory: mem }
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await authAndOwn(params.id)
   if (!auth.ok) return auth.response
-  if (auth.memory.is_draft === false) {
+  if (auth.memory.is_draft === false && req.nextUrl.searchParams.get('confirm') !== 'final') {
     return NextResponse.json(
       {
-        error: 'Cannot delete a finalised memory via this endpoint',
-        detail: 'Final-memory soft-delete via memory_revisions lands in Step 6g+',
+        error: 'Deleting a finalised memory requires explicit confirmation',
+        detail: 'Pass ?confirm=final. This is permanent: the verbatim text and its revisions are removed.',
       },
       { status: 400 },
     )

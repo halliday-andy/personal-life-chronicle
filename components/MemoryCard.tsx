@@ -88,6 +88,7 @@ export default function MemoryCard({ m }: { m: MemoryRow }) {
   // state if the user doesn't follow through.
   const [confirmingAccept, setConfirmingAccept] = useState(false)
   const [confirmingDecline, setConfirmingDecline] = useState(false)
+  const [confirmingDeleteFinal, setConfirmingDeleteFinal] = useState(false)
 
   // ── Hidden after a successful Decline (the row will fully unmount
   //    on router.refresh(), but we hide it optimistically). ───────
@@ -136,6 +137,33 @@ export default function MemoryCard({ m }: { m: MemoryRow }) {
     setError(null)
     try {
       const res = await fetch(`/api/memory/${memory.id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body?.error ?? `HTTP ${res.status}`)
+      }
+      setRemoved(true)
+      router.refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  // Owner curation of finalized memories (duplicates, test entries —
+  // decided with Andy 2026-06-13). Same two-click confirm as Decline;
+  // the API additionally requires ?confirm=final.
+  async function handleDeleteFinal() {
+    if (!confirmingDeleteFinal) {
+      setConfirmingDeleteFinal(true)
+      setError(null)
+      setTimeout(() => setConfirmingDeleteFinal(false), CONFIRM_WINDOW_MS)
+      return
+    }
+    setBusy('decline')
+    setError(null)
+    try {
+      const res = await fetch(`/api/memory/${memory.id}?confirm=final`, { method: 'DELETE' })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
         throw new Error(body?.error ?? `HTTP ${res.status}`)
@@ -243,6 +271,25 @@ export default function MemoryCard({ m }: { m: MemoryRow }) {
         <span className="ml-auto text-stone-400">
           {new Date(memory.created_at).toLocaleDateString()}
         </span>
+        {!isDraft && !editing && (
+          <button
+            type="button"
+            onClick={handleDeleteFinal}
+            disabled={busy !== null}
+            title="Permanently remove this memory and its revisions"
+            className={`rounded px-1.5 py-0.5 text-[10px] font-medium disabled:opacity-50 ${
+              confirmingDeleteFinal
+                ? 'bg-rose-600 text-white hover:bg-rose-700'
+                : 'text-stone-300 hover:text-rose-600'
+            }`}
+          >
+            {busy === 'decline'
+              ? 'Deleting…'
+              : confirmingDeleteFinal
+              ? 'Click again — permanent'
+              : 'Delete'}
+          </button>
+        )}
       </div>
 
       {/* Action row (drafts only, never below the panel — see file header) */}
