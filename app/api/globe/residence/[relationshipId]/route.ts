@@ -96,12 +96,19 @@ export async function GET(_req: NextRequest, { params }: { params: { relationshi
   return NextResponse.json({ memoryId, body, isDraft, image, images, facts, linked })
 }
 
+const PIN_TYPE_CODES = [
+  'lived_at', 'worked_at', 'owned_residence_at',
+  'lived_briefly_at', 'vacationed_at', 'traveled_for_work_to',
+] as const
+
 interface PatchBody {
   name?: string
   whenText?: string
   body?: string
   lng?: number
   lat?: number
+  typeCode?: string         // re-classify the pin; omit to leave type/anchor untouched
+  anchorId?: string | null  // marker → its primary residence (null = standalone)
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: { relationshipId: string } }) {
@@ -126,6 +133,19 @@ export async function PATCH(request: NextRequest, { params }: { params: { relati
     } catch { /* non-fatal: keep existing subtype/country */ }
   }
 
+  // Optional re-type. Omitted typeCode leaves type + anchor untouched (a
+  // plain text/relocate edit). When present it must be a valid pin type.
+  let typeCode: string | null = null
+  if (p.typeCode !== undefined) {
+    if (!(PIN_TYPE_CODES as readonly string[]).includes(p.typeCode)) {
+      return NextResponse.json({ error: `Unknown pin type: ${p.typeCode}` }, { status: 400 })
+    }
+    typeCode = p.typeCode
+  }
+  const anchorId = typeCode && typeCode !== 'lived_at'
+    ? (typeof p.anchorId === 'string' ? p.anchorId : null)
+    : null
+
   const admin = createAdminClient()
   const { data, error } = await admin.rpc('update_residence_pin', {
     p_relationship_id: params.relationshipId,
@@ -137,6 +157,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { relati
     p_country_code: countryCode,
     p_when_text: p.whenText?.trim() || null,
     p_body: p.body !== undefined ? p.body.trim() : null,
+    p_type_code: typeCode,
+    p_anchor_residence_id: anchorId,
   })
   if (error) {
     return NextResponse.json({ error: 'Failed to update pin', detail: error.message }, { status: 500 })

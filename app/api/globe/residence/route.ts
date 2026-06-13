@@ -42,13 +42,23 @@ export async function GET() {
   return NextResponse.json({ pins: data ?? [] })
 }
 
+// The six globe pin types (relationship_types codes). Primary residence
+// (lived_at) is the connected spine; the rest are time-anchored markers.
+const PIN_TYPE_CODES = [
+  'lived_at', 'worked_at', 'owned_residence_at',
+  'lived_briefly_at', 'vacationed_at', 'traveled_for_work_to',
+] as const
+type PinTypeCode = (typeof PIN_TYPE_CODES)[number]
+
 interface PostBody {
   lng?: number
   lat?: number
   label?: string      // the place name the user confirmed in the UI
   whenText?: string   // optional free-text date ("early 70s")
   body?: string       // optional verbatim narrative
-  position?: number | null  // sequence slot; null/omitted = append at the end
+  position?: number | null  // spine sequence slot; null/omitted = append
+  typeCode?: string   // one of PIN_TYPE_CODES; defaults to 'lived_at'
+  anchorId?: string | null  // marker → its primary residence relationship
 }
 
 export async function POST(request: NextRequest) {
@@ -63,7 +73,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const { lng, lat, label, whenText, body, position } = payload
+  const { lng, lat, label, whenText, body, position, typeCode, anchorId } = payload
   if (
     typeof lng !== 'number' || typeof lat !== 'number' ||
     Number.isNaN(lng) || Number.isNaN(lat) ||
@@ -71,6 +81,15 @@ export async function POST(request: NextRequest) {
   ) {
     return NextResponse.json({ error: 'lng/lat must be valid coordinates' }, { status: 400 })
   }
+  const type: PinTypeCode =
+    typeCode && (PIN_TYPE_CODES as readonly string[]).includes(typeCode)
+      ? (typeCode as PinTypeCode)
+      : 'lived_at'
+  if (typeCode && type !== typeCode) {
+    return NextResponse.json({ error: `Unknown pin type: ${typeCode}` }, { status: 400 })
+  }
+  // Anchor only applies to markers; ignored for the spine.
+  const anchor = type === 'lived_at' ? null : (typeof anchorId === 'string' ? anchorId : null)
   // Optional sequence slot. Must be a non-negative integer when present;
   // null/undefined means "append at the end".
   const pos =
@@ -111,6 +130,8 @@ export async function POST(request: NextRequest) {
     p_when_text: whenText?.trim() || null,
     p_body_text: body?.trim() || null,
     p_position: pos,
+    p_type_code: type,
+    p_anchor_residence_id: anchor,
   })
   if (error) {
     return NextResponse.json({ error: 'Failed to place pin', detail: error.message }, { status: 500 })
@@ -127,8 +148,12 @@ export async function POST(request: NextRequest) {
     })
   }
 
-  // Non-blocking: was this placed near a place already on the globe?
-  const proximity = await proximityHint(admin, user.id, lng, lat, row?.relationship_id ?? null)
+  // Non-blocking: was this placed near a residence already on the globe?
+  // Only meaningful for primary residences — "returning / local move" is a
+  // statement about where you lived, not a vacation near home.
+  const proximity = type === 'lived_at'
+    ? await proximityHint(admin, user.id, lng, lat, row?.relationship_id ?? null)
+    : null
 
   return NextResponse.json({
     pin: {
@@ -142,6 +167,8 @@ export async function POST(request: NextRequest) {
       when_text: whenText?.trim() || null,
       has_memory: Boolean(row?.memory_id),
       sort_order: row?.sort_order ?? null,
+      type_code: type,
+      anchor_residence_id: anchor,
     },
     proximity,
   })
