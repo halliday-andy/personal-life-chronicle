@@ -178,6 +178,7 @@ export default function PinEditPanel({
           <option key={t.code} value={t.code}>{t.label}</option>
         ))}
       </select>
+      <p className="mt-1 text-xs leading-relaxed text-[var(--ink-dim)]/80">{pinTypeMeta(typeCode).description}</p>
 
       {typeCode !== SPINE_CODE && primaries.length > 0 && (
         <>

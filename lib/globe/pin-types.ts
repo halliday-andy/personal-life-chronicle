@@ -15,15 +15,24 @@ export interface PinTypeMeta {
   isSpine: boolean
   /** Phrasing for the "which home?" anchor picker, per type. */
   anchorPrompt: string
+  /** One-line description shown under the type selector so the choice is
+   *  self-explanatory (added after a real-use ambiguity, 2026-06-14). */
+  description: string
 }
 
 export const PIN_TYPES: PinTypeMeta[] = [
-  { code: 'lived_at',             label: 'Primary residence',   color: '#f4b14a', isSpine: true,  anchorPrompt: '' },
-  { code: 'worked_at',            label: 'Workplace',           color: '#5fc6dc', isSpine: false, anchorPrompt: 'Which home did you commute from?' },
-  { code: 'owned_residence_at',   label: 'Second residence',    color: '#f4b14a', isSpine: false, anchorPrompt: 'Which home was this alongside?' },
-  { code: 'lived_briefly_at',     label: 'Short-term stay',     color: '#d99b46', isSpine: false, anchorPrompt: 'Which home was this between?' },
-  { code: 'vacationed_at',        label: 'Vacation',            color: '#ef8aa6', isSpine: false, anchorPrompt: 'Which home were you living in then?' },
-  { code: 'traveled_for_work_to', label: 'Professional travel', color: '#8a9bc0', isSpine: false, anchorPrompt: 'Which home were you living in then?' },
+  { code: 'lived_at',             label: 'Primary residence',   color: '#f4b14a', isSpine: true,  anchorPrompt: '',
+    description: 'A home you lived in. These form the main line of your life’s journey.' },
+  { code: 'worked_at',            label: 'Workplace',           color: '#5fc6dc', isSpine: false, anchorPrompt: 'Which home did you commute from?',
+    description: 'An office or employer you worked at — draws a commute line to the home you lived in then.' },
+  { code: 'owned_residence_at',   label: 'Second residence',    color: '#f4b14a', isSpine: false, anchorPrompt: 'Which home was this alongside?',
+    description: 'A second home you returned to alongside your main one — owned, rented, shared, or a recurring seasonal place.' },
+  { code: 'lived_briefly_at',     label: 'Short-term stay',     color: '#d99b46', isSpine: false, anchorPrompt: 'Which home was this between?',
+    description: 'Somewhere you lived briefly — a summer, a sublet, a short posting.' },
+  { code: 'vacationed_at',        label: 'Vacation',            color: '#ef8aa6', isSpine: false, anchorPrompt: 'Which home were you living in then?',
+    description: 'A place you traveled to for leisure — a trip, not a home.' },
+  { code: 'traveled_for_work_to', label: 'Professional travel', color: '#8a9bc0', isSpine: false, anchorPrompt: 'Which home were you living in then?',
+    description: 'A work trip to a place you didn’t live.' },
 ]
 
 export const SPINE_CODE = 'lived_at'
