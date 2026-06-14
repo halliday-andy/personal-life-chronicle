@@ -242,6 +242,35 @@ HEIC in Chrome and confirm it renders. Note: `npm run lint` turns out to
 be unconfigured in this repo (next lint prompts for interactive setup) —
 tsc is the only static gate; configuring ESLint is a candidate chore.
 
+## 2026-06-14 — pin-type descriptions + a debugging near-miss
+
+- **Pin-type descriptions shipped (`5f2ddf0`)**: each of the six types now shows a
+  one-line description under the selector (modal + edit panel), driven by
+  `lib/globe/pin-types.ts`. Prompted by a real ambiguity — Andy's recurring summer
+  rental at Playa Comaruga (anchored to Zaragoza) could read as Second residence,
+  Short-term stay, or Vacation. Descriptions disambiguate; all three still render
+  the same dashed tether so no choice is "wrong."
+- **Backlog "data loss" was a FALSE ALARM — no bug.** Andy's Operation Reflex /
+  Zaragoza research (a "context entry") IS correctly saved: `review_queue` row
+  `99b9ac68`, `item_type='memory_elaboration_needed'`, open, full text intact;
+  surfaces on /review. The capture assistant behaved correctly (kept research out
+  of the Raw Vault, queued it). **My initial diagnosis was wrong**: I ran a
+  `review_queue` select that named a nonexistent `status` column → supabase-js
+  returned error+null → I misread it as "0 rows / not persisted" and told Andy his
+  data wasn't saved. **Class-of-bug lesson: a supabase-js `.select()` naming a
+  column that doesn't exist returns `{data:null,error}`, not a throw — ALWAYS check
+  `error`, or you'll mistake a broken query for an empty table.** Systematic
+  debugging (reproduce before fixing) prevented me from "fixing" a working feature.
+- **Small real follow-up (not urgent):** `memory_elaboration_needed` items set
+  `item_id = source_submission_id` (not a memory id), so /review tries to hydrate a
+  nonexistent memory and renders the item thinly. Render these from
+  `context_json.text` instead. Cosmetic; queued.
+- **#3 NEXT — context-layer design session:** where non-recollection material
+  (research, historical background) ultimately lives. Backlog is the interim pen;
+  durable home is `entity_biography` (attached to e.g. Zaragoza AB / Strategic Air
+  Command) + period/era context. Empty tables `entity_biography`/`life_periods`
+  exist. Brainstorm capture → route (entity vs period) → surface.
+
 ## Step 7 Slice 3 — in progress (2026-06-12, autonomous under bypass)
 
 Canonical design: `docs/plans/2026-06-12-globe-place-types-design.md`.
