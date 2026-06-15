@@ -304,7 +304,11 @@ from recollections: captured once, attached to the **entity it's about** (ANY
 entity type, not just places — e.g. an `event_series`); recollections inherit
 context via `memory_entities` (never attached to a recollection directly). Data
 model **B** = many context notes per entity (footnotes/bibliography) with optional
-source_label+source_url; synthesized biography deferred. Capture =
+source_label+source_url; synthesized biography deferred. **Each note carries a
+`visibility`**: shareable (governed by Access Cards) vs private ("for your eyes
+only" — entity-level analog of `memories.private_notes`, canonical case = sensitive
+notes on a person). Same Add-context UI hosts both. **Hard invariant:**
+published/synthesized artifacts draw ONLY from shareable notes, never private. Capture =
 **propose-and-confirm** (assistant classifies as context + proposes the entity;
 user Accept/Adjust/Decline) — replaces the `memory_elaboration_needed` backlog
 dead-end. Surfaces: per-entity **Entity View** is the context home (notes + linked
