@@ -451,12 +451,21 @@ function MemoryElaborationBody({
 }) {
   const memory = item.memory
   const ctx = item.context_json ?? {}
+  // Backlog items from the orchestrator (add_to_backlog) store the content
+  // in `text` + `rationale`; older/other shapes used `prompt`. item.memory
+  // is usually null here (item_id is the capture submission, not a memory),
+  // so the text is what to show.
+  const text = typeof ctx.text === 'string' ? ctx.text : null
   const prompt = typeof ctx.prompt === 'string' ? ctx.prompt : null
+  const rationale = typeof ctx.rationale === 'string' ? ctx.rationale : null
   return (
     <div>
-      <div className="text-sm text-stone-700 mb-2">
-        {prompt ?? 'Elaboration prompt'}
+      <div className="text-sm text-stone-700 mb-2 max-h-48 overflow-y-auto whitespace-pre-wrap">
+        {text ?? prompt ?? 'Elaboration prompt'}
       </div>
+      {rationale && (
+        <p className="text-xs text-stone-500 italic mb-3">{rationale}</p>
+      )}
       {memory && (
         <p className="text-xs text-stone-500 italic mb-3 line-clamp-2">
           {memory.content_raw}
