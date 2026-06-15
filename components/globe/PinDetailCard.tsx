@@ -63,6 +63,7 @@ export default function PinDetailCard({
   const [reloadKey, setReloadKey] = useState(0)
   const [imageBusy, setImageBusy] = useState(false)
   const [imageError, setImageError] = useState<string | null>(null)
+  const [imageNotice, setImageNotice] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -87,12 +88,13 @@ export default function PinDetailCard({
   const handleFile = useCallback(async (file: File) => {
     setImageBusy(true)
     setImageError(null)
+    setImageNotice(null)
     try {
       // HEIC→JPEG + compression toward ~2MB happens client-side so every
       // browser can render what lands in storage. From the card, a new
       // upload always becomes the pin photo (primary); a previous photo
       // is demoted into the gallery, not deleted.
-      const prepared = await preprocessPinImage(file)
+      const { file: prepared, warning } = await preprocessPinImage(file)
       const form = new FormData()
       form.append('file', prepared)
       form.append('primary', 'true')
@@ -104,6 +106,7 @@ export default function PinDetailCard({
       if (!res.ok) throw new Error(d.detail || d.error || `HTTP ${res.status}`)
       setImage(d.image ?? null)
       setImageCount(d.images?.length ?? (d.image ? 1 : 0))
+      setImageNotice(warning)
     } catch (e) {
       setImageError(e instanceof Error ? e.message : 'Upload failed.')
     } finally {
@@ -293,6 +296,7 @@ export default function PinDetailCard({
       )}
 
       {imageError && <p className="mt-2 text-xs text-rose-300">{imageError}</p>}
+      {imageNotice && <p className="mt-2 text-xs text-amber-300/90">{imageNotice}</p>}
     </div>
   )
 }

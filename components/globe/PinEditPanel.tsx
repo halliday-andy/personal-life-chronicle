@@ -73,6 +73,7 @@ export default function PinEditPanel({
   const [linkedCount, setLinkedCount] = useState(0)
   const [galleryBusy, setGalleryBusy] = useState(false)
   const [galleryError, setGalleryError] = useState<string | null>(null)
+  const [galleryNotice, setGalleryNotice] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   // Load the recollection text + photo gallery for this pin.
@@ -92,6 +93,7 @@ export default function PinEditPanel({
   async function galleryCall(run: () => Promise<Response>) {
     setGalleryBusy(true)
     setGalleryError(null)
+    setGalleryNotice(null)
     try {
       const res = await run()
       const d = await res.json().catch(() => ({}))
@@ -106,12 +108,18 @@ export default function PinEditPanel({
   }
 
   async function handleAddPhoto(file: File) {
+    setGalleryNotice(null)
+    let warning: string | null = null
     await galleryCall(async () => {
+      // Best-effort: HEIC conversion/compression never blocks the upload;
+      // a failure falls back to the original file + a soft warning.
       const prepared = await preprocessPinImage(file)
+      warning = prepared.warning
       const form = new FormData()
-      form.append('file', prepared)
+      form.append('file', prepared.file)
       return fetch(`/api/globe/residence/${pin.relationship_id}/image`, { method: 'POST', body: form })
     })
+    if (warning) setGalleryNotice(warning)
   }
 
   return (
@@ -302,6 +310,7 @@ export default function PinEditPanel({
             </div>
           )}
           {galleryError && <p className="mt-1 text-xs text-rose-300">{galleryError}</p>}
+          {galleryNotice && <p className="mt-1 text-xs text-amber-300/90">{galleryNotice}</p>}
         </div>
       )}
 
