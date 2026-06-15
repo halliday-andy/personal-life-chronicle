@@ -242,6 +242,21 @@ HEIC in Chrome and confirm it renders. Note: `npm run lint` turns out to
 be unconfigured in this repo (next lint prompts for interactive setup) —
 tsc is the only static gate; configuring ESLint is a candidate chore.
 
+## Shared global nav header (2026-06-14, `fcb8bb6`)
+
+Fable-5-suggested refactor, agreed + done after Slice 3 build. `components/AppNav.tsx`
+(client, `usePathname`) renders once from `app/(protected)/layout.tsx`: brand +
+links to Dashboard/Globe/Memories/Entities/Review/Interview with active-route
+highlighting + email/sign-out. **Globe opts out** (returns null on `/globe`) so its
+full-screen nocturne chrome is never covered — it keeps its own glass "← Dashboard"
+link. Each page dropped its redundant "← Dashboard | Title" bar, keeping a slim
+title+counts row; dashboard's duplicated email/sign-out moved into AppNav. Interview
+page (full-height chat) now uses `h-[calc(100vh-3.5rem)]` to fit below the 56px nav.
+Attributed to Opus 4.8 (Fable 5 originated the idea). Ends the navigation-dead-end
+whack-a-mole — new protected pages inherit nav automatically. **JSX gotcha hit:** a
+`{/* */}` comment can't precede the root element in a `return (...)` (creates two
+roots); use a `//` JS comment instead.
+
 ## Reliable HEIC display — server-side conversion (2026-06-14, `c45278b`)
 
 Follow-up to the graceful-fallback fix: Andy will send iPhone HEICs to his Mac
