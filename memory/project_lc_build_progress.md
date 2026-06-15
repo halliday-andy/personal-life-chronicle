@@ -242,6 +242,23 @@ HEIC in Chrome and confirm it renders. Note: `npm run lint` turns out to
 be unconfigured in this repo (next lint prompts for interactive setup) —
 tsc is the only static gate; configuring ESLint is a candidate chore.
 
+## Deferred design — interview dialogue → recollections (2026-06-14)
+
+Spec at `docs/plans/2026-06-14-interview-dialogue-to-recollections-design.md`
+(commit `3e93af4`). **Explicitly post-MVP** — a narrative-biography editing
+enhancement, not a capture primitive; Andy's use-case proofing doesn't need it.
+Validated decisions: the **journalist model** (assistant elicits → Raw Vault
+holds verbatim answers → synthesis "reports out" with quotations → biography
+publishes a compact view). Whose words = both as layers (verbatim in vault + AI
+synthesis derived). Question preserved in `memories.metadata.interview_question`
++ a session transcript. Trigger = quiet per-answer verbatim capture + "shape
+this" synthesis offer at thread close. Revise-and-propagate: draft edits in
+place, finalized edits write `memory_revisions` (non-destructive), synthesis
+goes stale → regenerate reading revisions → propose updated language for
+approval. Rails scaffolded (memory_revisions, synthesis stubs,
+synthesis/invalidated, synthesis_stale); propagation automation + question
+preservation + session transcript + synthesize-on-close are to-build.
+
 ## 2026-06-14 — pin-type descriptions + a debugging near-miss
 
 - **Pin-type descriptions shipped (`5f2ddf0`)**: each of the six types now shows a
