@@ -296,6 +296,26 @@ to fix conversion (e.g. server-side sharp/libheif, or heic2any `multiple` for
 Live Photos) so Chrome gets true HEIC support rather than the Safari-only
 fallback.
 
+## Design — context layer & recollection→entity journey (2026-06-14)
+
+Spec: `docs/plans/2026-06-14-context-layer-and-recollection-surfaces-design.md`
+(commit `f1c0323`). Validated with Andy. **Context** is a content type distinct
+from recollections: captured once, attached to the **entity it's about** (ANY
+entity type, not just places — e.g. an `event_series`); recollections inherit
+context via `memory_entities` (never attached to a recollection directly). Data
+model **B** = many context notes per entity (footnotes/bibliography) with optional
+source_label+source_url; synthesized biography deferred. Capture =
+**propose-and-confirm** (assistant classifies as context + proposes the entity;
+user Accept/Adjust/Decline) — replaces the `memory_elaboration_needed` backlog
+dead-end. Surfaces: per-entity **Entity View** is the context home (notes + linked
+recollections + Add context); **`/memories` must become the searchable, editable
+recollection home** (today editing is only via globe→detail→Edit) with entity
+chips on the recollection DETAIL linking to the Entity View; add-context never on
+the recollection editing form. **To-dos surfaced:** RAF Mildenhall has
+`globe_extraction=false` (no chips) — Inngest-down event loss; re-trigger
+`globe/pin.saved` + consider an extraction-backfill sweep. Confirm
+`entity_biography` cardinality before building the notes store.
+
 ## Deferred design — interview dialogue → recollections (2026-06-14)
 
 Spec at `docs/plans/2026-06-14-interview-dialogue-to-recollections-design.md`
