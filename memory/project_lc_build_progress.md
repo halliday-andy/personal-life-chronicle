@@ -242,6 +242,27 @@ HEIC in Chrome and confirm it renders. Note: `npm run lint` turns out to
 be unconfigured in this repo (next lint prompts for interactive setup) —
 tsc is the only static gate; configuring ESLint is a candidate chore.
 
+## HEIC upload bug fixed (2026-06-14, `549d686`)
+
+Andy's first HEIC upload (to Lockbourne via the edit-panel gallery) failed
+with "Photo action failed." **Root cause (systematic debug):** no server
+request was sent (dev log showed no POST for that pin) + the generic message
+(non-Error throw) ⟹ client-side `heic2any`/libheif conversion *rejected*, and
+since conversion was the ONLY path, the whole upload died — even though the
+`pin_images` bucket accepts raw HEIC. **Fix:** `preprocessPinImage` is now
+best-effort — returns `{ file, warning }`; on HEIC conversion or compression
+failure it falls back to the original file, logs the real rejection to console,
+and surfaces an amber notice ("uploaded as-is — may only display in Safari").
+Both callers (PinDetailCard, PinEditPanel gallery) updated. Verified in Node
+(heic2any can't load there → exercises the fallback): HEIC falls back without
+throwing, JPEG passes through. **Class-of-bug lesson:** a client-side
+enhancement (format conversion) must never gate the core action — degrade
+gracefully. **Follow-up (not urgent):** the *browser-side* libheif failure
+reason is now logged to console on the next attempt — use it to decide whether
+to fix conversion (e.g. server-side sharp/libheif, or heic2any `multiple` for
+Live Photos) so Chrome gets true HEIC support rather than the Safari-only
+fallback.
+
 ## Deferred design — interview dialogue → recollections (2026-06-14)
 
 Spec at `docs/plans/2026-06-14-interview-dialogue-to-recollections-design.md`
