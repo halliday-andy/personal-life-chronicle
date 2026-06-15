@@ -24,9 +24,18 @@ Two distinct kinds of user content, kept architecturally separate:
 
 Each entity accumulates **many context notes** — a footnotes/bibliography platform — nothing is overwritten:
 
-- A context note has: `entity_id`, `body` (the text), optional **`source_label` + `source_url`** (the Zaragoza paste carried a Gemini URL — notes act as real citations later), `created_by` (`owner` | `assistant`), `created_at`.
+- A context note has: `entity_id`, `body` (the text), optional **`source_label` + `source_url`** (the Zaragoza paste carried a Gemini URL — notes act as real citations later), `created_by` (`owner` | `assistant`), `created_at`, and **`visibility`** (see below).
 - **Schema check at build time:** confirm whether `entity_biography` is one-row-per-entity or many; if one-row, add a dedicated `entity_context_notes` table (many per entity). Do not force a single curated "about" — that's lossy (a second paste would fight the first).
 - **Deferred:** a *synthesized* biography/precis derived from notes + recollections. It will *draw from* context notes (not be limited to them) when we build the compilation/presentation step. Mirrors the recollection→synthesis pattern. Out of scope here.
+
+### Visibility — shareable vs private (Andy, 2026-06-14)
+
+A note's **visibility is an attribute**, so one store and one "Add context" UI host both kinds:
+
+- **Shareable** — published, governed by **Access Cards** (cards/grants, invariant #3; audience chosen per card once Access Cards ship — default Private until granted, matching the orchestrator's default-to-private posture).
+- **Private** — owner-only "for your eyes only" commentary; the **entity-level analog of `memories.private_notes`**. Never exposed via Access Cards, shares, or any non-owner read. The canonical case is sensitive observations about a **person** entity.
+
+**Hard invariant:** the deferred synthesized biography (and any published artifact) draws **only from shareable notes — never private ones.** Private entity commentary informs the owner's reading but must never surface in a published compilation, exactly as `memories.private_notes` is walled off today. Synthesis queries over context notes MUST filter `visibility = 'shareable'`.
 
 ## Capture flow (decision: propose-and-confirm)
 
@@ -40,7 +49,7 @@ Not fully automatic (user keeps control of the association); not pure manual (th
 
 ## Surfaces & navigation
 
-- **Entity View (the home for context).** A per-entity page showing: the entity's **context notes** (with sources), the **recollections that mention it**, and an **"Add context"** action (paste/type a note + optional source). For place entities this is reachable from the globe pin; for all entities from `/entities`.
+- **Entity View (the home for context).** A per-entity page showing: the entity's **context notes** (with sources), the **recollections that mention it**, and an **"Add context"** action (paste/type a note + optional source + a **Private / Shareable** visibility choice). Private notes render in a visually distinct, owner-only section. For place entities this is reachable from the globe pin; for all entities from `/entities`.
 - **`/memories` — searchable, editable recollection home (companion requirement).** Today a recollection is only editable via globe → detail card → Edit (too deep). `/memories` must become the primary searchable list with an **editable recollection detail**. On that detail (the read view, not the edit form) the recollection's **entity chips** appear and **link to each entity's View** — the navigation path to "add context" when needed.
 - **Recollection editing stays pure.** No "add context" on the editing form. Context is entity-scoped; you navigate to the entity to add it.
 - **Globe.** A place pin's detail card links through to that place's Entity View (where its context lives), unifying the globe with the entity/context surfaces.
