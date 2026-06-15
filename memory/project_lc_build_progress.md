@@ -332,12 +332,19 @@ preservation + session transcript + synthesize-on-close are to-build.
   column that doesn't exist returns `{data:null,error}`, not a throw — ALWAYS check
   `error`, or you'll mistake a broken query for an empty table.** Systematic
   debugging (reproduce before fixing) prevented me from "fixing" a working feature.
-- **✅ DONE (`d41af11`):** `memory_elaboration_needed` items render thinly — the
-  card read `ctx.prompt` + a linked memory, but orchestrator backlog items store
-  content in `ctx.text` + `ctx.rationale` and have no linked memory (`item_id` is
-  the capture submission). The card showed an empty "Elaboration prompt" placeholder,
-  hiding the user's real research (Andy hit this on the Zaragoza item via the new
-  AppNav). Fixed: renders `ctx.text` (scrollable) + `ctx.rationale`.
+- **✅ DONE (`d41af11` + `0c1dbca`):** `memory_elaboration_needed` cards rendered
+  thinly (empty "Elaboration prompt" placeholder), hiding the user's research (Andy
+  hit it on the Zaragoza item via the new AppNav). First fix showed `ctx.text` — but
+  that's only the orchestrator's 753-char SUMMARY; the user's full 6,911-char
+  research lives in `capture_submissions.input_text` (item_id = the submission id).
+  Second fix: /review now hydrates the submission's `input_text` into
+  `item.fullText`; the card shows the FULL research (scrollable) + the queue rationale.
+  **Standing gap (→ context-layer design):** these cards are still Dismiss-only — no
+  workflow to act on non-recollection research (view-in-place, attach to an entity as
+  `entity_biography` context, elaborate, etc.). Andy hit this dead-end during proofing;
+  it's motivating pulling the deferred context-layer design
+  (`docs/plans/2026-06-14-interview-dialogue-...` sibling) forward. The backlog is an
+  interim holding pen, not a destination.
 - **#3 NEXT — context-layer design session:** where non-recollection material
   (research, historical background) ultimately lives. Backlog is the interim pen;
   durable home is `entity_biography` (attached to e.g. Zaragoza AB / Strategic Air
