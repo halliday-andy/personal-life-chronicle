@@ -28,6 +28,7 @@ import {
   MAX_PIN_IMAGE_BYTES,
   PIN_IMAGE_MIME_TYPES,
 } from '@/lib/globe/pin-image'
+import { toWebSafeImage } from '@/lib/globe/heic-server'
 
 async function ownedPlaceEntity(relationshipId: string): Promise<
   { userId: string; entityId: string } | null
@@ -65,12 +66,16 @@ export async function POST(request: NextRequest, { params }: { params: { relatio
 
   const admin = createAdminClient()
   try {
+    // Convert HEIC/HEIF → JPEG server-side so the stored image renders in
+    // every browser (not just Safari). Non-HEIC passes through untouched.
+    const raw = Buffer.from(await file.arrayBuffer())
+    const safe = await toWebSafeImage(raw, file.type, file.name || null)
     const image = await addPinImage(admin, {
       userId: owned.userId,
       entityId: owned.entityId,
-      bytes: Buffer.from(await file.arrayBuffer()),
-      mimeType: file.type,
-      filename: file.name || null,
+      bytes: safe.bytes,
+      mimeType: safe.mimeType,
+      filename: safe.filename,
       makePrimary,
     })
     const images = await listPinImages(admin, owned.userId, owned.entityId)

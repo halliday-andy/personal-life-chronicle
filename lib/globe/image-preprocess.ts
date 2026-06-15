@@ -1,14 +1,11 @@
 /**
- * Client-side pin-image preprocessing (Step 7 Slice 2 follow-up,
- * agreed 2026-06-10):
+ * Client-side pin-image preprocessing (Step 7 Slice 2 follow-up).
  *
- *   1. HEIC/HEIF → JPEG. iPhone photos upload fine but only Safari can
- *      render HEIC in an <img>; converting before upload makes them
- *      first-class in every browser. Decoder (heic2any, wasm) loads
- *      lazily — only when a HEIC actually arrives.
- *   2. Compression toward the ~2MB target from the image-storage memo:
- *      downscale to max 2048px and re-encode as JPEG, stepping quality
- *      down until under target (or the quality floor).
+ * Scope as of 2026-06-14: **compression only**. HEIC→JPEG conversion was
+ * moved SERVER-SIDE (lib/globe/heic-server.ts) — doing it in the browser
+ * (heic2any/libheif) was unreliable and failed on real iPhone files. HEIC
+ * now passes straight through to the server, which converts it. Here we
+ * only downscale/re-encode large raster images to save bandwidth.
  *
  * Browser-only (canvas APIs) — call from client components.
  */
@@ -63,48 +60,21 @@ export interface PreprocessResult {
  * 2026-06-14: a heic2any rejection used to fail the whole upload).
  */
 export async function preprocessPinImage(file: File): Promise<PreprocessResult> {
-  let working: Blob = file
-  let name = file.name
-  const heic = isHeic(file)
-
-  if (heic) {
-    try {
-      const mod = await import('heic2any')
-      const convert = (mod.default ?? mod) as (opts: {
-        blob: Blob; toType?: string; quality?: number
-      }) => Promise<Blob | Blob[]>
-      const out = await convert({ blob: file, toType: 'image/jpeg', quality: QUALITY_START })
-      working = Array.isArray(out) ? out[0] : out
-      name = jpegName(name)
-    } catch (err) {
-      // heic2any rejects with a plain object, not an Error — stringify it
-      // so the diagnostic is actually readable.
-      console.error(
-        '[pin-image] HEIC→JPEG conversion failed; uploading the original HEIC.',
-        err instanceof Error ? err : JSON.stringify(err),
-      )
-      return {
-        file,
-        warning:
-          'Couldn’t convert this HEIC photo — it was uploaded as-is and may only display in Safari.',
-      }
-    }
-  }
+  // HEIC/HEIF: don't touch it in the browser — the server converts it to
+  // JPEG reliably. Canvas can't decode HEIC anyway. Pass straight through.
+  if (isHeic(file)) return { file, warning: null }
 
   // Animated GIFs would lose animation through canvas; pass through.
-  if (!heic && file.type === 'image/gif') return { file, warning: null }
+  if (file.type === 'image/gif') return { file, warning: null }
 
-  // Fast paths: already small enough.
-  if (working.size <= TARGET_BYTES) {
-    if (!heic) return { file, warning: null }
-    return { file: new File([working], name, { type: 'image/jpeg' }), warning: null }
-  }
+  // Already small enough — nothing to gain from re-encoding.
+  if (file.size <= TARGET_BYTES) return { file, warning: null }
 
-  // Downscale + re-encode, stepping quality down toward the target. Also
-  // best-effort: a canvas/decode failure falls back to the (converted or
-  // original) working blob rather than failing the upload.
+  // Downscale + re-encode large raster images to save bandwidth. Best-
+  // effort: a canvas/decode failure falls back to the original file rather
+  // than failing the upload.
   try {
-    const bitmap = await createImageBitmap(working)
+    const bitmap = await createImageBitmap(file)
     try {
       const scale = Math.min(1, MAX_DIMENSION / Math.max(bitmap.width, bitmap.height))
       let best: Blob | null = null
@@ -113,15 +83,12 @@ export async function preprocessPinImage(file: File): Promise<PreprocessResult> 
         if (best.size <= TARGET_BYTES) break
       }
       if (!best) throw new Error('JPEG encode produced nothing')
-      return { file: new File([best], jpegName(name), { type: 'image/jpeg' }), warning: null }
+      return { file: new File([best], jpegName(file.name), { type: 'image/jpeg' }), warning: null }
     } finally {
       bitmap.close()
     }
   } catch (err) {
     console.warn('[pin-image] compression skipped (decode/encode failed).', err)
-    const fallback = heic
-      ? new File([working], name, { type: 'image/jpeg' })
-      : file
-    return { file: fallback, warning: null }
+    return { file, warning: null }
   }
 }
