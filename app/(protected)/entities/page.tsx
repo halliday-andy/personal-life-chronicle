@@ -20,7 +20,6 @@
  */
 
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import EntitiesList, { type EntityRow } from '@/components/EntitiesList'
@@ -77,21 +76,10 @@ export default async function EntitiesPage() {
 
   return (
     <div className="min-h-screen bg-stone-50">
-      <header className="bg-white border-b border-stone-200">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="text-sm text-stone-400 hover:text-stone-900 transition-colors"
-            >
-              ← Dashboard
-            </Link>
-            <span className="text-stone-300">|</span>
-            <span className="text-sm font-medium text-stone-700">Entities</span>
-          </div>
-          <span className="text-xs text-stone-400">{items.length} total</span>
-        </div>
-      </header>
+      <div className="max-w-3xl mx-auto flex items-baseline justify-between px-4 sm:px-6 pt-6">
+        <h1 className="text-lg font-semibold text-stone-900">Entities</h1>
+        <span className="text-xs text-stone-400">{items.length} total</span>
+      </div>
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
         {(entErr || linkErr) && (

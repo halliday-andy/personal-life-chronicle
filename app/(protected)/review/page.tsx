@@ -121,23 +121,10 @@ export default async function ReviewPage() {
 
   return (
     <div className="min-h-screen bg-stone-50">
-      <header className="bg-white border-b border-stone-200">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="text-sm text-stone-400 hover:text-stone-900 transition-colors"
-            >
-              ← Dashboard
-            </Link>
-            <span className="text-stone-300">|</span>
-            <span className="text-sm font-medium text-stone-700">Review</span>
-          </div>
-          <span className="text-xs text-stone-400">
-            {items.length} open
-          </span>
-        </div>
-      </header>
+      <div className="max-w-3xl mx-auto flex items-baseline justify-between px-4 sm:px-6 pt-6">
+        <h1 className="text-lg font-semibold text-stone-900">Review</h1>
+        <span className="text-xs text-stone-400">{items.length} open</span>
+      </div>
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
         {draftCount > 0 && (

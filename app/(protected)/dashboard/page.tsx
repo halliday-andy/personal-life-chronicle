@@ -2,7 +2,6 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import SignOutButton from './sign-out-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -104,15 +103,6 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-stone-50">
-      <header className="bg-white border-b border-stone-200">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <span className="text-base font-semibold text-stone-900 tracking-tight">Life Chronicle</span>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-stone-500">{user.email}</span>
-            <SignOutButton />
-          </div>
-        </div>
-      </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
         <h1 className="text-xl font-semibold text-stone-900">Welcome back</h1>

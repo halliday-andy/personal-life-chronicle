@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import AppNav from '@/components/AppNav'
 import CaptureAssistant from '@/components/CaptureAssistant'
 import { UiChromeProvider } from '@/components/UiChromeContext'
 
@@ -13,6 +14,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
 
   return (
     <UiChromeProvider>
+      <AppNav email={user.email} />
       {children}
       {/*
         Capture assistant mounts at the layout level so it persists across

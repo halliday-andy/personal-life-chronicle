@@ -104,30 +104,14 @@ export default async function MemoriesPage({
   // ── Render ─────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-stone-50">
-      <header className="bg-white border-b border-stone-200">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="text-sm text-stone-400 hover:text-stone-900 transition-colors"
-            >
-              ← Dashboard
-            </Link>
-            <span className="text-stone-300">|</span>
-            <span className="text-sm font-medium text-stone-700">Memories</span>
-            <nav className="ml-2 flex items-center gap-2.5 text-xs text-stone-400">
-              <Link href="/entities" className="hover:text-stone-900 transition-colors">Entities</Link>
-              <Link href="/review" className="hover:text-stone-900 transition-colors">Review</Link>
-              <Link href="/globe" className="hover:text-stone-900 transition-colors">Globe</Link>
-            </nav>
-          </div>
-          <span className="text-xs text-stone-400">
-            {entityFilter
-              ? `${rows.length} matching`
-              : `${rows.length} total · ${finalisedCount} final · ${draftCount} draft${draftCount === 1 ? '' : 's'}`}
-          </span>
-        </div>
-      </header>
+      <div className="max-w-3xl mx-auto flex items-baseline justify-between px-4 sm:px-6 pt-6">
+        <h1 className="text-lg font-semibold text-stone-900">Memories</h1>
+        <span className="text-xs text-stone-400">
+          {entityFilter
+            ? `${rows.length} matching`
+            : `${rows.length} total · ${finalisedCount} final · ${draftCount} draft${draftCount === 1 ? '' : 's'}`}
+        </span>
+      </div>
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
         {error && (

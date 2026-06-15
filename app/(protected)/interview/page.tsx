@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import Link from 'next/link'
 
 type Message = {
   role: 'user' | 'assistant'
@@ -88,24 +87,16 @@ export default function InterviewPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-stone-50">
+    // h-[calc(100vh-3.5rem)] fills the viewport below the global AppNav (h-14).
+    <div className="flex flex-col h-[calc(100vh-3.5rem)] bg-stone-50">
       {/* Header */}
       <header className="bg-white border-b border-stone-200 flex-none">
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="text-sm text-stone-400 hover:text-stone-700 transition-colors"
-            >
-              ← Dashboard
-            </Link>
-            <span className="text-stone-300">|</span>
-            <div>
-              <span className="text-sm font-medium text-stone-700">Free-form Memory Capture</span>
-              <span className="ml-2 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">
-                Phase 0 onboarding not yet started
-              </span>
-            </div>
+            <span className="text-sm font-medium text-stone-700">Free-form Memory Capture</span>
+            <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">
+              Phase 0 onboarding not yet started
+            </span>
           </div>
           {memoriesRecorded > 0 && (
             <span className="text-xs text-stone-400">
