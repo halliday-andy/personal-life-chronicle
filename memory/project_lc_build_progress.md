@@ -332,10 +332,12 @@ preservation + session transcript + synthesize-on-close are to-build.
   column that doesn't exist returns `{data:null,error}`, not a throw — ALWAYS check
   `error`, or you'll mistake a broken query for an empty table.** Systematic
   debugging (reproduce before fixing) prevented me from "fixing" a working feature.
-- **Small real follow-up (not urgent):** `memory_elaboration_needed` items set
-  `item_id = source_submission_id` (not a memory id), so /review tries to hydrate a
-  nonexistent memory and renders the item thinly. Render these from
-  `context_json.text` instead. Cosmetic; queued.
+- **✅ DONE (`d41af11`):** `memory_elaboration_needed` items render thinly — the
+  card read `ctx.prompt` + a linked memory, but orchestrator backlog items store
+  content in `ctx.text` + `ctx.rationale` and have no linked memory (`item_id` is
+  the capture submission). The card showed an empty "Elaboration prompt" placeholder,
+  hiding the user's real research (Andy hit this on the Zaragoza item via the new
+  AppNav). Fixed: renders `ctx.text` (scrollable) + `ctx.rationale`.
 - **#3 NEXT — context-layer design session:** where non-recollection material
   (research, historical background) ultimately lives. Backlog is the interim pen;
   durable home is `entity_biography` (attached to e.g. Zaragoza AB / Strategic Air
