@@ -51,6 +51,9 @@ export interface ReviewItem {
   entity: EntityRef | null
   proposed_primary_entity: EntityRef | null
   memory: MemoryRef | null
+  /** Full original submission text for backlog items (the card's
+   *  context_json.text is only the orchestrator's short summary). */
+  fullText: string | null
 }
 
 const TYPE_BADGE: Record<string, { label: string; classes: string }> = {
@@ -451,20 +454,20 @@ function MemoryElaborationBody({
 }) {
   const memory = item.memory
   const ctx = item.context_json ?? {}
-  // Backlog items from the orchestrator (add_to_backlog) store the content
-  // in `text` + `rationale`; older/other shapes used `prompt`. item.memory
-  // is usually null here (item_id is the capture submission, not a memory),
-  // so the text is what to show.
-  const text = typeof ctx.text === 'string' ? ctx.text : null
+  // Prefer the FULL original submission text (hydrated as item.fullText);
+  // context_json.text is only the orchestrator's short summary. item.memory
+  // is usually null (item_id is the capture submission, not a memory).
+  const summary = typeof ctx.text === 'string' ? ctx.text : null
   const prompt = typeof ctx.prompt === 'string' ? ctx.prompt : null
   const rationale = typeof ctx.rationale === 'string' ? ctx.rationale : null
+  const body = item.fullText ?? summary ?? prompt ?? 'Elaboration prompt'
   return (
     <div>
-      <div className="text-sm text-stone-700 mb-2 max-h-48 overflow-y-auto whitespace-pre-wrap">
-        {text ?? prompt ?? 'Elaboration prompt'}
+      <div className="text-sm text-stone-700 mb-2 max-h-64 overflow-y-auto whitespace-pre-wrap rounded bg-stone-50 p-2">
+        {body}
       </div>
       {rationale && (
-        <p className="text-xs text-stone-500 italic mb-3">{rationale}</p>
+        <p className="text-xs text-stone-500 italic mb-3">Queued because: {rationale}</p>
       )}
       {memory && (
         <p className="text-xs text-stone-500 italic mb-3 line-clamp-2">

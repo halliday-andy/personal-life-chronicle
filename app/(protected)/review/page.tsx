@@ -62,9 +62,10 @@ export default async function ReviewPage() {
 
   const rows = (rqRaw ?? []) as unknown as RawRow[]
 
-  // --- Hydrate referenced entities + memories -----------------------
+  // --- Hydrate referenced entities + memories + backlog submissions --
   const entityIds = new Set<string>()
   const memoryIds = new Set<string>()
+  const submissionIds = new Set<string>()
   for (const r of rows) {
     if (['entity_confirmation_needed', 'entity_merge_proposal'].includes(r.item_type)) {
       entityIds.add(r.item_id)
@@ -74,9 +75,16 @@ export default async function ReviewPage() {
     if (['memory_elaboration_needed', 'synthesis_stale', 'sensitive_promotion'].includes(r.item_type)) {
       memoryIds.add(r.item_id)
     }
+    // Orchestrator backlog items (add_to_backlog) anchor item_id to the
+    // capture submission — pull its full input_text so the card can show
+    // the user's complete research, not just the short summary.
+    if (r.item_type === 'memory_elaboration_needed') {
+      const src = (r.context_json ?? {})['source_submission_id']
+      submissionIds.add(typeof src === 'string' ? src : r.item_id)
+    }
   }
 
-  const [entitiesRes, memoriesRes] = await Promise.all([
+  const [entitiesRes, memoriesRes, submissionsRes] = await Promise.all([
     entityIds.size > 0
       ? admin
           .from('entities')
@@ -89,7 +97,18 @@ export default async function ReviewPage() {
           .select('id, content_raw, occurred_at_fuzzy, time_precision, is_draft')
           .in('id', Array.from(memoryIds))
       : Promise.resolve({ data: [], error: null }),
+    submissionIds.size > 0
+      ? admin
+          .from('capture_submissions')
+          .select('id, input_text')
+          .in('id', Array.from(submissionIds))
+      : Promise.resolve({ data: [], error: null }),
   ])
+
+  const submissionTextById = new Map<string, string>()
+  for (const s of (submissionsRes.data ?? []) as unknown as { id: string; input_text: string | null }[]) {
+    if (s.input_text) submissionTextById.set(s.id, s.input_text)
+  }
 
   const entityById = new Map<string, { id: string; type: string; canonical_name: string; aliases: string[] | null }>()
   for (const e of (entitiesRes.data ?? []) as unknown as { id: string; type: string; canonical_name: string; aliases: string[] | null }[]) {
@@ -116,6 +135,14 @@ export default async function ReviewPage() {
         ? entityById.get(primary) ?? null
         : null,
       memory: isMemory ? memoryById.get(r.item_id) ?? null : null,
+      fullText:
+        r.item_type === 'memory_elaboration_needed'
+          ? submissionTextById.get(
+              (typeof (r.context_json ?? {})['source_submission_id'] === 'string'
+                ? ((r.context_json ?? {})['source_submission_id'] as string)
+                : r.item_id),
+            ) ?? null
+          : null,
     }
   })
 
