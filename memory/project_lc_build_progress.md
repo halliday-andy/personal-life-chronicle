@@ -242,6 +242,24 @@ HEIC in Chrome and confirm it renders. Note: `npm run lint` turns out to
 be unconfigured in this repo (next lint prompts for interactive setup) —
 tsc is the only static gate; configuring ESLint is a candidate chore.
 
+## Reliable HEIC display — server-side conversion (2026-06-14, `c45278b`)
+
+Follow-up to the graceful-fallback fix: Andy will send iPhone HEICs to his Mac
+and upload via desktop Chrome (no iOS auto-convert), so reliable display
+everywhere requires real conversion. **Decision: convert server-side, not in
+the browser.** Browser heic2any/libheif is per-browser-flaky; the server is one
+controlled environment. `lib/globe/heic-server.ts` (`toWebSafeImage`) uses
+`heic-convert` (pure-JS libheif WASM, no native deps — portable to Vercel),
+lazy-loaded only when a HEIC arrives; quality steps 0.85→0.6→0.45 if a converted
+JPEG would exceed the 5MB cap. Wired into `POST …/image` before `addPinImage`,
+so **storage always holds a web-universal JPEG**. Client `preprocessPinImage` is
+now **compression-only** (HEIC passes straight through); `heic2any` dependency
+removed. Privacy-preserving (no third-party CDN — rejected Cloudinary for the
+memory vault). **Proven on a real 3MB HEVC HEIC → valid 3992×2992 JPEG under
+cap**: `scripts/verify-heic-server-convert.mjs`. The image route is Node runtime
+(heic-convert needs Node, not edge). **Prod note:** verify Next traces the
+libheif WASM into the serverless bundle at deploy time (works in dev now).
+
 ## HEIC upload bug fixed (2026-06-14, `549d686`)
 
 Andy's first HEIC upload (to Lockbourne via the edit-panel gallery) failed
