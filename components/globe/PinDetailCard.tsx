@@ -12,6 +12,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { preprocessPinImage } from '@/lib/globe/image-preprocess'
 import { pinTypeMeta } from '@/lib/globe/pin-types'
+import PhotoLightbox from './PhotoLightbox'
 
 export interface PinFacts {
   residence_type: string | null
@@ -64,6 +65,7 @@ export default function PinDetailCard({
   const [imageBusy, setImageBusy] = useState(false)
   const [imageError, setImageError] = useState<string | null>(null)
   const [imageNotice, setImageNotice] = useState<string | null>(null)
+  const [lightbox, setLightbox] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -204,7 +206,9 @@ export default function PinDetailCard({
               <img
                 src={image.url}
                 alt={pin.name}
-                className="h-28 w-28 rounded-xl border border-[var(--glass-border)] object-cover"
+                title="Double-click to enlarge"
+                onDoubleClick={() => setLightbox(image.url)}
+                className="h-28 w-28 cursor-zoom-in rounded-xl border border-[var(--glass-border)] object-cover"
               />
               <div className="absolute inset-0 hidden items-end justify-center gap-2 rounded-xl bg-black/55 pb-2 group-hover:flex">
                 <button
@@ -297,6 +301,8 @@ export default function PinDetailCard({
 
       {imageError && <p className="mt-2 text-xs text-rose-300">{imageError}</p>}
       {imageNotice && <p className="mt-2 text-xs text-amber-300/90">{imageNotice}</p>}
+
+      {lightbox && <PhotoLightbox url={lightbox} alt={pin.name} onClose={() => setLightbox(null)} />}
     </div>
   )
 }

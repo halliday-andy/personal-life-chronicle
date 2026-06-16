@@ -13,6 +13,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { preprocessPinImage } from '@/lib/globe/image-preprocess'
 import { PIN_TYPES, pinTypeMeta, SPINE_CODE } from '@/lib/globe/pin-types'
+import PhotoLightbox from './PhotoLightbox'
 
 export interface EditablePin {
   relationship_id: string
@@ -74,6 +75,7 @@ export default function PinEditPanel({
   const [galleryBusy, setGalleryBusy] = useState(false)
   const [galleryError, setGalleryError] = useState<string | null>(null)
   const [galleryNotice, setGalleryNotice] = useState<string | null>(null)
+  const [lightbox, setLightbox] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   // Load the recollection text + photo gallery for this pin.
@@ -259,7 +261,9 @@ export default function PinEditPanel({
                   <img
                     src={img.url}
                     alt={img.filename ?? 'Pin photo'}
-                    className={`h-16 w-full rounded-lg object-cover ${
+                    title="Double-click to enlarge"
+                    onDoubleClick={() => setLightbox(img.url)}
+                    className={`h-16 w-full cursor-zoom-in rounded-lg object-cover ${
                       img.is_primary
                         ? 'ring-2 ring-[var(--ember)]'
                         : 'border border-[var(--glass-border)] opacity-80'
@@ -362,6 +366,8 @@ export default function PinEditPanel({
           {confirmDelete ? 'Delete permanently — can’t be undone' : 'Delete'}
         </button>
       </div>
+
+      {lightbox && <PhotoLightbox url={lightbox} onClose={() => setLightbox(null)} />}
     </aside>
   )
 }
