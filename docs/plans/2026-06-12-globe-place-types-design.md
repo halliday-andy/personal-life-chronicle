@@ -122,3 +122,18 @@ Plus `tsc --noEmit` + `npm run lint` gates on the frontend.
 5. **Manual proof** — Andy places one of each type, confirms styling, tethers, re-typing, and the time chip in the live app.
 
 Build directly on `main` (project convention; Andy proofs the live dev server on `main`).
+
+---
+
+## Post-ship commentary (Gemini, reviewed 2026-06-15)
+
+**Fixed in code (`324aacf`, migration `20260615120000_globe_anchor_safety.sql`):**
+- **C — Multi-tenancy anchor safety.** `create`/`update_residence_pin` stored `p_anchor_residence_id` unchecked → a client could anchor to another user's residence or a non-primary. Added `validate_residence_anchor()` (non-null anchor must be the same user's own `lived_at`); both RPCs call it. Proof `verify-globe-anchor-safety.mjs`.
+- **A — Re-typing away orphans children.** Re-typing a primary off the spine now sets `anchor_residence_id = NULL` on the markers anchored to it (the FK `ON DELETE SET NULL` only fires on delete, not a type change).
+
+**Adopted as guidance (no code yet):**
+- **B — Multi-residence workplaces via "Workplace Epochs."** Don't let one workplace pin link to multiple homes; instead create multiple `worked_at` pins (e.g. "Google — Austin era" anchored to the Austin home, "Google — Seattle era" to Seattle). Fits the MVP schema, keeps commute lines temporally accurate. This is the supported pattern; supersedes the "deferred multi-home workplace" note.
+
+**UI polish (future, not MVP):**
+- **Tether highlight on selection.** Selecting a marker highlights its tether + anchor pin; selecting a primary highlights all its incoming tethers ("gravity" of a home). A natural extension of the existing selection emphasis.
+- **Static era gradient.** A frontend approximation of the deferred era-coloration: gradient the spine segments by years parsed from `when_text` (warm amber → ember → cool gold). Cheap, effective; revisit when we touch the temporal layer. Note: parsing fuzzy `when_text` ("early 70s") is the catch — keep it best-effort.

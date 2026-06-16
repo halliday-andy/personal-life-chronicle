@@ -242,6 +242,23 @@ HEIC in Chrome and confirm it renders. Note: `npm run lint` turns out to
 be unconfigured in this repo (next lint prompts for interactive setup) —
 tsc is the only static gate; configuring ESLint is a candidate chore.
 
+## Globe anchor-safety hardening (2026-06-15, `324aacf`) — from Gemini commentary
+
+Reviewed Gemini's commentary on the shipped Slice 3 globe design; two were real
+code gaps, fixed in `20260615120000_globe_anchor_safety.sql`:
+- **C (multi-tenancy):** `create`/`update_residence_pin` stored `p_anchor_residence_id`
+  with NO validation — a client could anchor to another user's residence or a
+  non-primary. New `validate_residence_anchor()` (non-null anchor must be the same
+  user's own `lived_at`); both RPCs call it. The DB is the authoritative guard
+  (defense-in-depth; the API route just passes anchorId through).
+- **A (orphan-on-retype):** re-typing a primary off the spine now NULLs the
+  `anchor_residence_id` of markers anchored to it (FK SET NULL only fires on delete).
+Proof `verify-globe-anchor-safety.mjs` (4/4). No invalid anchors in live data.
+**Adopted as guidance (no code):** multi-residence workplaces via "Workplace Epochs"
+(multiple `worked_at` pins per era, not one pin→many homes). **Future UI polish:**
+tether highlight on selection; static era gradient from parsed `when_text`. All in
+`docs/plans/2026-06-12-globe-place-types-design.md` (post-ship commentary section).
+
 ## Shared global nav header (2026-06-14, `fcb8bb6`)
 
 Fable-5-suggested refactor, agreed + done after Slice 3 build. `components/AppNav.tsx`
