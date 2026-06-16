@@ -318,7 +318,12 @@ chips on the recollection DETAIL linking to the Entity View; add-context never o
 the recollection editing form. **To-dos surfaced:** RAF Mildenhall has
 `globe_extraction=false` (no chips) — Inngest-down event loss; re-trigger
 `globe/pin.saved` + consider an extraction-backfill sweep. Confirm
-`entity_biography` cardinality before building the notes store.
+`entity_biography` cardinality before building the notes store. **RESOLVED 2026-06-15:
+`entity_biography` is a `syntheses.type` (derived, one-per-entity), NOT a table — raw
+context needs a dedicated `entity_context_notes` table (gen_random_uuid, user_id w/o
+auth.users FK; visibility shareable|private). Also: `merge_entities()` must repoint
+`entity_context_notes.entity_id` on merge or notes orphan. RLS deferred to Step 13
+(globally stubbed off now).**
 
 ## Deferred design — interview dialogue → recollections (2026-06-14)
 
@@ -371,9 +376,9 @@ preservation + session transcript + synthesize-on-close are to-build.
   interim holding pen, not a destination.
 - **#3 NEXT — context-layer design session:** where non-recollection material
   (research, historical background) ultimately lives. Backlog is the interim pen;
-  durable home is `entity_biography` (attached to e.g. Zaragoza AB / Strategic Air
-  Command) + period/era context. Empty tables `entity_biography`/`life_periods`
-  exist. Brainstorm capture → route (entity vs period) → surface.
+  durable home is the entity's context notes (a NEW `entity_context_notes` table) +
+  the derived `entity_biography` synthesis (a `syntheses.type`, NOT a table) + period/era
+  context (`life_periods`). Brainstorm capture → route (entity vs period) → surface.
 
 ## Step 7 Slice 3 — in progress (2026-06-12, autonomous under bypass)
 

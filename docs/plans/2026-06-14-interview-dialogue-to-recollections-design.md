@@ -56,6 +56,13 @@ The user's **verbatim turns** become Raw Vault recollections. An **AI synthesis*
 4. **Revise-and-propagate** — staleness → regenerate-from-revisions → approval proposal.
 5. **Biography/publication** — compaction into a shareable, readable artifact.
 
+## Commentary-driven enhancements (Gemini review, 2026-06-15 — adopted)
+
+- **Session-end review modal (draft-bloat hygiene).** D3's *quiet per-answer capture* risks flooding the review queue with half-formed drafts. At session close, the assistant presents a cleanup screen — *"Here are 4 recollections I captured from our talk — save them to your vault?"* — for bulk approve / adjust / discard while the conversation is fresh. This is the preferred review point over "review later in /memories." (Genuine improvement to D3.)
+- **Interactive diff view for synthesis propagation.** D4's "propose updated language for approval" is best rendered as a side-by-side diff (source revision · old synthesis · proposed new · Approve/Edit) so the user sees exactly what the journalist-AI rewrote. Never a silent regenerate.
+- **Bidirectional session↔memory linking.** `interview_sessions.transcript` (JSONB) and `interview_sessions.memory_ids[]` already exist. Store per-turn `extracted_memory_id` inside each interviewee turn so a "Replay Interview" screen can jump turn→memory and back. No schema change needed.
+- **Temporal enrichment on regeneration.** When a synthesis regenerates after a memory's date revision, the Synthesis Agent must be supplied the referenced memories' temporal estimates (`occurred_at_fuzzy` / `time_precision` / constraint-graph output) so it re-sequences correctly and doesn't produce chronological contradictions.
+
 ## MVP boundary (explicit)
 
 None of the above is required for Andy's MVP use-case proofing. Today's behavior (each substantive answer may become its own verbatim draft, reviewed in `/memories`) is sufficient for capture. This spec is the target for the **narrative-biography editing step**, to be built after the MVP is exercised. Cross-references: invariants #1 and #6 (project `CLAUDE.md`), `project_lc_stroll_feature.md`, `project_lc_shareable_artifacts.md`, `project_lc_single_post_share.md`.
