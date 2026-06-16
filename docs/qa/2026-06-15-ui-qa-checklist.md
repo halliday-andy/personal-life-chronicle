@@ -42,6 +42,7 @@ For each, use search box → drag the pin → **Add this place** → pick the **
 - [ ] Hover a non-primary thumbnail → **★ primary** to promote it; the card's main photo updates.
 - [ ] Hover → **✕ remove** one; it disappears, and if you removed the primary another is promoted.
 - [ ] Back on the detail card, a **+N badge** shows on the photo when the gallery has more than one.
+- [ ] **Double-click** any photo (detail-card image or a gallery thumbnail) → it opens **full-size**; close with the **✕**, a backdrop click, or **Escape**.
 
 ## 6. Recollections & Review
 - [ ] **/memories** lists your recollections in full text (Lockbourne shows the long aviation-story memory).
