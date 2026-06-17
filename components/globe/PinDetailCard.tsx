@@ -13,6 +13,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { preprocessPinImage } from '@/lib/globe/image-preprocess'
 import { pinTypeMeta } from '@/lib/globe/pin-types'
 import PhotoLightbox from './PhotoLightbox'
+import Markdown from '../Markdown'
 
 export interface PinFacts {
   residence_type: string | null
@@ -246,9 +247,15 @@ export default function PinDetailCard({
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="max-h-28 overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed text-[var(--ink)]/90">
-            {loading ? 'Loading…' : body || <span className="text-[var(--ink-dim)]">No recollection yet — Edit to add one.</span>}
-          </p>
+          <div className="max-h-28 overflow-y-auto text-sm text-[var(--ink)]/90">
+            {loading ? (
+              'Loading…'
+            ) : body ? (
+              <Markdown>{body}</Markdown>
+            ) : (
+              <span className="text-[var(--ink-dim)]">No recollection yet — Edit to add one.</span>
+            )}
+          </div>
           {factChips.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1.5">
               {factChips.map((c) => (
@@ -280,21 +287,23 @@ export default function PinDetailCard({
                   const truncated = r.text.length > r.excerpt.length || r.excerpt.length >= 240
                   return (
                     <li key={r.id} className="text-xs leading-relaxed text-[var(--ink)]/80">
+                      {/* Toggle stays a plain-text button (no block markdown
+                          nested inside <button>); the expanded recollection
+                          renders as markdown below it (QA item 7). */}
                       <button
                         onClick={() => setExpandedId(expanded ? null : r.id)}
                         className="w-full text-left hover:text-[var(--ink)]"
                         title={expanded ? 'Collapse' : 'Read the full recollection'}
                       >
                         <span className="mr-1.5 text-[var(--ember-soft)]">{expanded ? '▾' : '▸'}</span>
-                        {expanded ? (
-                          <span className="whitespace-pre-wrap">{r.text}</span>
-                        ) : (
+                        {expanded ? 'Collapse' : (
                           <>
                             {r.excerpt}
                             {truncated ? '…' : ''}
                           </>
                         )}
                       </button>
+                      {expanded && <Markdown className="mt-1 pl-4">{r.text}</Markdown>}
                     </li>
                   )
                 })}

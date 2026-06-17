@@ -32,6 +32,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import PrivateNotesPanel from './PrivateNotesPanel'
+import Markdown from './Markdown'
 
 export interface MemoryRow {
   id: string
@@ -401,13 +402,11 @@ export default function MemoryCard({ m }: { m: MemoryRow }) {
           </div>
         </div>
       ) : (
-        <p
-          className={`text-sm leading-relaxed whitespace-pre-wrap ${
-            dimmed ? 'text-stone-600' : 'text-stone-900'
-          }`}
-        >
+        // Verbatim content_raw rendered as markdown — pasted research notes
+        // keep their headings/lists; plain prose is unaffected (QA item 7).
+        <Markdown className={`text-sm ${dimmed ? 'text-stone-600' : 'text-stone-900'}`}>
           {memory.content_raw}
-        </p>
+        </Markdown>
       )}
 
       {/* Error */}
