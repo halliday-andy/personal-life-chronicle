@@ -267,6 +267,22 @@ export default function GlobeView() {
     setStagedCoords(null)
   }, [])
 
+  // Step to the previous/next home along the residential spine and fly the
+  // globe to it (QA feature request). Spine-only for MVP; significant
+  // marker "children" (workplaces, second residences) are a deferred design
+  // — see documentation/feature_residential_globe_onboarding.md.
+  const navigateSpine = useCallback((dir: -1 | 1) => {
+    const spine = pins.filter((p) => p.type_code === SPINE_CODE)
+    const idx = spine.findIndex((p) => p.relationship_id === selectedId)
+    if (idx < 0) return
+    const next = spine[idx + dir]
+    if (!next) return
+    selectPin(next.relationship_id)
+    // Preserve the user's zoom; flyTo arcs (zoom out → in) on long hops,
+    // giving the requested smooth re-orientation.
+    mapRef.current?.flyTo({ center: [next.lng, next.lat], speed: 0.8, curve: 1.6, essential: true })
+  }, [pins, selectedId, selectPin])
+
   // Initialise the map once.
   useEffect(() => {
     if (mapRef.current || !containerRef.current) return
@@ -751,6 +767,7 @@ export default function GlobeView() {
             pin={sel}
             position={spinePos}
             total={spine.length}
+            onNavigate={navigateSpine}
             onEdit={() => setEditMode(true)}
             onClose={deselect}
           />

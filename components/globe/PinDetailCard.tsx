@@ -42,15 +42,20 @@ export default function PinDetailCard({
   pin,
   position,
   total,
+  onNavigate,
   onEdit,
   onClose,
 }: {
   pin: { relationship_id: string; place_entity_id: string; name: string; when_text: string | null; place_subtype: string | null; type_code: string | null }
   position: number   // 0-based index in the SPINE sequence; -1 for off-spine markers
   total: number      // number of primary residences (spine length)
+  onNavigate: (dir: -1 | 1) => void  // step prev/next along the spine + fly there
   onEdit: () => void
   onClose: () => void
 }) {
+  // Prev/next walks the residential spine; shown only on spine pins with
+  // neighbours (markers are off-spine, position -1).
+  const onSpine = position >= 0 && total > 1
   const [body, setBody] = useState('')
   const [image, setImage] = useState<PinImageInfo | null>(null)
   const [imageCount, setImageCount] = useState(0)
@@ -167,6 +172,28 @@ export default function PinDetailCard({
           {pin.when_text && <p className="mt-0.5 text-sm text-[var(--ember-soft)]">{pin.when_text}</p>}
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          {onSpine && (
+            <div className="mr-1 flex items-center gap-1">
+              <button
+                onClick={() => onNavigate(-1)}
+                disabled={position === 0}
+                aria-label="Previous home"
+                title="Previous home"
+                className="rounded-lg border border-[var(--glass-border)] px-2 py-1.5 text-sm text-[var(--ink-dim)] hover:text-[var(--ink)] disabled:opacity-30"
+              >
+                ←
+              </button>
+              <button
+                onClick={() => onNavigate(1)}
+                disabled={position === total - 1}
+                aria-label="Next home"
+                title="Next home"
+                className="rounded-lg border border-[var(--glass-border)] px-2 py-1.5 text-sm text-[var(--ink-dim)] hover:text-[var(--ink)] disabled:opacity-30"
+              >
+                →
+              </button>
+            </div>
+          )}
           <button
             onClick={onEdit}
             className="rounded-lg border border-[var(--glass-border)] px-3 py-1.5 text-sm text-[var(--ink-dim)] hover:text-[var(--ink)]"
