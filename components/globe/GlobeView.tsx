@@ -22,6 +22,7 @@ import PinEditPanel from './PinEditPanel'
 import PinDetailCard from './PinDetailCard'
 import { useUiChrome } from '../UiChromeContext'
 import type { ProximityHint } from '@/lib/globe/proximity'
+import { pinTypeMeta } from '@/lib/globe/pin-types'
 
 function hintText(h: ProximityHint): string {
   return h.kind === 'returning'
@@ -409,6 +410,8 @@ export default function GlobeView() {
         pinTypeClass(p.type_code) +
         (bloomIdRef.current === p.place_entity_id ? ' globe-pin-bloom' : '') +
         (p.relationship_id === selectedId ? ' globe-pin-selected' : '')
+      // Selection ring/glow read this var so they match the pin's type hue.
+      el.style.setProperty('--pin-ring', pinTypeMeta(p.type_code).color)
       el.title = p.name
       el.addEventListener('click', (ev) => { ev.stopPropagation(); selectPin(p.relationship_id) })
       const marker = new mapboxgl.Marker({ element: el, draggable: isSel }).setLngLat([p.lng, p.lat]).addTo(map)

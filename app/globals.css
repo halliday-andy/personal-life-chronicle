@@ -137,14 +137,18 @@ body {
   box-shadow: 0 0 0 2px rgba(7, 11, 24, 0.85), 0 0 9px 1px rgba(138, 155, 192, 0.45);
 }
 
-/* Selected pin — ring + lift, and it becomes draggable for relocation. */
+/* Selected pin — ring + lift, and it becomes draggable for relocation.
+   The boundary ring/glow take the pin's OWN type hue (--pin-ring, set
+   inline per marker in GlobeView) so a selected rose vacation pin no
+   longer wears an ember ring that reads like a second residence. Falls
+   back to ember for the primary spine / untyped pins. */
 .globe-pin-selected {
   cursor: grab;
   transform: scale(1.2);
   box-shadow:
     0 0 0 2px var(--night),
-    0 0 0 4px var(--ember-soft),
-    0 0 20px 6px rgba(244, 177, 74, 0.85);
+    0 0 0 4px var(--pin-ring, var(--ember-soft)),
+    0 0 20px 6px var(--pin-ring, var(--ember-soft));
 }
 .globe-pin-selected:active {
   cursor: grabbing;
