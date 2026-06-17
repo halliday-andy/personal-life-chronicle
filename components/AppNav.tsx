@@ -46,8 +46,13 @@ export default function AppNav({ email }: { email?: string }) {
                 <Link
                   key={l.href}
                   href={l.href}
-                  className={`shrink-0 transition-colors ${
-                    active ? 'font-medium text-stone-900' : 'text-stone-500 hover:text-stone-900'
+                  // Active tab gets an underline (border-b-2 sitting on the
+                  // bar's baseline), matching the entity sub-navigation tabs —
+                  // a stronger selected-state signal than weight/colour alone.
+                  className={`shrink-0 border-b-2 pb-0.5 transition-colors ${
+                    active
+                      ? 'border-stone-900 font-medium text-stone-900'
+                      : 'border-transparent text-stone-500 hover:text-stone-900'
                   }`}
                 >
                   {l.label}
