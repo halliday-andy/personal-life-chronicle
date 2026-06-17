@@ -34,6 +34,16 @@ interface GalleryImage {
 
 const CONFIRM_MS = 3000
 
+// Resizable-panel bounds (QA item 5). Min keeps the form usable; max is a
+// fraction of the viewport so the globe never fully disappears.
+const DEFAULT_PANEL_WIDTH = 380
+const MIN_PANEL_WIDTH = 320
+const PANEL_WIDTH_KEY = 'lc-pin-panel-width'
+function clampPanelWidth(px: number): number {
+  const max = Math.round(window.innerWidth * 0.85)
+  return Math.max(MIN_PANEL_WIDTH, Math.min(px, max))
+}
+
 export default function PinEditPanel({
   pin,
   relocated,
@@ -77,6 +87,35 @@ export default function PinEditPanel({
   const [galleryNotice, setGalleryNotice] = useState<string | null>(null)
   const [lightbox, setLightbox] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  // User-resizable width (QA item 5): drag the left edge to trade globe
+  // visibility for photo size. Persisted so the choice is sticky.
+  const [panelWidth, setPanelWidth] = useState<number>(DEFAULT_PANEL_WIDTH)
+  const resizingRef = useRef(false)
+  useEffect(() => {
+    const saved = Number(localStorage.getItem(PANEL_WIDTH_KEY))
+    if (saved) setPanelWidth(clampPanelWidth(saved))
+  }, [])
+  useEffect(() => {
+    function onMove(e: PointerEvent) {
+      if (!resizingRef.current) return
+      // Panel is anchored 16px (right-4) from the right edge; width grows
+      // leftward as the pointer moves toward the globe.
+      setPanelWidth(clampPanelWidth(window.innerWidth - 16 - e.clientX))
+    }
+    function onUp() {
+      if (!resizingRef.current) return
+      resizingRef.current = false
+      document.body.style.userSelect = ''
+      setPanelWidth((w) => { localStorage.setItem(PANEL_WIDTH_KEY, String(w)); return w })
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+  }, [])
 
   // Load the recollection text + photo gallery for this pin.
   useEffect(() => {
@@ -125,7 +164,23 @@ export default function PinEditPanel({
   }
 
   return (
-    <aside className="glass absolute right-4 top-4 bottom-4 z-30 flex w-[min(380px,92vw)] flex-col rounded-2xl p-5 text-[var(--ink)]">
+    <aside
+      className="glass absolute right-4 top-4 bottom-4 z-30 flex max-w-[92vw] flex-col rounded-2xl p-5 text-[var(--ink)]"
+      style={{ width: panelWidth }}
+    >
+      {/* Drag the left edge to widen the panel (bigger photos) or narrow it
+          (more globe). QA item 5 — user-selectable, sticky width. */}
+      <div
+        onPointerDown={(e) => {
+          e.preventDefault()
+          resizingRef.current = true
+          document.body.style.userSelect = 'none'
+          ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+        }}
+        onDoubleClick={() => { setPanelWidth(DEFAULT_PANEL_WIDTH); localStorage.setItem(PANEL_WIDTH_KEY, String(DEFAULT_PANEL_WIDTH)) }}
+        title="Drag to resize · double-click to reset"
+        className="absolute -left-1 top-0 bottom-0 z-10 w-2 cursor-ew-resize rounded-l-2xl hover:bg-[var(--ember-soft)]/30"
+      />
       <div className="flex items-start justify-between">
         <p className="flex items-center gap-1.5 text-xs uppercase tracking-[0.18em] text-[var(--ink-dim)]">
           <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: pinTypeMeta(typeCode).color }} />
@@ -263,7 +318,7 @@ export default function PinEditPanel({
                     alt={img.filename ?? 'Pin photo'}
                     title="Double-click to enlarge"
                     onDoubleClick={() => setLightbox(img.url)}
-                    className={`h-16 w-full cursor-zoom-in rounded-lg object-cover ${
+                    className={`aspect-square w-full cursor-zoom-in rounded-lg object-cover ${
                       img.is_primary
                         ? 'ring-2 ring-[var(--ember)]'
                         : 'border border-[var(--glass-border)] opacity-80'
