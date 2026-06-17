@@ -3,20 +3,23 @@
  *
  * Effects:
  *   1. memories.is_draft → false
- *   2. memories.metadata.skip_async_fanout → false (now informational; the
- *      async Inngest listeners only check this flag when memory/ingested
- *      fires, and we're not re-emitting it)
+ *   2. memories.metadata.skip_async_fanout → false
+ *   3. Extraction backfill: if the memory has NO memory_entities rows, we
+ *      re-emit memory/ingested so the async Entity + Tagger listeners run
+ *      with persist=true (the skip flag is cleared above, so they no
+ *      longer no-op).
  *
- * No re-emit of memory/ingested. Per the orchestrator system prompt
- * (lib/agents/orchestrator/system.ts §3), the orchestrator already calls
- * classify_dimensions and extract_entities with persist=true at draft
- * creation. The memory_dimensions and memory_entities rows are real from
- * the start; finalisation just lifts the draft flag.
- *
- * Caveat: if the user edited content_raw via PATCH between create and
- * finalize, the tags/entities may be slightly stale. MVP accepts this —
- * the user can fix via inline chip editing. A future refinement could
- * re-run classification when content_raw was touched.
+ * Why the backfill (2026-06-17, QA item 6): the orchestrator is *supposed*
+ * to call extract_entities with persist=true at draft creation (system.ts
+ * §3), but that depends on the model performing a second tool-use turn —
+ * and it sometimes doesn't. A real capture ("Sir William Wallace…")
+ * finalised with zero entities: no person extracted, no link to its place
+ * pin, while the reply claimed it was "associated". Rather than trust the
+ * model, we guarantee extraction here by reusing the same async pipeline
+ * that already runs for normal memories. Gated on zero memory_entities so
+ * the common (model-did-its-job) path skips the extra LLM calls. The
+ * Entity/Tagger cores upsert with onConflict, so the backfill is
+ * idempotent even in races.
  *
  * Auth: user must own the memory. Admin client used after the ownership
  * check because RLS is still in stub mode (Step 13 will activate it).
@@ -25,6 +28,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createUserClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { inngest } from '@/lib/inngest/client'
 
 export async function POST(_request: NextRequest, { params }: { params: { id: string } }) {
   const memoryId = params.id
@@ -63,5 +67,26 @@ export async function POST(_request: NextRequest, { params }: { params: { id: st
     return NextResponse.json({ error: 'Failed to finalize', detail: updateErr.message }, { status: 500 })
   }
 
-  return NextResponse.json({ status: 'finalised', memory_id: memoryId })
+  // Extraction backfill (QA item 6). If no entities were ever linked to this
+  // memory, the orchestrator's draft-time extract_entities turn didn't run —
+  // re-emit memory/ingested so the Entity + Tagger listeners extract now.
+  let extractionBackfilled = false
+  const { count: entityCount } = await admin
+    .from('memory_entities')
+    .select('memory_id', { count: 'exact', head: true })
+    .eq('memory_id', memoryId)
+  if ((entityCount ?? 0) === 0) {
+    try {
+      await inngest.send({
+        name: 'memory/ingested',
+        data: { memory_id: memoryId, user_id: user.id },
+      })
+      extractionBackfilled = true
+    } catch (sendErr) {
+      // The memory is finalised regardless; extraction can be retried.
+      console.warn('[finalize] extraction backfill send failed', sendErr)
+    }
+  }
+
+  return NextResponse.json({ status: 'finalised', memory_id: memoryId, extractionBackfilled })
 }
