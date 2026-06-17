@@ -196,7 +196,15 @@ export default function PinDetailCard({
       <div className="mt-3 flex gap-4">
         <div className="shrink-0">
           {image ? (
-            <div className="group relative">
+            // onDoubleClick lives on the wrapper, not the <img>: the hover
+            // overlay below covers the full image (inset-0), so a handler on
+            // the img alone never fires while hovering — which is exactly
+            // when the user double-clicks (QA item 5.6).
+            <div
+              className="group relative"
+              title="Double-click to enlarge"
+              onDoubleClick={() => setLightbox(image.url)}
+            >
               {imageCount > 1 && (
                 <span className="absolute -right-1.5 -top-1.5 z-10 rounded-full bg-[var(--ember)] px-1.5 text-[10px] font-medium leading-4 text-[#241500]">
                   +{imageCount - 1}
@@ -206,8 +214,6 @@ export default function PinDetailCard({
               <img
                 src={image.url}
                 alt={pin.name}
-                title="Double-click to enlarge"
-                onDoubleClick={() => setLightbox(image.url)}
                 className="h-28 w-28 cursor-zoom-in rounded-xl border border-[var(--glass-border)] object-cover"
               />
               <div className="absolute inset-0 hidden items-end justify-center gap-2 rounded-xl bg-black/55 pb-2 group-hover:flex">
