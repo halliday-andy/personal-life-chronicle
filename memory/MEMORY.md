@@ -26,6 +26,7 @@ Consolidated 2026-05-10. Updated 2026-05-17 (capture assistant + residential glo
 - [Project: LC The Stroll (reminiscence)](project_lc_stroll_feature.md) — Three response pathways (A: adjacent stub, B: wisdom reflection, C: non-destructive revision); sole input to wisdom_distillation synthesis
 - [Project: LC five shareable artifacts](project_lc_shareable_artifacts.md) — Life Globe, Relationship Portrait, Period Narrative, Career Story, Wisdom Distillation; lens for synthesis prioritization
 - [Project: LC Single Post Share](project_lc_single_post_share.md) — Token-in-URL share; shared view is an enrichment invitation, not passive display; comments route to review_queue
+- [Project: LC extraction reliability & context-layer boundary](project_lc_extraction_reliability.md) — Orchestrator memories only extract entities if the model does its 2nd turn; finalize now backfills (commit 7ef6b96) + `backfill-memory-extraction.mjs`. Research/3rd-person "context" yields no personal entities by design — associating it needs the context-layer feature, not extraction
 
 ## Resolved-history (decisions and reviews, retained for the "why")
 
@@ -42,3 +43,4 @@ Consolidated 2026-05-10. Updated 2026-05-17 (capture assistant + residential glo
 - [Project: LC document sources](project_lc_document_sources.md) — Google Drive vs. local folder; what's unique to each, what's redundant
 - [Feedback: LC memory dual-write protocol](feedback_lc_memory_dual_write.md) — Every memory write must hit both auto-memory and the workspace mirror
 - [Feedback: Use lowercase for folder and file names](feedback_folder_naming.md) — create-next-app and Unix tooling reject capitals
+- [Feedback: never `npm run build` while `next dev` is live](feedback_lc_no_build_during_dev.md) — shared `.next` dir; building mid-dev clobbers the dev server (500s every route). Verify with tsc/eslint; recover via kill + `rm -rf .next` + restart
