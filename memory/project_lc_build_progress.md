@@ -4,6 +4,26 @@ description: What's been built so far in the Claude Code implementation of Life 
 type: project
 ---
 
+## Session handoff — 2026-06-17 (QA remediation pass)
+
+Worked from Andy's hands-on QA of the recent UI/features (`docs/qa/2026-06-15-ui-qa-checklist.md`). All shipped to `main`, **not pushed** (11 commits, `0f37c5a`…`7474a99`):
+
+- **Item 1** active global-nav tab now underlined (`0f37c5a`).
+- **Item 4** pin selection ring/glow take the pin's own type colour via `--pin-ring` (`2759b20`).
+- **Item 5.6** detail-card photo double-click enlarges — hover overlay was eating the gesture; handler moved to wrapper (`446d01a`).
+- **Item 5** pin edit panel is user-resizable (drag left edge, sticky localStorage width, square thumbnails) (`bc2cd21`).
+- **Item 6** finalize now backfills entity extraction when a memory has zero `memory_entities` (`7ef6b96`); proof `verify-finalize-extraction-backfill.mjs`; manual repair `scripts/backfill-memory-extraction.mjs`. See [[project_lc_extraction_reliability]].
+- **Item 7** recollections render as markdown (`components/Markdown.tsx`, `8e1d787`); orchestrator now stores pasted text verbatim (system prompt invariant 1, `SYSTEM_PROMPT_VERSION=2026-06-17.0`, `a6b39c5`).
+- **Feature** previous/next navigation along the residential spine with fly-to (`a6dee92`); marker-children inclusion deferred as **OQ-G15** in `feature_residential_globe_onboarding.md`.
+- **Decisions:** item 2 (Memories chronological sort) deferred to the Temporal Agent; item 3 satisfied **render-only** (markdown = the "view as viewer" preview, no stored formatting edits).
+- One-off: hand-linked Andy's "Wallace" context memory to its castle pin (extraction can't auto-associate third-person research — that's the context layer's job).
+- New learning memory: [[feedback_lc_no_build_during_dev]] (never `npm run build` while `next dev` is live — it 500s every route).
+
+**Open / next:**
+- **Context-layer build is still #3 NEXT** (see below + `docs/plans/2026-06-14-context-layer-and-recollection-surfaces-design.md`) — the proper home for "add context to a pin/entity"; Andy hit its absence again this pass.
+- **QA section 4 (edit / re-type / reorder pins) is UNTESTED by Andy** — lower priority; he'll exercise it when adding out-of-sequence pins (e.g. an early-life workplace).
+- Andy is continuing QA; more feedback expected.
+
 ## Status as of 2026-05-10
 
 **Steps 1–5 of `documentation/LC_Development_Sequence.md` complete.** Free-form memory capture is live end-to-end; user can sign in, start an interview, dictate via Wispr Flow, and the system extracts and stores memories using Claude Sonnet 4.5 with a `record_memory` tool. Phase 0 UI is the next major build (Steps 7–9).
