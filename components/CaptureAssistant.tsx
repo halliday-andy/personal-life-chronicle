@@ -66,6 +66,9 @@ export default function CaptureAssistant() {
   // ── ⌘K / Ctrl+K opens the panel and focuses input ─────────────────
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      // While suppressed the panel is hidden (display:none) behind a focused
+      // surface like the globe pin editor — don't let ⌘K pop it open there.
+      if (assistantSuppressed) return
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
         setOpen(true)
@@ -78,7 +81,7 @@ export default function CaptureAssistant() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [open])
+  }, [open, assistantSuppressed])
 
   // ── Auto-resize textarea and scroll thread on new content ─────────
   useEffect(() => {
@@ -175,12 +178,18 @@ export default function CaptureAssistant() {
   // the FAB is fixed at z-50 and would overlap such panels, hiding their
   // controls (it was covering the pin panel's Delete button). The assistant
   // stays available everywhere else, including the globe itself.
-  // (Guard is after all hooks: this component persists across navigation,
-  // so hooks must run unconditionally to satisfy rules-of-hooks.)
-  if (assistantSuppressed) return null
+  //
+  // We HIDE the subtree with display:none rather than returning null.
+  // Returning null unmounts the thread and every ProposalCard, and each card
+  // keeps its resolution state (resolved merges, accepted/declined status) in
+  // local useState seeded from capture-time props. So suppress→restore (open
+  // a pin editor, then reopen Capture) used to remount the cards from stale
+  // props — resurrecting already-resolved merge prompts and flipping accepted
+  // drafts back to pending. It looked like lost work (2026-06-17 QA). Hidden
+  // keeps every child mounted with its state intact.
 
   return (
-    <>
+    <div className={assistantSuppressed ? 'hidden' : 'contents'}>
       {/* ── Floating button (closed state) ─────────────────────────── */}
       {!open && (
         <button
@@ -330,7 +339,7 @@ export default function CaptureAssistant() {
           </div>
         </div>
       </aside>
-    </>
+    </div>
   )
 }
 
