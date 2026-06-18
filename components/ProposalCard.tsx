@@ -17,7 +17,7 @@
  * renders whatever the cards report.
  */
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import PrivateNotesPanel from './PrivateNotesPanel'
 
@@ -87,6 +87,21 @@ export function ProposalCard({ initial }: { initial: MemoryCardData }) {
   const [error, setError] = useState<string | null>(null)
   const [renamingEntityId, setRenamingEntityId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
+
+  // Grow the draft editor to fit the whole recollection (capped at 60vh,
+  // floored so a short draft still gets a comfortable box) so the user keeps
+  // visual context of the full text while editing. resize-y on the textarea
+  // still lets them drag it taller/shorter by hand. Runs when the editor
+  // opens and as the text changes.
+  const editRef = useRef<HTMLTextAreaElement>(null)
+  useEffect(() => {
+    if (!editing) return
+    const ta = editRef.current
+    if (!ta) return
+    ta.style.height = 'auto'
+    const max = Math.round(window.innerHeight * 0.6)
+    ta.style.height = Math.min(Math.max(ta.scrollHeight, 128), max) + 'px'
+  }, [editing, draftText])
 
   // ── Actions ─────────────────────────────────────────────────────
 
@@ -345,10 +360,11 @@ export function ProposalCard({ initial }: { initial: MemoryCardData }) {
       {editing ? (
         <div className="space-y-2">
           <textarea
+            ref={editRef}
             value={draftText}
             onChange={(e) => setDraftText(e.target.value)}
-            rows={Math.max(3, draftText.split('\n').length)}
-            className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent leading-relaxed"
+            rows={6}
+            className="w-full resize-y min-h-[8rem] max-h-[60vh] overflow-y-auto rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent leading-relaxed"
           />
           <input
             type="text"
