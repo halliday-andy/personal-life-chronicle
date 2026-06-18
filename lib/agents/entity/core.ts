@@ -252,6 +252,12 @@ export function scoreNameMatch(a: string, b: string): number {
 // Lockbourne text extracting as 'place' one run and 'organization' the
 // next. Resolution must search both types or the type roll of the dice
 // silently duplicates the entity.
+//
+// KEEP IN SYNC with merge_entities() (supabase/migrations/
+// 20260617130000_merge_entities_place_org.sql): the set of types treated as
+// mergeable peers here must match the set that function is willing to merge
+// across, or resolution will queue merge proposals the DB then refuses to
+// execute. Today both define that set as {place, organization}.
 function candidateTypes(type: EntityType): EntityType[] {
   return type === 'place' || type === 'organization' ? ['place', 'organization'] : [type]
 }
