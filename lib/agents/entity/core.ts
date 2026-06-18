@@ -73,7 +73,7 @@ interface ExistingEntity {
 const EXTRACT_TOOL: Anthropic.Tool = {
   name: 'submit_entities',
   description:
-    'Submit the named entities you identified in the memory. Include people by name, named places (cities, addresses, schools, etc.), named organizations (employers, schools, etc.), and named vehicles or event series if present. Skip pronouns, generic references ("my mother" without a name), and vague locations ("the city").',
+    'Submit the named entities you identified in the memory. Include people by name; named places — anywhere with a physical location the user was at, including towns, addresses, schools, campuses, military bases, hospitals, churches; named organizations — institutions experienced as membership or employment with no single site of their own, such as employers, companies, military commands or units, clubs; and named vehicles or event series if present. Skip pronouns, generic references ("my mother" without a name), and vague locations ("the city").',
   input_schema: {
     type: 'object' as const,
     properties: {
@@ -122,7 +122,24 @@ Guidelines:
   - "My sister" alone → skip (no name)
   - "Madrid" → extract (place)
   - "the city" → skip
-  - "Loring Air Force Base" → extract (organization, since it's a named institution; also a place)
+
+Place vs. organization — physical location wins:
+- If a named thing has a physical location the user was in, at, lived,
+  worked, studied, was stationed, or visited, type it a **place** — even
+  when an institution shares the name. Military bases, schools, universities,
+  hospitals, churches, factories, campuses, towns, and street addresses are
+  places.
+  - "I was stationed at Loring Air Force Base" → Loring Air Force Base (place)
+  - "I went to Damon Elementary" → Damon Elementary (place)
+- Reserve **organization** for an institution experienced as membership,
+  employment, or affiliation that has no single fixed location of its own —
+  an employer, a company, a military command or unit, a band, a club, an agency.
+  - "I served under Strategic Air Command" → Strategic Air Command (organization)
+  - "the 69th Bomb Squadron" → organization
+- A base and the commands stationed on it are different entities: extract the
+  base as a place; extract a command or unit as an organization only when the
+  user names it distinctly.
+
 - For ambiguous role (person who is the central figure vs. mentioned in passing), use 'subject' for the memory's main figure and 'participant' for others.
 - Set confidence below 0.8 only when the name is genuinely uncertain (e.g. "I think his name was John?").
 - If the memory contains no named entities, return an empty array.
