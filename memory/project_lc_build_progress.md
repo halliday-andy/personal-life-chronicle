@@ -19,6 +19,9 @@ Worked from Andy's hands-on QA of the recent UI/features (`docs/qa/2026-06-15-ui
 - One-off: hand-linked Andy's "Wallace" context memory to its castle pin (extraction can't auto-associate third-person research — that's the context layer's job).
 - New learning memory: [[feedback_lc_no_build_during_dev]] (never `npm run build` while `next dev` is live — it 500s every route).
 
+**Continued QA (2026-06-17 PM, unpushed — `8c910e2`):**
+- **place↔organization merge bug.** Andy added a recollection to his Loring AFB pin to test extraction; it extracted "Loring Air Force Base"/"Mather AFB" as `organization`, resolution correctly proposed merging them into his existing `place` pins, but the merge failed: *"cannot merge entities of different types."* Root cause: resolution's `candidateTypes()` blurs place/org (by design) but `merge_entities()` rejected all cross-type merges. Fixed (migration `20260617130000`): place/org now merge, place always survives (owns globe identity). Proof `verify-entity-merge-place-org.mjs`; reciprocal keep-in-sync comments added. The two real stuck proposals (Loring, Mather) are now actionable — Andy clicks "Same — link them". See [[project_lc_extraction_reliability]].
+
 **Open / next:**
 - **Context-layer build is still #3 NEXT** (see below + `docs/plans/2026-06-14-context-layer-and-recollection-surfaces-design.md`) — the proper home for "add context to a pin/entity"; Andy hit its absence again this pass.
 - **QA section 4 (edit / re-type / reorder pins) is UNTESTED by Andy** — lower priority; he'll exercise it when adding out-of-sequence pins (e.g. an early-life workplace).

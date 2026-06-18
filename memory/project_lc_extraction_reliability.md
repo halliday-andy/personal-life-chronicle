@@ -20,6 +20,34 @@ Even with extraction guaranteed, third-person **research/genealogical** text yie
 
 This is exactly what the **context layer** resolves: see [[project_lc_capture_assistant]] and the spec `docs/plans/2026-06-14-context-layer-and-recollection-surfaces-design.md` — context is a first-class content type attached to the **entity it is about** (new `entity_context_notes` table) via a **propose-and-confirm** "attach as context?" flow, reachable for places from the globe pin. Until that ships, associating context to a pin/entity must be done by hand (a `memory_entities` row, or the backfill script). The Wallace note was hand-linked to its castle place entity on 2026-06-17 as a one-off repair.
 
+## Place/organization are mergeable peers — and merge_entities() must agree (2026-06-17)
+
+The `candidateTypes()` blur has a counterpart it must stay in sync with:
+`merge_entities()`. Because resolution searches both `place` + `organization`,
+it queues **cross-type** merge proposals (an extracted `organization` duplicate
+of an existing `place` pin). The original `merge_entities()` (migration
+`20260528222311`) hard-rejected **every** cross-type merge, so those proposals
+dead-ended in the UI with *"cannot merge entities of different types:
+organization vs place."* Andy hit this in QA merging an extracted "Loring Air
+Force Base" (organization, from a recollection) into his "Loring AFB, Limestone
+Maine" globe pin (place).
+
+**Fix (migration `20260617130000`, `CREATE OR REPLACE`, commit `8c910e2`):** a
+merge is permitted when **both** entities are within `{place, organization}`;
+the hard guard stays for every other cross-type pair. The **place is always the
+survivor** — the function swaps source/target if needed — because only the place
+row carries the globe identity columns (`geom`, `place_subtype`, `country_code`)
+and the residence relationship; `merge_entities` never copies those, so the pin
+must never be the deleted side. Proof: `scripts/verify-entity-merge-place-org.mjs`
+(org→place keeps pin + aliases the org + repoints `memory_entities`; place→org
+keeps the pin via swap; person/vehicle still rejected).
+
+**Durable invariant:** the "mergeable peer types" set now lives in **two**
+places — `candidateTypes()` (TS, `lib/agents/entity/core.ts`) and
+`merge_entities()` (SQL) — with reciprocal keep-in-sync comments. Extend both
+together or resolution will queue proposals the DB refuses to run. Also added
+`scripts/db-query.mjs` (read-only SELECT helper for QA/debugging).
+
 ## Related capture fix — verbatim formatting (item 7)
 
 Same QA pass: the orchestrator was flattening pasted markdown (stripping headings/bullets/line breaks and `[1,2]` citations) when writing `content_raw`. Fixed by an explicit verbatim-capture rule in invariant 1 of the system prompt (`SYSTEM_PROMPT_VERSION` → `2026-06-17.0`, commit `a6b39c5`), plus a shared markdown renderer for recollections (`components/Markdown.tsx`, commit `8e1d787`). content_raw stays verbatim under Raw Vault; rendering just honours its structure.
