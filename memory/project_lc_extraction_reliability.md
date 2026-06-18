@@ -20,6 +20,26 @@ Even with extraction guaranteed, third-person **research/genealogical** text yie
 
 This is exactly what the **context layer** resolves: see [[project_lc_capture_assistant]] and the spec `docs/plans/2026-06-14-context-layer-and-recollection-surfaces-design.md` — context is a first-class content type attached to the **entity it is about** (new `entity_context_notes` table) via a **propose-and-confirm** "attach as context?" flow, reachable for places from the globe pin. Until that ships, associating context to a pin/entity must be done by hand (a `memory_entities` row, or the backfill script). The Wallace note was hand-linked to its castle place entity on 2026-06-17 as a one-off repair.
 
+## Physical locations are places, not organizations (2026-06-17, the cause fix)
+
+Andy challenged the deeper logic: a thing with a physical location the user
+*was at* (a base, a school) is, for a memoir product, a **place** — only the
+place row carries `geom` + the residence relationship and belongs on the globe.
+The old extraction prompt did the opposite — it told the model to type named
+institutions as `organization` ("since it's a named institution") and even
+listed schools under organizations in the tool description — which is what
+mis-typed Loring/Mather/Damon. **Rule now (commit `38017d8`): physical location
+wins.** A named thing the user was in/at/lived/worked/studied/stationed/visited
+is a `place` even when an institution shares the name; `organization` is reserved
+for institutions experienced as membership/employment with no single site (an
+employer, a military *command or unit* like SAC or the 69th Bomb Squadron, a
+club). A base and the commands stationed on it are **different entities**. Proof:
+`scripts/verify-entity-typing.mjs` (LLM eval — Loring/Damon → place, SAC → org,
+person/town controls). The merge tolerance below stays as defense-in-depth for
+residual model flips and already-mis-typed data; this prompt change removes the
+cause. Decided via brainstorming with Andy (LLM-dialogue disambiguation is a
+post-MVP nicety, not required).
+
 ## Place/organization are mergeable peers — and merge_entities() must agree (2026-06-17)
 
 The `candidateTypes()` blur has a counterpart it must stay in sync with:
