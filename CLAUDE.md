@@ -40,6 +40,26 @@ removable later if it proves superfluous.
 
 ---
 
+## Critical Protocol: origin/main is a backup — auto-push is wired
+
+Andy's intent is that `origin/main` stays current as a continuous backup.
+The global commit-autonomy rule says "do NOT push unless explicitly asked";
+**in THIS project that carve-out is lifted for backup pushes** — pushing
+committed work to `origin/main` is expected, not a deviation.
+
+This is now automated: a `PostToolUse` hook in `.claude/settings.json`
+(matcher `Bash`, `if: Bash(git commit *)`) runs `git push origin HEAD`
+after every commit, async + non-fatal. So you normally do nothing — each
+commit backs itself up. If the hook is ever disabled or the push fails
+(offline), push manually before the session ends.
+
+Why this exists: on 2026-06-18 `origin/main` was found 122 commits / 13
+days behind because nothing ever pushed — the autonomy rule commits but
+the backup objective lived only in Andy's head, encoded nowhere
+operative. See `memory/feedback_lc_origin_backup_autopush.md`.
+
+---
+
 ## Project Identity
 
 **Life Chronicle / MemRec** — a personal memory collection and chronicle system. Users record memories through voice and text interviews; the system organizes them across 10 life dimensions, builds synthesis outputs (relationship portraits, period narratives, wisdom distillations), and presents them back through a navigable life journey.

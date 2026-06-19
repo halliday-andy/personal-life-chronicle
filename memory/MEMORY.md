@@ -44,3 +44,4 @@ Consolidated 2026-05-10. Updated 2026-05-17 (capture assistant + residential glo
 - [Feedback: LC memory dual-write protocol](feedback_lc_memory_dual_write.md) — Every memory write must hit both auto-memory and the workspace mirror
 - [Feedback: Use lowercase for folder and file names](feedback_folder_naming.md) — create-next-app and Unix tooling reject capitals
 - [Feedback: never `npm run build` while `next dev` is live](feedback_lc_no_build_during_dev.md) — shared `.next` dir; building mid-dev clobbers the dev server (500s every route). Verify with tsc/eslint; recover via kill + `rm -rf .next` + restart
+- [Feedback: origin/main backup auto-push](feedback_lc_origin_backup_autopush.md) — origin is a continuous backup; PostToolUse hook pushes after every commit. The global "don't push" rule is carved out here. Fixed a 122-commit/13-day drift found 2026-06-18
