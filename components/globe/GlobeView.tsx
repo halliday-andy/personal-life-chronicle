@@ -23,6 +23,7 @@ import PinDetailCard from './PinDetailCard'
 import { useUiChrome } from '../UiChromeContext'
 import type { ProximityHint } from '@/lib/globe/proximity'
 import { pinTypeMeta } from '@/lib/globe/pin-types'
+import { moveToIndex } from '@/lib/globe/reorder'
 
 function hintText(h: ProximityHint): string {
   return h.kind === 'returning'
@@ -542,18 +543,10 @@ export default function GlobeView() {
     }
   }, [selectedId, stagedCoords, loadPins])
 
-  // Move the selected pin one slot earlier/later in the sequence by
-  // swapping it with its neighbour and re-sequencing the whole chain.
-  const handleMove = useCallback(async (dir: -1 | 1) => {
-    if (!selectedId) return
-    // Reorder operates on the residential spine only (the RPC rejects
-    // marker ids); build the ordered list from primary residences.
-    const spine = pins.filter((p) => p.type_code === SPINE_CODE)
-    const idx = spine.findIndex((p) => p.relationship_id === selectedId)
-    const swap = idx + dir
-    if (idx < 0 || swap < 0 || swap >= spine.length) return
-    const order = spine.map((p) => p.relationship_id)
-    ;[order[idx], order[swap]] = [order[swap], order[idx]]
+  // Persist a full spine ordering. Reorder operates on the residential spine
+  // only (the RPC rejects marker ids and any list that doesn't cover exactly
+  // the user's residences), so callers pass the complete ordered id list.
+  const resequence = useCallback(async (order: string[]) => {
     setSavingPanel(true)
     setError(null)
     try {
@@ -572,7 +565,26 @@ export default function GlobeView() {
     } finally {
       setSavingPanel(false)
     }
-  }, [selectedId, pins, loadPins])
+  }, [loadPins])
+
+  // Nudge the selected pin one slot earlier/later (adjacent swap).
+  const handleMove = useCallback((dir: -1 | 1) => {
+    if (!selectedId) return
+    const spine = pins.filter((p) => p.type_code === SPINE_CODE)
+    const idx = spine.findIndex((p) => p.relationship_id === selectedId)
+    const to = idx + dir
+    if (idx < 0 || to < 0 || to >= spine.length) return
+    void resequence(moveToIndex(spine.map((p) => p.relationship_id), idx, to))
+  }, [selectedId, pins, resequence])
+
+  // Jump the selected pin directly to an arbitrary slot (edit-panel selector).
+  const handleMoveTo = useCallback((toIndex: number) => {
+    if (!selectedId) return
+    const spine = pins.filter((p) => p.type_code === SPINE_CODE)
+    const idx = spine.findIndex((p) => p.relationship_id === selectedId)
+    if (idx < 0 || toIndex === idx) return
+    void resequence(moveToIndex(spine.map((p) => p.relationship_id), idx, toIndex))
+  }, [selectedId, pins, resequence])
 
   const handlePanelDelete = useCallback(async () => {
     if (!selectedId) return
@@ -758,6 +770,7 @@ export default function GlobeView() {
             total={spine.length}
             primaries={primaries}
             onMove={handleMove}
+            onMoveTo={handleMoveTo}
             onSave={handlePanelSave}
             onDelete={handlePanelDelete}
             onClose={deselect}

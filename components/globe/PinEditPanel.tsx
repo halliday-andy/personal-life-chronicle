@@ -13,6 +13,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { preprocessPinImage } from '@/lib/globe/image-preprocess'
 import { PIN_TYPES, pinTypeMeta, SPINE_CODE } from '@/lib/globe/pin-types'
+import { spineSlotOptions } from '@/lib/globe/reorder'
 import PhotoLightbox from './PhotoLightbox'
 
 export interface EditablePin {
@@ -52,6 +53,7 @@ export default function PinEditPanel({
   total,
   primaries,
   onMove,
+  onMoveTo,
   onSave,
   onDelete,
   onClose,
@@ -63,6 +65,7 @@ export default function PinEditPanel({
   total: number      // number of primary residences
   primaries: { relationship_id: string; name: string }[]
   onMove: (dir: -1 | 1) => void
+  onMoveTo: (toIndex: number) => void
   onSave: (fields: { name: string; whenText: string; body: string; typeCode: string; anchorId: string | null }) => void
   onDelete: () => void
   onClose: () => void
@@ -192,26 +195,41 @@ export default function PinEditPanel({
         </button>
       </div>
 
-      {/* Reorder applies only to the residential spine. */}
+      {/* Reorder applies only to the residential spine. The selector is the
+          authoritative control (jump to any slot in one write); Earlier/Later
+          are quick adjacent nudges. */}
       {position >= 0 && total > 1 && (
-        <div className="mt-3 flex items-center gap-2">
-          <span className="text-xs text-[var(--ink-dim)]">Order</span>
-          <button
-            onClick={() => onMove(-1)}
-            disabled={saving || position === 0}
-            title="Move earlier"
-            className="rounded-lg border border-[var(--glass-border)] px-2.5 py-1 text-sm text-[var(--ink-dim)] hover:text-[var(--ink)] disabled:opacity-30"
+        <div className="mt-3">
+          <label className="block text-xs text-[var(--ink-dim)]">Where does this fall in your life?</label>
+          <select
+            value={position}
+            onChange={(e) => onMoveTo(Number(e.target.value))}
+            disabled={saving}
+            className="mt-1 w-full rounded-lg border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--ember-soft)]"
           >
-            ↑ Earlier
-          </button>
-          <button
-            onClick={() => onMove(1)}
-            disabled={saving || position === total - 1}
-            title="Move later"
-            className="rounded-lg border border-[var(--glass-border)] px-2.5 py-1 text-sm text-[var(--ink-dim)] hover:text-[var(--ink)] disabled:opacity-30"
-          >
-            ↓ Later
-          </button>
+            {spineSlotOptions(primaries.map((p) => p.name), position).map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+          <div className="mt-2 flex items-center gap-2">
+            <span className="text-xs text-[var(--ink-dim)]">Nudge</span>
+            <button
+              onClick={() => onMove(-1)}
+              disabled={saving || position === 0}
+              title="Move earlier"
+              className="rounded-lg border border-[var(--glass-border)] px-2.5 py-1 text-sm text-[var(--ink-dim)] hover:text-[var(--ink)] disabled:opacity-30"
+            >
+              ↑ Earlier
+            </button>
+            <button
+              onClick={() => onMove(1)}
+              disabled={saving || position === total - 1}
+              title="Move later"
+              className="rounded-lg border border-[var(--glass-border)] px-2.5 py-1 text-sm text-[var(--ink-dim)] hover:text-[var(--ink)] disabled:opacity-30"
+            >
+              ↓ Later
+            </button>
+          </div>
         </div>
       )}
 
