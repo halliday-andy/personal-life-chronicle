@@ -18,3 +18,6 @@ node_modules/
 # Supabase local state
 supabase/.branches
 supabase/.temp
+
+# Claude Code — machine-local settings (settings.json IS tracked; .local is not)
+.claude/settings.local.json
