@@ -15,6 +15,7 @@ Consolidated 2026-05-10. Updated 2026-05-17 (capture assistant + residential glo
 - [Project: LC Capture Assistant + Orchestrator](project_lc_capture_assistant.md) — Summary memory; canonical spec at `documentation/feature_capture_assistant.md` v1.1. Step 6 build (substeps 6a–6i).
 - Canonical: `documentation/feature_residential_globe_onboarding.md` v1.1 — Residential strand UX; Step 7 build. Now phased into slices — see [Step 7 slice phasing](decision_step7_slice_phasing_2026-06-05.md).
 - [Project: LC future pin types (deferred)](project_lc_future_pin_types.md) — Aspirational bucket-list pin; multi-home concurrent-domicile display. Post-MVP globe enhancements.
+- [Project: LC globe & entity UX brief (2026-06-22)](project_lc_globe_entity_ux_brief.md) — 7 enhancements (pin chips/hover, origin pin, line declutter+tray, Resume View, the Hopper, Person Entity page, Vertical Moments). **REVIEWED + resequenced by Claude Code 2026-06-22** → canonical roadmap `docs/plans/2026-06-22-globe-and-entity-ux-revised-roadmap.md` (Person page ≡ the 2026-06-14 context-layer Entity View, pulled forward; Hopper = new `memory_stubs`; items 1–3 fold into Slice 3 / 3.5). Brief = product intent: `docs/plans/2026-06-22-globe-and-entity-ux-enhancements-design.md`.
 
 ## Architecture & schema (durable design decisions)
 
@@ -40,6 +41,7 @@ Consolidated 2026-05-10. Updated 2026-05-17 (capture assistant + residential glo
 
 - [Reference: LC migration apply](reference_lc_migration_apply.md) — Claude applies Supabase DDL directly via `scripts/db-apply.mjs` (no dashboard paste / no CLI); needs `SUPABASE_DB_URL` + raw `SUPABASE_DB_PASSWORD` in `.env.local`
 - [Reference: LC schema file locations](reference_lc_schema_files.md) — Where every design doc and early-planning file lives; what's read, what's pending
+- [Reference: LC designer skills](reference_lc_designer_skills.md) — 48 UX/UI skills vendored into `.claude/skills/` (Owl-Listener subset) for Claude Code; source audit PDF in `documentation/research/`; TypeUI preset recommendation (Andy's brand call)
 - [Project: LC document sources](project_lc_document_sources.md) — Google Drive vs. local folder; what's unique to each, what's redundant
 - [Feedback: LC memory dual-write protocol](feedback_lc_memory_dual_write.md) — Every memory write must hit both auto-memory and the workspace mirror
 - [Feedback: Use lowercase for folder and file names](feedback_folder_naming.md) — create-next-app and Unix tooling reject capitals
