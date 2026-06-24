@@ -22,7 +22,7 @@ import PinEditPanel from './PinEditPanel'
 import PinDetailCard from './PinDetailCard'
 import { useUiChrome } from '../UiChromeContext'
 import type { ProximityHint } from '@/lib/globe/proximity'
-import { pinTypeMeta } from '@/lib/globe/pin-types'
+import { pinTypeMeta, PIN_TYPES } from '@/lib/globe/pin-types'
 import { moveToIndex } from '@/lib/globe/reorder'
 
 function hintText(h: ProximityHint): string {
@@ -199,6 +199,12 @@ export default function GlobeView() {
   // hovered pin's relationship_id (a primary reveals its markers' tethers; a
   // marker reveals its own). Click-to-persist + type filters land in Slice 3.5.
   const [hoverPreview, setHoverPreview] = useState<string | null>(null)
+  // Active-lines tray (Slice 3.5): pins whose side lines persist (dismissible
+  // chips). Selecting a pin with side lines adds it; ✕/Clear-all remove.
+  const [activePins, setActivePins] = useState<string[]>([])
+  // Class-level type filters (Slice 3.5): marker codes whose tethers show as a
+  // baseline. Empty = bare spine (the per-pin chips + hover add on top).
+  const [typeFilters, setTypeFilters] = useState<Set<string>>(new Set())
   const { setAssistantSuppressed } = useUiChrome()
 
   // Proximity hints are advisory — auto-dismiss after a few seconds.
@@ -216,6 +222,16 @@ export default function GlobeView() {
   }, [notice])
 
   const hasPins = pins.length > 0
+
+  // Active-lines tray derivations (Slice 3.5): a pin earns a chip only if it
+  // actually has side lines — a marker with an anchor, or a primary that some
+  // marker tethers to.
+  const markerPins = pins.filter((p) => p.type_code !== SPINE_CODE)
+  const pinHasSideLines = (id: string) =>
+    markerPins.some((m) => (m.relationship_id === id && m.anchor_residence_id !== null) || m.anchor_residence_id === id)
+  const activeChips = activePins
+    .map((id) => pins.find((p) => p.relationship_id === id))
+    .filter((p): p is Pin => !!p && pinHasSideLines(p.relationship_id))
 
   // Suppress the global CaptureAssistant FAB only while the pin EDIT
   // panel is open — it's fixed z-50 and would overlap the panel (it was
@@ -281,6 +297,9 @@ export default function GlobeView() {
     setEditMode(false)
     setRefining(false)
     setStagedCoords(null)
+    // Default on-click: this pin's side lines ON, persisted in the tray
+    // (Slice 3.5). A chip only renders if the pin actually has side lines.
+    setActivePins((cur) => (cur.includes(relId) ? cur : [...cur, relId]))
   }, [])
 
   // Step to the previous/next home along the residential spine and fly the
@@ -518,13 +537,21 @@ export default function GlobeView() {
     const map = mapRef.current!
     const markers = pins.filter((p) => p.type_code !== SPINE_CODE)
     const byId = new Map(pins.map((p) => [p.relationship_id, p]))
-    const visible = hoverPreview
-      ? markers.filter((m) => m.relationship_id === hoverPreview || m.anchor_residence_id === hoverPreview)
-      : []
+    // A marker's tether shows if (baseline) its class is filter-enabled, OR
+    // (persisted) it/its anchor is in the active-lines tray, OR (transient)
+    // it/its anchor is the hovered pin.
+    const visible = markers.filter((m) => {
+      const inFilter = typeFilters.has(m.type_code ?? '')
+      const inActive = activePins.includes(m.relationship_id) ||
+        (m.anchor_residence_id !== null && activePins.includes(m.anchor_residence_id))
+      const inHover = hoverPreview !== null &&
+        (m.relationship_id === hoverPreview || m.anchor_residence_id === hoverPreview)
+      return inFilter || inActive || inHover
+    })
     const { commute, trip } = tetherFeatures(visible, byId)
     ;(map.getSource('commute-lines') as mapboxgl.GeoJSONSource | undefined)?.setData(commute)
     ;(map.getSource('trip-tethers') as mapboxgl.GeoJSONSource | undefined)?.setData(trip)
-  }, [pins, ready, hoverPreview])
+  }, [pins, ready, hoverPreview, activePins, typeFilters])
 
   const handleRetrieve = useCallback((place: RetrievedPlace) => {
     const map = mapRef.current
@@ -638,6 +665,25 @@ export default function GlobeView() {
     setStagedCoords(null) // toggling refining re-renders markers back to saved coords
   }, [])
 
+  // Active-lines tray + type filters (Slice 3.5).
+  const toggleTypeFilter = useCallback((code: string) => {
+    setTypeFilters((cur) => {
+      const next = new Set(cur)
+      if (next.has(code)) next.delete(code); else next.add(code)
+      return next
+    })
+  }, [])
+  const removeActivePin = useCallback((id: string) => {
+    setActivePins((cur) => cur.filter((x) => x !== id))
+  }, [])
+  const clearActiveLines = useCallback(() => {
+    setActivePins([])
+    setTypeFilters(new Set())
+  }, [])
+  const toggleSideLines = useCallback((id: string) => {
+    setActivePins((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]))
+  }, [])
+
   // Persist a full spine ordering. Reorder operates on the residential spine
   // only (the RPC rejects marker ids and any list that doesn't cover exactly
   // the user's residences), so callers pass the complete ordered id list.
@@ -728,50 +774,94 @@ export default function GlobeView() {
         ← Dashboard
       </a>
 
-      {/* Legend — keys the six pin types + three line tiers. Collapsed
-          by default so it never competes with the globe. */}
+      {/* Bottom-left control stack (Slice 3.5): the active-lines tray docked
+          above the legend, which doubles as the class-level type filter. */}
       {hasPins && (
-        <div className="glass absolute bottom-6 left-6 z-20 rounded-xl text-xs text-[var(--ink-dim)]">
-          <button
-            onClick={() => setLegendOpen((o) => !o)}
-            className="flex w-full items-center gap-2 px-3 py-2 text-[var(--ink)] hover:text-[var(--ember-soft)]"
-          >
-            <span className="text-[var(--ember-soft)]">{legendOpen ? '▾' : '▸'}</span>
-            Legend
-          </button>
-          {legendOpen && (
-            <div className="space-y-1.5 px-3 pb-3">
-              {([
-                ['globe-pin', 'Primary residence'],
-                ['globe-pin globe-pin--workplace', 'Workplace'],
-                ['globe-pin globe-pin--second', 'Second residence'],
-                ['globe-pin globe-pin--short', 'Short-term stay'],
-                ['globe-pin globe-pin--vacation', 'Vacation'],
-                ['globe-pin globe-pin--work-travel', 'Professional travel'],
-              ] as const).map(([cls, label]) => (
-                <div key={label} className="flex items-center gap-2.5">
-                  <span className="relative inline-flex h-3.5 w-3.5 items-center justify-center">
-                    <span className={`${cls} !cursor-default`} style={{ position: 'static' }} />
-                  </span>
-                  <span>{label}</span>
-                </div>
+        <div className="absolute bottom-6 left-6 z-20 flex flex-col items-start gap-2">
+          {/* Active-lines tray — persisted per-pin side-line sets as chips. */}
+          {(activeChips.length > 0 || typeFilters.size > 0) && (
+            <div className="glass flex max-w-[min(380px,80vw)] flex-wrap items-center gap-1.5 rounded-xl px-2.5 py-2 text-xs">
+              <span className="px-1 text-[var(--ink-dim)]">Lines</span>
+              {activeChips.map((p) => (
+                <span key={p.relationship_id} className="flex items-center gap-1 rounded-full border border-[var(--glass-border)] bg-black/20 py-0.5 pl-2 pr-1 text-[var(--ink)]">
+                  <span className="max-w-[120px] truncate">{p.name}</span>
+                  <button
+                    onClick={() => removeActivePin(p.relationship_id)}
+                    aria-label={`Remove ${p.name} lines`}
+                    className="rounded-full px-1 text-[var(--ink-dim)] hover:text-[var(--ink)]"
+                  >
+                    ✕
+                  </button>
+                </span>
               ))}
-              <div className="mt-2 space-y-1.5 border-t border-[var(--glass-border)] pt-2">
-                <div className="flex items-center gap-2.5">
-                  <span className="inline-block h-0 w-6 border-t-2 border-[var(--ember)]" style={{ boxShadow: '0 0 6px var(--ember)' }} />
-                  <span>Residential transit ›</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="inline-block h-0 w-6 border-t-2" style={{ borderColor: '#5fc6dc' }} />
-                  <span>Commute (home → work)</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="inline-block h-0 w-6 border-t border-dashed" style={{ borderColor: '#cdb78a' }} />
-                  <span>Trip / temporary</span>
-                </div>
-              </div>
+              <button
+                onClick={clearActiveLines}
+                className="ml-0.5 rounded-full px-2 py-0.5 text-[var(--ember-soft)] hover:text-[var(--ember)]"
+              >
+                Clear all
+              </button>
             </div>
           )}
+
+          {/* Legend + type filters — keys the pin types and toggles each
+              class's tethers as a baseline. Collapsed by default. */}
+          <div className="glass rounded-xl text-xs text-[var(--ink-dim)]">
+            <button
+              onClick={() => setLegendOpen((o) => !o)}
+              className="flex w-full items-center gap-2 px-3 py-2 text-[var(--ink)] hover:text-[var(--ember-soft)]"
+            >
+              <span className="text-[var(--ember-soft)]">{legendOpen ? '▾' : '▸'}</span>
+              Legend &amp; filters
+            </button>
+            {legendOpen && (
+              <div className="space-y-1 px-2 pb-2">
+                {/* Primary residence is the spine — always shown, not a filter. */}
+                <div className="flex items-center gap-2.5 px-1 py-0.5">
+                  <span className="relative inline-flex h-3.5 w-3.5 items-center justify-center">
+                    <span className="globe-pin !cursor-default" style={{ position: 'static' }} />
+                  </span>
+                  <span>Primary residence</span>
+                  <span className="ml-auto text-[10px] text-[var(--ink-dim)]/60">spine</span>
+                </div>
+                {PIN_TYPES.filter((t) => !t.isSpine).map((t) => {
+                  const on = typeFilters.has(t.code)
+                  return (
+                    <button
+                      key={t.code}
+                      onClick={() => toggleTypeFilter(t.code)}
+                      title={on ? `Hide all ${t.label}` : `Show all ${t.label}`}
+                      className={
+                        'flex w-full items-center gap-2.5 rounded-lg px-1 py-0.5 text-left hover:bg-white/5 ' +
+                        (on ? 'text-[var(--ink)]' : 'text-[var(--ink-dim)]')
+                      }
+                    >
+                      <span className="relative inline-flex h-3.5 w-3.5 items-center justify-center">
+                        <span className={`${pinTypeClass(t.code)} !cursor-default`} style={{ position: 'static' }} />
+                      </span>
+                      <span>{t.label}</span>
+                      <span className={'ml-auto text-[10px] ' + (on ? 'text-[var(--ember-soft)]' : 'text-[var(--ink-dim)]/50')}>
+                        {on ? '● shown' : '○ hidden'}
+                      </span>
+                    </button>
+                  )
+                })}
+                <div className="mt-1 space-y-1.5 border-t border-[var(--glass-border)] px-1 pt-2">
+                  <div className="flex items-center gap-2.5">
+                    <span className="inline-block h-0 w-6 border-t-2 border-[var(--ember)]" style={{ boxShadow: '0 0 6px var(--ember)' }} />
+                    <span>Residential transit ›</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <span className="inline-block h-0 w-6 border-t-2" style={{ borderColor: '#5fc6dc' }} />
+                    <span>Commute (home → work)</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <span className="inline-block h-0 w-6 border-t border-dashed" style={{ borderColor: '#94a0c4' }} />
+                    <span>Trip / temporary</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -910,6 +1000,9 @@ export default function GlobeView() {
             position={spinePos}
             total={spine.length}
             refining={refining}
+            sideLinesOn={activePins.includes(sel.relationship_id)}
+            hasSideLines={pinHasSideLines(sel.relationship_id)}
+            onToggleSideLines={() => toggleSideLines(sel.relationship_id)}
             onNavigate={navigateSpine}
             onRefine={() => { setStagedCoords(null); setRefining(true) }}
             onEdit={() => { setRefining(false); setEditMode(true) }}
