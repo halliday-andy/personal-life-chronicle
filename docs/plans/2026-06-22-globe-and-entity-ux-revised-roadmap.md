@@ -118,7 +118,7 @@ Shipped in 7 atomic commits (`12a3392`…`a9183ce`): finding 2 backend+frontend,
 - marker→primary→marker round-trips losslessly: the original anchor and dashed tether are restored, not orphaned to standalone.
 - All six place types + 3 line tiers proof-checked live (the held Phase 5). `tsc + eslint` clean.
 
-### Slice 3.5 — active-lines tray + type filters (item 3, dynamic)  ·  *near-term*
+### Slice 3.5 — active-lines tray + type filters (item 3, dynamic)  ·  ✅ BUILT 2026-06-23 (`87ffe44`)
 The new stateful interaction, built on Slice 3's hover-preview line-visibility foundation. Apply `interaction-design` skills (`state-machine`, `feedback-patterns`, Fitts'/Hick's for the bottom-left cluster). **Now also owns the class-level type filters** (moved here from Slice 3 — they share the bottom-left selector region and the line-visibility state, per the brief).
 **Acceptance:**
 - Click a pin → its tether set persists + a dismissible chip appears in the tray docked with the type selector.
@@ -127,8 +127,8 @@ The new stateful interaction, built on Slice 3's hover-preview line-visibility f
 - The detail-card "keep side lines" toggle is a shortcut into the same tray state (not a parallel mechanism); default on click = lines ON for the clicked pin.
 - Type filters (in the bottom-left selector) set the baseline of what's shown; per-pin chips add on top. State survives detail-card changes (no orphaned sets).
 
-### Slice 3.6 — the "Log" pin: generalized anchoring + recollection roll-up  ·  *near-term (Phase-5 finding 3); unblocks finding 4*
-A seventh, category-neutral pin type plus the anchor-model generalization it needs.
+### Slice 3.6 — the "Log" pin: generalized anchoring + recollection roll-up  ·  ✅ BUILT 2026-06-23 (`3219462`/`3650151`/`f19b39d`)
+A seventh, category-neutral pin type plus the anchor-model generalization it needs. Shipped as 3.6a (backend: `logged_at` type + `validate_pin_anchor` + RPCs), 3.6b (frontend: pin-types entry, CSS, any-pin anchor picker), 3.6c (recollection roll-up + route allowlists). Unblocks Phase-5 finding 4 (orphan-on-retype can now resolve into a Log association).
 **Includes:**
 - **New type** — code working-name `logged_at` (+ inverse), label **"Log"** (MVP trial; rename is a one-line change in `lib/globe/pin-types.ts` — candidates Waypoint / Relic / Capture parked). Non-spine; optional dashed tether; its own pin styling row. Two new `relationship_types` rows.
 - **Generalized anchoring** — replace `validate_residence_anchor()` with `validate_pin_anchor()`: a non-null anchor must be any of the user's own **globe pins** (primary or marker), not only `lived_at`. Column `anchor_residence_id` keeps its name (rename is churn) but its *semantics* widen to "anchor pin"; the validation, not the column, changes. Both `create_residence_pin` and `update_residence_pin` call the generalized helper. **Additive** (loosens a CHECK, no data rewrite).
