@@ -333,9 +333,11 @@ export default function GlobeView() {
         source: 'trip-tethers',
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: {
-          'line-color': '#cdb78a',
-          'line-width': 1,
-          'line-opacity': 0.4,
+          // Cool, desaturated slate — deliberately NOT a dimmer ember so trip
+          // tethers read as distinct from the glowing spine (item 3 note).
+          'line-color': '#94a0c4',
+          'line-width': 1.1,
+          'line-opacity': 0.55,
           'line-dasharray': [2, 2.5],
         },
       })
@@ -377,15 +379,15 @@ export default function GlobeView() {
         source: 'arcs',
         layout: {
           'symbol-placement': 'line',
-          'symbol-spacing': 110,
+          'symbol-spacing': 95,
           'text-field': '›',
-          'text-size': 14,
+          'text-size': 18,
           'text-keep-upright': false,
           'text-rotation-alignment': 'map',
           'text-allow-overlap': true,
           'text-ignore-placement': true,
         },
-        paint: { 'text-color': '#f4b14a', 'text-opacity': 0.4 },
+        paint: { 'text-color': '#f4b14a', 'text-opacity': 0.5 },
       })
       map.addLayer({
         id: 'arc-chevrons-active',
@@ -394,9 +396,9 @@ export default function GlobeView() {
         filter: NO_SEGMENT,
         layout: {
           'symbol-placement': 'line',
-          'symbol-spacing': 80,
+          'symbol-spacing': 72,
           'text-field': '›',
-          'text-size': 18,
+          'text-size': 22,
           'text-keep-upright': false,
           'text-rotation-alignment': 'map',
           'text-allow-overlap': true,
