@@ -194,6 +194,11 @@ export default function GlobeView() {
   const [legendOpen, setLegendOpen] = useState(false)
   // Hover card (item 1): name + placard at the pin's screen position.
   const [hovered, setHovered] = useState<{ name: string; description: string | null; x: number; y: number } | null>(null)
+  // Line declutter (item 3): default view is the bare spine; hovering a pin
+  // transiently previews its associated side lines. `hoverPreview` is the
+  // hovered pin's relationship_id (a primary reveals its markers' tethers; a
+  // marker reveals its own). Click-to-persist + type filters land in Slice 3.5.
+  const [hoverPreview, setHoverPreview] = useState<string | null>(null)
   const { setAssistantSuppressed } = useUiChrome()
 
   // Proximity hints are advisory — auto-dismiss after a few seconds.
@@ -424,8 +429,6 @@ export default function GlobeView() {
     // The connected glowing spine is the primary-residence sequence only;
     // every other type is a marker that tethers to its anchor primary.
     const spine = pins.filter((p) => p.type_code === SPINE_CODE)
-    const markers = pins.filter((p) => p.type_code !== SPINE_CODE)
-    const byId = new Map(pins.map((p) => [p.relationship_id, p]))
     // The origin pin (item 2): wherever the journey starts — sequence
     // position #1, not a semantic "birth" field. Calm "infancy" treatment.
     const originId = spine[0]?.relationship_id ?? null
@@ -458,8 +461,12 @@ export default function GlobeView() {
       el.addEventListener('mouseenter', () => {
         const pt = map.project([p.lng, p.lat])
         setHovered({ name: p.name, description: p.description, x: pt.x, y: pt.y })
+        setHoverPreview(p.relationship_id)
       })
-      el.addEventListener('mouseleave', () => setHovered((h) => (h?.name === p.name ? null : h)))
+      el.addEventListener('mouseleave', () => {
+        setHovered((h) => (h?.name === p.name ? null : h))
+        setHoverPreview((cur) => (cur === p.relationship_id ? null : cur))
+      })
       const marker = new mapboxgl.Marker({ element: el, draggable: isSel }).setLngLat([p.lng, p.lat]).addTo(map)
       if (isSel) {
         marker.on('dragend', () => {
@@ -473,9 +480,8 @@ export default function GlobeView() {
 
     const arcSrc = map.getSource('arcs') as mapboxgl.GeoJSONSource | undefined
     arcSrc?.setData(arcSegments(spine))
-    const { commute, trip } = tetherFeatures(markers, byId)
-    ;(map.getSource('commute-lines') as mapboxgl.GeoJSONSource | undefined)?.setData(commute)
-    ;(map.getSource('trip-tethers') as mapboxgl.GeoJSONSource | undefined)?.setData(trip)
+    // Tether visibility (item 3) is driven by hover preview in its own effect
+    // below — default view is the bare spine.
 
     // Directional emphasis for a selected SPINE pin: its inbound leg
     // (seq = idx-1, "approached from") renders brighter than its outbound
@@ -500,6 +506,23 @@ export default function GlobeView() {
       }
     }
   }, [pins, ready, selectedId, editMode, refining, selectPin])
+
+  // Tether visibility (item 3): default = none (bare spine); a hovered pin
+  // transiently reveals its associated side lines — a primary shows the
+  // tethers of markers anchored to it; a marker shows its own. Kept in its
+  // own effect so hovering only re-sets the two line sources, not every pin.
+  useEffect(() => {
+    if (!ready) return
+    const map = mapRef.current!
+    const markers = pins.filter((p) => p.type_code !== SPINE_CODE)
+    const byId = new Map(pins.map((p) => [p.relationship_id, p]))
+    const visible = hoverPreview
+      ? markers.filter((m) => m.relationship_id === hoverPreview || m.anchor_residence_id === hoverPreview)
+      : []
+    const { commute, trip } = tetherFeatures(visible, byId)
+    ;(map.getSource('commute-lines') as mapboxgl.GeoJSONSource | undefined)?.setData(commute)
+    ;(map.getSource('trip-tethers') as mapboxgl.GeoJSONSource | undefined)?.setData(trip)
+  }, [pins, ready, hoverPreview])
 
   const handleRetrieve = useCallback((place: RetrievedPlace) => {
     const map = mapRef.current
