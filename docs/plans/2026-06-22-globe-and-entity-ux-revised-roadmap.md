@@ -83,23 +83,39 @@ Host-agnostic: `host_entity_id` points at the pin's place entity **or** a person
 
 **M3 — Life's Cast promotion flag:** no DDL for MVP — `entities.metadata.in_lifes_cast` boolean. (Promote to a real column only if list queries need it.)
 
-No new columns for items 1–4 (placard reuses `description`; chips/tray/origin/Resume are rendering).
+**M4 — "Log" pin type + generalized anchoring (Slice 3.6, Phase-5 finding 3):** two new `relationship_types` rows (`logged_at` + inverse); replace `validate_residence_anchor()` with `validate_pin_anchor()` (anchor must be any of the user's own globe pins, not only `lived_at`) — `CREATE OR REPLACE`, loosens a check, **no data rewrite**; `create`/`update_residence_pin` call the generalized helper and gain `logged_at` in their valid-type list; `get_residence_pins` widens to include the new type. Finding 2's `metadata.prior_anchor_residence_id` round-trip restore is metadata-only (no DDL). All additive/reversible — no safety-gate stop.
+
+No new columns for items 1, 2, 4 or Resume View (placard reuses `description`; chips/tray/origin/refine-button/Resume are rendering + metadata).
 
 ---
+
+## 3a. Phase-5 proof findings (Andy, 2026-06-22) — reshaping the globe-legibility track
+
+Andy ran the six-type live proof and surfaced five items. Verified against code:
+
+1. **Drag-refine is gated to edit mode** (`GlobeView.tsx:423`, `draggable only while editing`) → refining a placed pin requires click → Edit → drag, which reads as "no way to refine on the globe surface." **Resolution:** add a **"Refine location"** action on the detail card that arms dragging without opening the full edit panel (Andy's choice — deliberate, no accidental moves). True auto-declutter / spiderfy of overlapping markers is **deferred to Slice 5**.
+2. **Re-type round-trip loses the anchor/tether (bug).** marker→primary→marker drops the anchor: `validate_residence_anchor()` clears it on the primary leg, and nothing remembers it on revert, so the picker falls to "not sure/standalone" and no tether redraws. **Resolution:** stash the prior anchor in `relationships.metadata.prior_anchor_residence_id` on re-type-to-primary; restore it (and the tether) on revert; default the picker to the temporally-nearest primary when no stash exists. Additive (metadata only).
+3. **New neutral pin type — "Log"** (MVP trial label; candidate names parked: Waypoint / Relic / Capture / Log — "a log entry in the journal of life"). A place marked purely because something memorable happened there, making no category claim. Two capabilities: (a) the new type, and (b) **generalized anchoring** — a marker may associate with **any** of the user's own globe pins (primary *or* marker, incl. a vacation), enabling "places visited around a vacation destination." Plus **recollection roll-up**: a pin's detail card includes recollections from pins anchored to it. → its own micro-slice (3.6).
+4. **Orphan-on-retype test** — Andy defers until the Log type exists (the "standalone" landing state should resolve into a Log association). Blocked on 3.6, agreed.
+5. **Workplace icon overwhelms the primary residence at zoom-out** (Queenstown / Coronet Peak Ski School screenshot). Visual hierarchy is inverted — the primary residence should dominate. **Deferred to the pin-visual redesign** (coloration / iconography / type styling pass), per Andy. Captured in §4 "Deferred."
+
+These items live entirely in the pin/anchor/type code region (not the entity/context substrate), so they extend the globe-legibility track: items 2 + (1) fold into the Slice 3 close-out; item 3 becomes Slice 3.6; item 5 parks to the visual redesign.
 
 ## 4. The revised slice roadmap
 
 Numbering continues the Step-7 slice line. Build directly on `main` (project convention); each phase commits atomically; `tsc + eslint` gate every commit; Andy proofs live.
 
 ### Slice 3 — close-out (globe legibility, static)  ·  *near-term, smallest*
-Folds in brief items 1, 2, and the static half of 3 alongside your pending Phase-5 proof of the place-types work.
-**Includes:** per-pin `when`-phrase chip (item 1); hover card = name + `description` placard (item 1); enlarged directional chevrons (item 1); origin-pin treatment for `sort_order` #1 (item 2); default-view = spine only + hover-preview of a pin's side lines + class-level type filters in the bottom-left selector (item 3 static); the coloration/contrast fix so tethers read distinct from the spine glow.
+Folds in brief items 1, 2, the static half of 3, **plus Phase-5 findings 1 (refine button) and 2 (re-type anchor restore)** alongside the place-types proof.
+**Includes:** per-pin `when`-phrase chip (item 1); hover card = name + `description` placard (item 1); enlarged directional chevrons (item 1); origin-pin treatment for `sort_order` #1 (item 2); default-view = spine only + hover-preview of a pin's side lines + class-level type filters in the bottom-left selector (item 3 static); the coloration/contrast fix so tethers read distinct from the spine glow; **"Refine location" detail-card action** (finding 1); **re-type anchor/tether restore** via `metadata.prior_anchor_residence_id` (finding 2).
 **Acceptance:**
 - Every pin shows its `when` phrase without interaction; current/open residence reads "…–now".
 - Hover reveals name + placard; placard is editable on the edit panel and persists to `entities.description`.
 - Pin #1 is visibly the origin (larger, calm treatment) and shows its start phrase.
 - Default globe shows only the `lived_at` spine; hovering a pin previews its tethers; mouse-out clears them.
 - Type filters in the bottom-left selector show/hide whole classes (Workplaces, Vacations, …).
+- "Refine location" arms drag on a selected pin without the full edit panel; an inspecting click never moves a pin.
+- marker→primary→marker round-trips losslessly: the original anchor and dashed tether are restored, not orphaned to standalone.
 - All six place types + 3 line tiers proof-checked live (the held Phase 5). `tsc + eslint` clean.
 
 ### Slice 3.5 — active-lines tray (item 3, dynamic)  ·  *near-term*
@@ -110,6 +126,20 @@ The new stateful interaction. Apply `interaction-design` skills (`state-machine`
 - Selecting a *different* pin and adding its set leaves prior sets intact (multi-pin compare).
 - The detail-card "keep side lines" toggle is a shortcut into the same tray state (not a parallel mechanism); default on click = lines ON for the clicked pin.
 - Type filters set the baseline; per-pin chips add on top. State survives detail-card changes (no orphaned sets).
+
+### Slice 3.6 — the "Log" pin: generalized anchoring + recollection roll-up  ·  *near-term (Phase-5 finding 3); unblocks finding 4*
+A seventh, category-neutral pin type plus the anchor-model generalization it needs.
+**Includes:**
+- **New type** — code working-name `logged_at` (+ inverse), label **"Log"** (MVP trial; rename is a one-line change in `lib/globe/pin-types.ts` — candidates Waypoint / Relic / Capture parked). Non-spine; optional dashed tether; its own pin styling row. Two new `relationship_types` rows.
+- **Generalized anchoring** — replace `validate_residence_anchor()` with `validate_pin_anchor()`: a non-null anchor must be any of the user's own **globe pins** (primary or marker), not only `lived_at`. Column `anchor_residence_id` keeps its name (rename is churn) but its *semantics* widen to "anchor pin"; the validation, not the column, changes. Both `create_residence_pin` and `update_residence_pin` call the generalized helper. **Additive** (loosens a CHECK, no data rewrite).
+- **Per-type picker scoping** — the DB is permissive (any pin); the *UI picker* stays guided: Workplace still offers primaries ("which home did you commute from?"); a Log offers **all** pins ("associated with which place?"). One DB rule, sensible per-type UX.
+- **Recollection roll-up (direct-anchor, MVP)** — a pin's detail-card linked-recollections includes the globe recollections of pins whose `anchor_residence_id` = this pin. So a Log anchored to a primary surfaces under that primary; a Log anchored to a vacation surfaces under that vacation. **Transitive roll-up** (Log→vacation→primary) is **deferred** — YAGNI until asked.
+**Acceptance:**
+- A Log pin can be placed and associated with a primary *or* a vacation (or any pin); it draws a dashed tether to that anchor.
+- The anchored pin's detail card lists the Log's recollection among its linked recollections (direct anchor).
+- `validate_pin_anchor` accepts any own globe pin and still rejects another user's pin / a non-pin relationship (multi-tenancy preserved). Proof script asserts both.
+- Re-typing still adjusts the spine correctly; a Log never enters the spine. `tsc + eslint` clean.
+- With Log shipped, **Phase-5 finding 4** can be tested: orphan-on-retype resolves into a Log-style association rather than bare standalone.
 
 ### Slice 6 — Entity View + context substrate  ·  *pulled forward (was "#3 NEXT")*
 Builds the 2026-06-14 design as the shared foundation. Serves **all** entity types (places included), so it also upgrades the globe pin's "add context" path and clears the Zaragoza/Mildenhall dead-end.
@@ -138,6 +168,9 @@ Per Andy: near-term, after globe legibility. Low-risk, reuse-heavy. Independent 
 - Selecting a row centers the globe; selecting a pin scrolls the list to it.
 - Reuses existing detail-card/recollection/photo components (no forked rendering).
 
+### Deferred to the pin-visual redesign (Phase-5 finding 5)
+**Workplace icon overwhelms the primary residence at zoom-out** (Queenstown / Coronet Peak). The primary residence should be the dominant marker; the workplace (and all tether-types) should read as subordinate to it. Fold into the dedicated pin coloration / iconography / type-styling pass — *not* a Slice 3 gate (Andy's call). Pairs naturally with the deferred "tether highlight on selection" and "static era gradient" polish already recorded in the Slice 3 design doc.
+
 ### Vertical Moments (item 7) — parked
 Capture-only. No work until Andy supplies examples. Taxonomy treated as extensible (consistent with the schema-extensibility constraint).
 
@@ -145,14 +178,15 @@ Capture-only. No work until Andy supplies examples. Taxonomy treated as extensib
 
 ## 5. Suggested execution order
 
-1. **Slice 3 close-out** (your live proof + items 1, 2, 3-static) — smallest, unblocks the visible legibility win.
-2. **Slice 3.5** (active-lines tray) — finishes the globe-legibility arc.
-3. **Resume View** — near-term quick win; can interleave with the next item since it's independent.
-4. **Slice 6** (Entity View + context substrate) — the foundation; also fixes the recurring context dead-end.
-5. **Slice 7** (Person page + Life's Cast + Hopper) — rides on Slice 6.
-6. **Vertical Moments** — parked.
+1. **Slice 3 close-out** (live proof + items 1, 2, 3-static + Phase-5 findings 1 & 2) — smallest, unblocks the visible legibility win and fixes the re-type bug.
+2. **Slice 3.5** (active-lines tray) — finishes the globe-legibility interaction arc.
+3. **Slice 3.6** (the "Log" pin + generalized anchoring + roll-up) — completes the place-type model and unblocks Phase-5 finding 4.
+4. **Resume View** — near-term quick win; independent, can interleave.
+5. **Slice 6** (Entity View + context substrate) — the foundation; also fixes the recurring context dead-end.
+6. **Slice 7** (Person page + Life's Cast + Hopper) — rides on Slice 6.
+7. **Vertical Moments** — parked; **pin-visual redesign** (finding 5) slots whenever the styling pass is scheduled.
 
-Rationale: globe legibility is presentational and self-contained (fast, visible). Resume View is independent and low-risk. The Entity-View substrate is the long pole and unblocks both the Person page *and* the context dead-end, so it precedes Slice 7, which is a thin specialization on top.
+Rationale: the globe-legibility track (3 → 3.5 → 3.6) is presentational/interaction work in one code region — fast, visible, and it closes out the place-type model cleanly before the bigger entity/context substrate. Resume View is independent and low-risk. The Entity-View substrate is the long pole and unblocks both the Person page *and* the context dead-end, so it precedes Slice 7, which is a thin specialization on top.
 
 ---
 

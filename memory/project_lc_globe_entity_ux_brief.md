@@ -17,7 +17,14 @@ A UX design brief was written 2026-06-22 capturing seven globe/entity enhancemen
 
 **Andy's sequencing calls (2026-06-22):** (1) pull the Entity-View/context substrate forward; (2) Resume View near-term after globe legibility; (3) defer the TypeUI brand preset — keep nocturne styling.
 
-**Revised slice order:** Slice 3 close-out (items 1,2,3-static + live proof) → Slice 3.5 (active-lines tray) → Resume View (item 4) → Slice 6 (Entity View + context substrate) → Slice 7 (Person page + Life's Cast + Hopper) → Vertical Moments parked.
+**Revised slice order:** Slice 3 close-out (items 1,2,3-static + live proof) → Slice 3.5 (active-lines tray) → **Slice 3.6 (the "Log" pin)** → Resume View (item 4) → Slice 6 (Entity View + context substrate) → Slice 7 (Person page + Life's Cast + Hopper) → Vertical Moments parked.
+
+**Phase-5 proof findings (Andy, 2026-06-22) — reshaped the globe track:**
+1. Drag-refine is gated to edit mode (`GlobeView.tsx:423`) → add a **"Refine location"** detail-card action; auto-declutter deferred to Slice 5. (→ Slice 3 close-out)
+2. **Bug:** marker→primary→marker re-type loses the anchor/tether (`validate_residence_anchor` clears it, nothing remembers it). Fix: stash `metadata.prior_anchor_residence_id`, restore on revert, default picker to nearest primary. (→ Slice 3 close-out)
+3. **New "Log" pin type** (MVP trial label; candidates parked: Waypoint / Relic / Capture / Log = "a log entry in the journal of life") — a category-neutral place. Needs **generalized anchoring** (`validate_pin_anchor`: anchor to ANY own globe pin, primary or marker incl. vacation) + **recollection roll-up** (anchor's card includes recollections of pins anchored to it; transitive deferred). (→ Slice 3.6)
+4. Orphan-on-retype test deferred until Log exists (Andy). (blocked on 3.6)
+5. Workplace icon overwhelms primary residence at zoom-out (Queenstown/Coronet Peak) — primary should dominate. **Deferred to the pin-visual redesign** (Andy). Captured.
 
 The seven items:
 1. **Pin legibility** — at-rest compact year-range chip per pin (e.g. `1971–75`, current = `2019–now`), plain text, NO visual proportionality (proportional timeline stays deferred to Temporal Agent, invariant #5); hover reveals name + a short user-written **placard** (likely a new short field); enlarge/sharpen spine chevrons.
