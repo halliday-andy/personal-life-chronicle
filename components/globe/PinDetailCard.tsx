@@ -42,14 +42,18 @@ export default function PinDetailCard({
   pin,
   position,
   total,
+  refining,
   onNavigate,
+  onRefine,
   onEdit,
   onClose,
 }: {
   pin: { relationship_id: string; place_entity_id: string; name: string; when_text: string | null; place_subtype: string | null; type_code: string | null }
   position: number   // 0-based index in the SPINE sequence; -1 for off-spine markers
   total: number      // number of primary residences (spine length)
+  refining: boolean  // drag-to-refine armed from this card (Phase-5 finding 1)
   onNavigate: (dir: -1 | 1) => void  // step prev/next along the spine + fly there
+  onRefine: () => void  // arm drag-to-refine without opening the full edit panel
   onEdit: () => void
   onClose: () => void
 }) {
@@ -194,6 +198,18 @@ export default function PinDetailCard({
               </button>
             </div>
           )}
+          <button
+            onClick={onRefine}
+            title="Drag the pin to a new spot on the globe"
+            className={
+              'rounded-lg border px-3 py-1.5 text-sm ' +
+              (refining
+                ? 'border-[var(--ember-soft)] text-[var(--ember-soft)]'
+                : 'border-[var(--glass-border)] text-[var(--ink-dim)] hover:text-[var(--ink)]')
+            }
+          >
+            Refine location
+          </button>
           <button
             onClick={onEdit}
             className="rounded-lg border border-[var(--glass-border)] px-3 py-1.5 text-sm text-[var(--ink-dim)] hover:text-[var(--ink)]"

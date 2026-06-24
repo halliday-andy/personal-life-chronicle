@@ -182,6 +182,10 @@ export default function GlobeView() {
   // Pin click opens the read view (detail card); Edit escalates to the
   // edit panel, which is also what arms drag-to-relocate.
   const [editMode, setEditMode] = useState(false)
+  // Lightweight "refine location" mode (Phase-5 finding 1): arms drag on the
+  // selected pin straight from the detail card, without opening the full edit
+  // panel — for nudging a marker to array close pins legibly.
+  const [refining, setRefining] = useState(false)
   const [stagedCoords, setStagedCoords] = useState<{ lng: number; lat: number } | null>(null)
   const [savingPanel, setSavingPanel] = useState(false)
   const [hint, setHint] = useState<ProximityHint | null>(null)
@@ -254,6 +258,7 @@ export default function GlobeView() {
     selectedIdRef.current = null
     setSelectedId(null)
     setEditMode(false)
+    setRefining(false)
     setStagedCoords(null)
   }, [])
 
@@ -266,6 +271,7 @@ export default function GlobeView() {
     selectedIdRef.current = relId
     setSelectedId(relId)
     setEditMode(false)
+    setRefining(false)
     setStagedCoords(null)
   }, [])
 
@@ -421,7 +427,7 @@ export default function GlobeView() {
     pinMarkersRef.current.forEach((m) => m.remove())
     pinMarkersRef.current = []
     pins.forEach((p) => {
-      const isSel = p.relationship_id === selectedId && editMode // draggable only while editing
+      const isSel = p.relationship_id === selectedId && (editMode || refining) // draggable while editing or refining
       const el = document.createElement('div')
       el.className =
         'globe-pin' +
@@ -471,7 +477,7 @@ export default function GlobeView() {
         map.setPaintProperty('arc-chevrons-active', 'text-opacity', inOut(0.95, 0.6))
       }
     }
-  }, [pins, ready, selectedId, editMode, selectPin])
+  }, [pins, ready, selectedId, editMode, refining, selectPin])
 
   const handleRetrieve = useCallback((place: RetrievedPlace) => {
     const map = mapRef.current
@@ -543,6 +549,47 @@ export default function GlobeView() {
       setSavingPanel(false)
     }
   }, [selectedId, stagedCoords, loadPins])
+
+  // Persist a refine-mode relocation (coords only). Re-send the pin's
+  // current name + when phrase so the PATCH doesn't clear them (a null
+  // p_when_text deletes the chip; null p_body leaves the finalized memory
+  // intact). Type/anchor are left untouched (typeCode omitted).
+  const handleRefineSave = useCallback(async () => {
+    if (!selectedId || !stagedCoords) return
+    const sel = pins.find((p) => p.relationship_id === selectedId)
+    if (!sel) return
+    setSavingPanel(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/globe/residence/${selectedId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lng: stagedCoords.lng, lat: stagedCoords.lat,
+          name: sel.name, whenText: sel.when_text ?? '',
+        }),
+      })
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}))
+        throw new Error(b.detail || b.error || `HTTP ${res.status}`)
+      }
+      const body = await res.json().catch(() => ({}))
+      await loadPins()
+      setRefining(false)
+      setStagedCoords(null)
+      setNotice(`Moved — ${sel.name || 'your place'} repositioned.`)
+      setHint(body.proximity ?? null)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not move the pin.')
+    } finally {
+      setSavingPanel(false)
+    }
+  }, [selectedId, stagedCoords, pins, loadPins])
+
+  const cancelRefine = useCallback(() => {
+    setRefining(false)
+    setStagedCoords(null) // toggling refining re-renders markers back to saved coords
+  }, [])
 
   // Persist a full spine ordering. Reorder operates on the residential spine
   // only (the RPC rejects marker ids and any list that doesn't cover exactly
@@ -754,6 +801,28 @@ export default function GlobeView() {
         />
       )}
 
+      {refining && !editMode && selectedId && (
+        <div className="glass absolute left-1/2 top-6 z-40 flex -translate-x-1/2 items-center gap-3 rounded-full px-4 py-2 text-sm text-[var(--ink)]">
+          <span className="text-[var(--ink-dim)]">
+            {stagedCoords ? 'New position set.' : 'Drag the pin to reposition it.'}
+          </span>
+          <button
+            onClick={handleRefineSave}
+            disabled={!stagedCoords || savingPanel}
+            className="rounded-full bg-[var(--ember)] px-3 py-1 text-xs font-medium text-[#241500] disabled:opacity-40"
+          >
+            {savingPanel ? 'Saving…' : 'Save location'}
+          </button>
+          <button
+            onClick={cancelRefine}
+            disabled={savingPanel}
+            className="text-xs text-[var(--ink-dim)] hover:text-[var(--ink)] disabled:opacity-40"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
       {selectedId && (() => {
         const sel = pins.find((p) => p.relationship_id === selectedId)
         if (!sel) return null
@@ -781,8 +850,10 @@ export default function GlobeView() {
             pin={sel}
             position={spinePos}
             total={spine.length}
+            refining={refining}
             onNavigate={navigateSpine}
-            onEdit={() => setEditMode(true)}
+            onRefine={() => { setStagedCoords(null); setRefining(true) }}
+            onEdit={() => { setRefining(false); setEditMode(true) }}
             onClose={deselect}
           />
         )
