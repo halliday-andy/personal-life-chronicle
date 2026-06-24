@@ -426,6 +426,9 @@ export default function GlobeView() {
     const spine = pins.filter((p) => p.type_code === SPINE_CODE)
     const markers = pins.filter((p) => p.type_code !== SPINE_CODE)
     const byId = new Map(pins.map((p) => [p.relationship_id, p]))
+    // The origin pin (item 2): wherever the journey starts — sequence
+    // position #1, not a semantic "birth" field. Calm "infancy" treatment.
+    const originId = spine[0]?.relationship_id ?? null
 
     pinMarkersRef.current.forEach((m) => m.remove())
     pinMarkersRef.current = []
@@ -435,6 +438,7 @@ export default function GlobeView() {
       el.className =
         'globe-pin' +
         pinTypeClass(p.type_code) +
+        (p.relationship_id === originId ? ' globe-pin-origin' : '') +
         (bloomIdRef.current === p.place_entity_id ? ' globe-pin-bloom' : '') +
         (p.relationship_id === selectedId ? ' globe-pin-selected' : '')
       // Selection ring/glow read this var so they match the pin's type hue.
