@@ -36,6 +36,13 @@ export interface LinkedRecollection {
   created_at: string
 }
 
+export interface AnchoredPin {
+  relationship_id: string
+  name: string
+  type_code: string | null
+  excerpt: string
+}
+
 const label = (s: string) => s.replace(/_/g, ' ')
 
 export default function PinDetailCard({
@@ -50,6 +57,7 @@ export default function PinDetailCard({
   onRefine,
   onEdit,
   onClose,
+  onSelectAnchored,
 }: {
   pin: { relationship_id: string; place_entity_id: string; name: string; when_text: string | null; place_subtype: string | null; type_code: string | null }
   position: number   // 0-based index in the SPINE sequence; -1 for off-spine markers
@@ -62,6 +70,7 @@ export default function PinDetailCard({
   onRefine: () => void  // arm drag-to-refine without opening the full edit panel
   onEdit: () => void
   onClose: () => void
+  onSelectAnchored: (relationshipId: string) => void  // open a pin anchored here (Slice 3.6)
 }) {
   // Prev/next walks the residential spine; shown only on spine pins with
   // neighbours (markers are off-spine, position -1).
@@ -71,6 +80,7 @@ export default function PinDetailCard({
   const [imageCount, setImageCount] = useState(0)
   const [facts, setFacts] = useState<PinFacts | null>(null)
   const [linked, setLinked] = useState<LinkedRecollection[]>([])
+  const [anchored, setAnchored] = useState<AnchoredPin[]>([])
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   // A failed load must look like a failure, never like an empty pin —
@@ -97,6 +107,7 @@ export default function PinDetailCard({
         setImageCount(d.images?.length ?? (d.image ? 1 : 0))
         setFacts(d.facts ?? null)
         setLinked(d.linked ?? [])
+        setAnchored(d.anchored ?? [])
         setLoading(false)
       })
       .catch(() => { if (active) { setLoadError(true); setLoading(false) } })
@@ -370,6 +381,28 @@ export default function PinDetailCard({
                     </li>
                   )
                 })}
+              </ul>
+            </div>
+          )}
+          {anchored.length > 0 && (
+            <div className="mt-3 border-t border-[var(--glass-border)] pt-2">
+              <p className="text-xs uppercase tracking-[0.18em] text-[var(--ink-dim)]">
+                Anchored here · {anchored.length}
+              </p>
+              <ul className="mt-1.5 max-h-40 space-y-1 overflow-y-auto">
+                {anchored.map((a) => (
+                  <li key={a.relationship_id}>
+                    <button
+                      onClick={() => onSelectAnchored(a.relationship_id)}
+                      title={`Open ${a.name}`}
+                      className="w-full rounded-lg px-1 py-0.5 text-left text-xs leading-relaxed text-[var(--ink)]/80 hover:bg-white/5 hover:text-[var(--ink)]"
+                    >
+                      <span className="mr-1.5 inline-block h-2 w-2 rounded-full align-middle" style={{ backgroundColor: pinTypeMeta(a.type_code).color }} />
+                      <span className="font-medium text-[var(--ink)]">{a.name}</span>
+                      {a.excerpt ? <span className="text-[var(--ink-dim)]"> — {a.excerpt}</span> : null}
+                    </button>
+                  </li>
+                ))}
               </ul>
             </div>
           )}

@@ -1011,6 +1011,7 @@ export default function GlobeView() {
             onRefine={() => { setStagedCoords(null); setRefining(true) }}
             onEdit={() => { setRefining(false); setEditMode(true) }}
             onClose={deselect}
+            onSelectAnchored={(relId) => { selectPin(relId); const t = pins.find((x) => x.relationship_id === relId); if (t) mapRef.current?.flyTo({ center: [t.lng, t.lat], speed: 0.7, essential: true }) }}
           />
         )
       })()}

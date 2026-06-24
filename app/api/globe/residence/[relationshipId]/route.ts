@@ -76,6 +76,45 @@ export async function GET(_req: NextRequest, { params }: { params: { relationshi
     created_at: r.created_at,
   }))
 
+  // Recollection roll-up (Slice 3.6): pins anchored to THIS pin (Logs,
+  // vacations, work trips…) surface as short descriptors that link to that
+  // pin. The recollection still lives on its own pin — this is an index.
+  const { data: anchoredRels } = await admin
+    .from('relationships')
+    .select('id, object_id, type_id')
+    .eq('anchor_residence_id', params.relationshipId)
+    .eq('user_id', user.id)
+  let anchored: { relationship_id: string; name: string; type_code: string | null; excerpt: string }[] = []
+  if (anchoredRels && anchoredRels.length > 0) {
+    const objIds = anchoredRels.map((r) => r.object_id)
+    const typeIds = Array.from(new Set(anchoredRels.map((r) => r.type_id)))
+    const [{ data: ents }, { data: tcodes }, { data: rollMems }] = await Promise.all([
+      admin.from('entities').select('id, canonical_name').in('id', objIds),
+      admin.from('relationship_types').select('id, code').in('id', typeIds),
+      admin.from('memories')
+        .select('content_raw, memory_entities!inner(entity_id, role)')
+        .in('memory_entities.entity_id', objIds)
+        .eq('memory_entities.role', 'location')
+        .eq('capture_mode', 'globe_onboarding')
+        .eq('user_id', user.id),
+    ])
+    const nameById = new Map((ents ?? []).map((e) => [e.id, e.canonical_name as string]))
+    const codeById = new Map((tcodes ?? []).map((t) => [t.id, t.code as string]))
+    const excerptByEntity = new Map<string, string>()
+    for (const m of rollMems ?? []) {
+      const meRows = Array.isArray(m.memory_entities) ? m.memory_entities : [m.memory_entities]
+      for (const me of meRows as { entity_id: string; role: string }[]) {
+        if (!excerptByEntity.has(me.entity_id)) excerptByEntity.set(me.entity_id, (m.content_raw ?? '').slice(0, 160))
+      }
+    }
+    anchored = anchoredRels.map((r) => ({
+      relationship_id: r.id,
+      name: nameById.get(r.object_id) ?? 'Untitled place',
+      type_code: codeById.get(r.type_id) ?? null,
+      excerpt: excerptByEntity.get(r.object_id) ?? '',
+    }))
+  }
+
   // Full gallery, primary first; `image` (the primary) kept for the
   // detail card, `images` powers the edit-panel gallery.
   const images = await listPinImages(admin, user.id, rel.object_id)
@@ -93,12 +132,12 @@ export async function GET(_req: NextRequest, { params }: { params: { relationshi
       }
     : null
 
-  return NextResponse.json({ memoryId, body, isDraft, image, images, facts, linked })
+  return NextResponse.json({ memoryId, body, isDraft, image, images, facts, linked, anchored })
 }
 
 const PIN_TYPE_CODES = [
   'lived_at', 'worked_at', 'owned_residence_at',
-  'lived_briefly_at', 'vacationed_at', 'traveled_for_work_to',
+  'lived_briefly_at', 'vacationed_at', 'traveled_for_work_to', 'logged_at',
 ] as const
 
 interface PatchBody {

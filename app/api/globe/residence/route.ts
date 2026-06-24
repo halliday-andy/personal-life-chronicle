@@ -46,7 +46,7 @@ export async function GET() {
 // (lived_at) is the connected spine; the rest are time-anchored markers.
 const PIN_TYPE_CODES = [
   'lived_at', 'worked_at', 'owned_residence_at',
-  'lived_briefly_at', 'vacationed_at', 'traveled_for_work_to',
+  'lived_briefly_at', 'vacationed_at', 'traveled_for_work_to', 'logged_at',
 ] as const
 type PinTypeCode = (typeof PIN_TYPE_CODES)[number]
 
