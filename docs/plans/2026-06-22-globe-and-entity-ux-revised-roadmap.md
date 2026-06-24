@@ -105,8 +105,8 @@ These items live entirely in the pin/anchor/type code region (not the entity/con
 
 Numbering continues the Step-7 slice line. Build directly on `main` (project convention); each phase commits atomically; `tsc + eslint` gate every commit; Andy proofs live.
 
-### Slice 3 — close-out (globe legibility, static)  ·  *near-term, smallest*
-Folds in brief items 1, 2, the static half of 3, **plus Phase-5 findings 1 (refine button) and 2 (re-type anchor restore)** alongside the place-types proof.
+### Slice 3 — close-out (globe legibility, static)  ·  ✅ BUILT 2026-06-23 (awaits Andy's live batch-proof)
+Shipped in 7 atomic commits (`12a3392`…`a9183ce`): finding 2 backend+frontend, finding 1 refine button, item 1 placard (persistence + chip/hover render), item 2 origin pin, item 3 default-spine + hover preview, chevron enlarge + tether contrast. **Type filters moved to Slice 3.5** (they live in the bottom-left selector with the tray, per the brief's grouping). Folds in brief items 1, 2, the static half of 3, **plus Phase-5 findings 1 (refine button) and 2 (re-type anchor restore)** alongside the place-types proof.
 **Includes:** per-pin `when`-phrase chip (item 1); hover card = name + `description` placard (item 1); enlarged directional chevrons (item 1); origin-pin treatment for `sort_order` #1 (item 2); default-view = spine only + hover-preview of a pin's side lines + class-level type filters in the bottom-left selector (item 3 static); the coloration/contrast fix so tethers read distinct from the spine glow; **"Refine location" detail-card action** (finding 1); **re-type anchor/tether restore** via `metadata.prior_anchor_residence_id` (finding 2).
 **Acceptance:**
 - Every pin shows its `when` phrase without interaction; current/open residence reads "…–now".
@@ -118,14 +118,14 @@ Folds in brief items 1, 2, the static half of 3, **plus Phase-5 findings 1 (refi
 - marker→primary→marker round-trips losslessly: the original anchor and dashed tether are restored, not orphaned to standalone.
 - All six place types + 3 line tiers proof-checked live (the held Phase 5). `tsc + eslint` clean.
 
-### Slice 3.5 — active-lines tray (item 3, dynamic)  ·  *near-term*
-The new stateful interaction. Apply `interaction-design` skills (`state-machine`, `feedback-patterns`, Fitts'/Hick's for the bottom-left cluster).
+### Slice 3.5 — active-lines tray + type filters (item 3, dynamic)  ·  *near-term*
+The new stateful interaction, built on Slice 3's hover-preview line-visibility foundation. Apply `interaction-design` skills (`state-machine`, `feedback-patterns`, Fitts'/Hick's for the bottom-left cluster). **Now also owns the class-level type filters** (moved here from Slice 3 — they share the bottom-left selector region and the line-visibility state, per the brief).
 **Acceptance:**
 - Click a pin → its tether set persists + a dismissible chip appears in the tray docked with the type selector.
 - Each chip ✕ removes just that set; Clear-all resets to the bare spine.
 - Selecting a *different* pin and adding its set leaves prior sets intact (multi-pin compare).
 - The detail-card "keep side lines" toggle is a shortcut into the same tray state (not a parallel mechanism); default on click = lines ON for the clicked pin.
-- Type filters set the baseline; per-pin chips add on top. State survives detail-card changes (no orphaned sets).
+- Type filters (in the bottom-left selector) set the baseline of what's shown; per-pin chips add on top. State survives detail-card changes (no orphaned sets).
 
 ### Slice 3.6 — the "Log" pin: generalized anchoring + recollection roll-up  ·  *near-term (Phase-5 finding 3); unblocks finding 4*
 A seventh, category-neutral pin type plus the anchor-model generalization it needs.
