@@ -109,6 +109,7 @@ interface PatchBody {
   lat?: number
   typeCode?: string         // re-classify the pin; omit to leave type/anchor untouched
   anchorId?: string | null  // marker → its primary residence (null = standalone)
+  description?: string      // placard; omit to leave untouched
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: { relationshipId: string } }) {
@@ -164,6 +165,12 @@ export async function PATCH(request: NextRequest, { params }: { params: { relati
     return NextResponse.json({ error: 'Failed to update pin', detail: error.message }, { status: 500 })
   }
   const row = Array.isArray(data) ? data[0] : data
+
+  // Placard — write the short description onto the place entity. Omitted =
+  // untouched; an empty string clears it.
+  if (p.description !== undefined && row?.place_entity_id) {
+    await admin.from('entities').update({ description: p.description.trim() || null }).eq('id', row.place_entity_id)
+  }
 
   // Re-extract when the recollection text was part of this save (the
   // panel sends the full field set, so this re-runs on every save with a

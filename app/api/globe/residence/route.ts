@@ -59,6 +59,7 @@ interface PostBody {
   position?: number | null  // spine sequence slot; null/omitted = append
   typeCode?: string   // one of PIN_TYPE_CODES; defaults to 'lived_at'
   anchorId?: string | null  // marker → its primary residence relationship
+  description?: string  // placard — a short one-line description of the place
 }
 
 export async function POST(request: NextRequest) {
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const { lng, lat, label, whenText, body, position, typeCode, anchorId } = payload
+  const { lng, lat, label, whenText, body, position, typeCode, anchorId, description } = payload
   if (
     typeof lng !== 'number' || typeof lat !== 'number' ||
     Number.isNaN(lng) || Number.isNaN(lat) ||
@@ -139,6 +140,11 @@ export async function POST(request: NextRequest) {
 
   const row = Array.isArray(data) ? data[0] : data
 
+  // Placard — a short one-line description on the place entity (item 1).
+  if (description !== undefined && row?.place_entity_id) {
+    await admin.from('entities').update({ description: description.trim() || null }).eq('id', row.place_entity_id)
+  }
+
   // Async extraction of the narrative into structured fields (Slice 2).
   // Save never waits on Claude; a send failure must not fail the pin.
   if (row?.memory_id && row?.relationship_id) {
@@ -162,6 +168,7 @@ export async function POST(request: NextRequest) {
       memory_id: row?.memory_id ?? null,
       name,
       place_subtype: placeSubtype,
+      description: description?.trim() || null,
       lng,
       lat,
       when_text: whenText?.trim() || null,

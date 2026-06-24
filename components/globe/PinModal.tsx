@@ -22,6 +22,7 @@ const GHOST_TEXTS = [
 
 export interface PinDraftData {
   whenText: string
+  description: string        // placard — a short one-line description (item 1)
   body: string
   position: number | null   // spine sequence slot; null = append / N/A for markers
   typeCode: string
@@ -43,6 +44,7 @@ export default function PinModal({
 }) {
   const [body, setBody] = useState('')
   const [whenText, setWhenText] = useState('')
+  const [placard, setPlacard] = useState('')
   const [typeCode, setTypeCode] = useState<string>(SPINE_CODE)
   // Sequence slot (spine only): 0 = before the first, i = after primaries[i-1].
   const [position, setPosition] = useState<number>(primaries.length)
@@ -102,6 +104,17 @@ export default function PinModal({
           className="mt-1 w-full rounded-xl border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] placeholder-[var(--ink-dim)]/70 outline-none focus:border-[var(--ember-soft)]"
         />
 
+        <label className="mt-4 block text-sm text-[var(--ink-dim)]">Placard (optional)</label>
+        <input
+          type="text"
+          value={placard}
+          onChange={(e) => setPlacard(e.target.value)}
+          maxLength={120}
+          placeholder="A one-line description, shown on hover"
+          disabled={saving}
+          className="mt-1 w-full rounded-xl border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] placeholder-[var(--ink-dim)]/70 outline-none focus:border-[var(--ember-soft)]"
+        />
+
         {/* Contextual placement: spine → sequence slot; markers → anchor. */}
         {isSpine && primaries.length > 0 && (
           <>
@@ -156,6 +169,7 @@ export default function PinModal({
             type="button"
             onClick={() => onSave({
               whenText,
+              description: placard,
               body,
               position: isSpine && primaries.length ? position : null,
               typeCode,

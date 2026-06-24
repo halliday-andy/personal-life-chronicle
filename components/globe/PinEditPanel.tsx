@@ -25,6 +25,7 @@ export interface EditablePin {
   type_code: string | null
   anchor_residence_id: string | null
   prior_anchor_residence_id: string | null
+  description: string | null
 }
 
 interface GalleryImage {
@@ -67,12 +68,13 @@ export default function PinEditPanel({
   primaries: { relationship_id: string; name: string }[]
   onMove: (dir: -1 | 1) => void
   onMoveTo: (toIndex: number) => void
-  onSave: (fields: { name: string; whenText: string; body: string; typeCode: string; anchorId: string | null }) => void
+  onSave: (fields: { name: string; whenText: string; body: string; typeCode: string; anchorId: string | null; description: string }) => void
   onDelete: () => void
   onClose: () => void
 }) {
   const [name, setName] = useState(pin.name)
   const [whenText, setWhenText] = useState(pin.when_text ?? '')
+  const [placard, setPlacard] = useState(pin.description ?? '')
   const [body, setBody] = useState('')
   const [typeCode, setTypeCode] = useState(pin.type_code ?? SPINE_CODE)
   const [anchorId, setAnchorId] = useState(pin.anchor_residence_id ?? '')
@@ -273,6 +275,16 @@ export default function PinEditPanel({
         className="mt-1 w-full rounded-lg border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] placeholder-[var(--ink-dim)]/70 outline-none focus:border-[var(--ember-soft)]"
       />
 
+      <label className="mt-3 block text-xs text-[var(--ink-dim)]">Placard <span className="text-[var(--ink-dim)]/60">— a one-line description, shown on hover</span></label>
+      <input
+        value={placard}
+        onChange={(e) => setPlacard(e.target.value)}
+        disabled={saving}
+        maxLength={120}
+        placeholder="e.g. The college town where it all began"
+        className="mt-1 w-full rounded-lg border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] placeholder-[var(--ink-dim)]/70 outline-none focus:border-[var(--ember-soft)]"
+      />
+
       <label className="mt-3 block text-xs text-[var(--ink-dim)]">Type of place</label>
       <select
         value={typeCode}
@@ -437,6 +449,7 @@ export default function PinEditPanel({
             name, whenText, body,
             typeCode,
             anchorId: typeCode === SPINE_CODE ? null : (anchorId || null),
+            description: placard,
           })}
           disabled={saving || loading || loadError}
           className="rounded-lg bg-[var(--ember)] px-4 py-2 text-sm font-medium text-[#241500] hover:bg-[var(--ember-soft)] disabled:opacity-60"

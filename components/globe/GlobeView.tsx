@@ -36,6 +36,7 @@ interface Pin {
   place_entity_id: string
   name: string
   place_subtype: string | null
+  description: string | null   // placard — short one-line description (item 1)
   lng: number
   lat: number
   when_text: string | null
@@ -498,7 +499,7 @@ export default function GlobeView() {
         body: JSON.stringify({
           lng: draft.lng, lat: draft.lat, label: draft.label,
           whenText: data.whenText, body: data.body, position: data.position,
-          typeCode: data.typeCode, anchorId: data.anchorId,
+          typeCode: data.typeCode, anchorId: data.anchorId, description: data.description,
         }),
       })
       if (!res.ok) {
@@ -519,7 +520,7 @@ export default function GlobeView() {
     }
   }, [draft, clearDraft, loadPins])
 
-  const handlePanelSave = useCallback(async (fields: { name: string; whenText: string; body: string; typeCode: string; anchorId: string | null }) => {
+  const handlePanelSave = useCallback(async (fields: { name: string; whenText: string; body: string; typeCode: string; anchorId: string | null; description: string }) => {
     if (!selectedId) return
     setSavingPanel(true)
     setError(null)
