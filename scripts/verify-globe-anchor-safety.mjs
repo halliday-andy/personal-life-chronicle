@@ -60,10 +60,12 @@ try {
   else { ok('marker anchors to own primary'); created.push(rel(md).relationship_id) }
   const M = md ? rel(md).relationship_id : null
 
-  // C2 — invalid: anchor to a NON-primary (M is a vacation marker)
-  const { error: eNon } = await mk(3, 13, 'TESTPIN bad nonprimary', 'vacationed_at', M)
-  if (eNon) ok('anchor to a non-primary is rejected')
-  else bad('anchor to a non-primary was WRONGLY accepted')
+  // C2 — generalized anchoring (Slice 3.6): anchoring to a non-primary
+  // marker (here the vacation M) is now ALLOWED. Multi-tenancy is still
+  // enforced (C3). Superseded the old "non-primary anchor rejected" rule.
+  const { data: nd, error: eNon } = await mk(3, 13, 'TESTPIN ok nonprimary', 'vacationed_at', M)
+  if (eNon) bad('anchor to a non-primary marker was rejected (allowed since Slice 3.6): ' + eNon.message)
+  else { ok('anchor to a non-primary marker is allowed (generalized anchoring)'); created.push(rel(nd).relationship_id) }
 
   // C3 — invalid: anchor to a nonexistent / non-owned id
   const { error: eGhost } = await mk(4, 14, 'TESTPIN bad ghost', 'vacationed_at', '00000000-0000-0000-0000-000000000000')
