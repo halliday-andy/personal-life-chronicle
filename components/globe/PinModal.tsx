@@ -33,12 +33,14 @@ export default function PinModal({
   placeLabel,
   saving,
   primaries,
+  allPins,
   onSave,
   onCancel,
 }: {
   placeLabel: string
   saving: boolean
   primaries: { relationship_id: string; name: string }[]  // primary residences, in sequence
+  allPins: { relationship_id: string; name: string; type_code: string | null }[]  // every globe pin (Log anchors to any)
   onSave: (data: PinDraftData) => void
   onCancel: () => void
 }) {
@@ -53,6 +55,10 @@ export default function PinModal({
   const ghost = useMemo(() => GHOST_TEXTS[Math.floor(Math.random() * GHOST_TEXTS.length)], [])
 
   const isSpine = typeCode === SPINE_CODE
+  // A Log anchors to ANY place; other markers anchor to a primary residence.
+  const anchorOptions = typeCode === 'logged_at'
+    ? allPins
+    : primaries.map((p) => ({ ...p, type_code: 'lived_at' as string | null }))
   const meta = pinTypeMeta(typeCode)
 
   return (
@@ -136,7 +142,7 @@ export default function PinModal({
           </>
         )}
 
-        {!isSpine && primaries.length > 0 && (
+        {!isSpine && anchorOptions.length > 0 && (
           <>
             <label className="mt-4 block text-sm text-[var(--ink-dim)]">{meta.anchorPrompt}</label>
             <select
@@ -145,8 +151,10 @@ export default function PinModal({
               disabled={saving}
               className="mt-1 w-full rounded-xl border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--ember-soft)]"
             >
-              {primaries.map((p) => (
-                <option key={p.relationship_id} value={p.relationship_id}>{p.name}</option>
+              {anchorOptions.map((p) => (
+                <option key={p.relationship_id} value={p.relationship_id}>
+                  {p.name}{p.type_code && p.type_code !== 'lived_at' ? ` · ${pinTypeMeta(p.type_code).label}` : ''}
+                </option>
               ))}
               <option value="">Not sure / standalone</option>
             </select>

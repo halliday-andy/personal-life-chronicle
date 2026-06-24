@@ -186,6 +186,14 @@ body {
   box-shadow: 0 0 0 2px rgba(7, 11, 24, 0.85), 0 0 9px 1px rgba(138, 155, 192, 0.45);
 }
 
+/* Log — a category-neutral "memory worth a pin": soft violet, small. */
+.globe-pin--log {
+  width: 11px;
+  height: 11px;
+  background: radial-gradient(circle at 35% 30%, #d8ccef, #aa9bd0);
+  box-shadow: 0 0 0 2px rgba(7, 11, 24, 0.85), 0 0 9px 1px rgba(170, 155, 208, 0.5);
+}
+
 /* Selected pin — ring + lift, and it becomes draggable for relocation.
    The boundary ring/glow take the pin's OWN type hue (--pin-ring, set
    inline per marker in GlobeView) so a selected rose vacation pin no

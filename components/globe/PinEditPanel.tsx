@@ -54,6 +54,7 @@ export default function PinEditPanel({
   position,
   total,
   primaries,
+  allPins,
   onMove,
   onMoveTo,
   onSave,
@@ -66,6 +67,7 @@ export default function PinEditPanel({
   position: number   // 0-based index in the SPINE; -1 for off-spine markers
   total: number      // number of primary residences
   primaries: { relationship_id: string; name: string }[]
+  allPins: { relationship_id: string; name: string; type_code: string | null }[]  // every globe pin (Log anchors to any)
   onMove: (dir: -1 | 1) => void
   onMoveTo: (toIndex: number) => void
   onSave: (fields: { name: string; whenText: string; body: string; typeCode: string; anchorId: string | null; description: string }) => void
@@ -100,6 +102,10 @@ export default function PinEditPanel({
     }
     setTypeCode(next)
   }
+  // A Log anchors to ANY place; other markers anchor to a primary residence.
+  const anchorOptions = typeCode === 'logged_at'
+    ? allPins
+    : primaries.map((p) => ({ ...p, type_code: 'lived_at' as string | null }))
   const [loading, setLoading] = useState(true)
   // If the recollection fails to load, Save MUST stay disabled: saving the
   // panel's empty textarea would overwrite the real recollection (PATCH
@@ -298,7 +304,7 @@ export default function PinEditPanel({
       </select>
       <p className="mt-1 text-xs leading-relaxed text-[var(--ink-dim)]/80">{pinTypeMeta(typeCode).description}</p>
 
-      {typeCode !== SPINE_CODE && primaries.length > 0 && (
+      {typeCode !== SPINE_CODE && anchorOptions.length > 0 && (
         <>
           <label className="mt-3 block text-xs text-[var(--ink-dim)]">{pinTypeMeta(typeCode).anchorPrompt}</label>
           <select
@@ -307,10 +313,12 @@ export default function PinEditPanel({
             disabled={saving}
             className="mt-1 w-full rounded-lg border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--ember-soft)]"
           >
-            {primaries
+            {anchorOptions
               .filter((p) => p.relationship_id !== pin.relationship_id)
               .map((p) => (
-                <option key={p.relationship_id} value={p.relationship_id}>{p.name}</option>
+                <option key={p.relationship_id} value={p.relationship_id}>
+                  {p.name}{p.type_code && p.type_code !== 'lived_at' ? ` · ${pinTypeMeta(p.type_code).label}` : ''}
+                </option>
               ))}
             <option value="">Not sure / standalone</option>
           </select>

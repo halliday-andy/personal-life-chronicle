@@ -56,6 +56,7 @@ function pinTypeClass(typeCode: string | null): string {
     case 'lived_briefly_at': return ' globe-pin--short'
     case 'vacationed_at': return ' globe-pin--vacation'
     case 'traveled_for_work_to': return ' globe-pin--work-travel'
+    case 'logged_at': return ' globe-pin--log'
     default: return '' // lived_at / unknown → base ember
   }
 }
@@ -933,6 +934,7 @@ export default function GlobeView() {
           primaries={pins
             .filter((p) => p.type_code === SPINE_CODE)
             .map((p) => ({ relationship_id: p.relationship_id, name: p.name }))}
+          allPins={pins.map((p) => ({ relationship_id: p.relationship_id, name: p.name, type_code: p.type_code }))}
           onSave={handleSave}
           onCancel={() => setModalOpen(false)}
         />
@@ -980,6 +982,7 @@ export default function GlobeView() {
         const spine = pins.filter((p) => p.type_code === SPINE_CODE)
         const spinePos = spine.findIndex((p) => p.relationship_id === selectedId)
         const primaries = spine.map((p) => ({ relationship_id: p.relationship_id, name: p.name }))
+        const allPins = pins.map((p) => ({ relationship_id: p.relationship_id, name: p.name, type_code: p.type_code }))
         return editMode ? (
           <PinEditPanel
             pin={sel}
@@ -988,6 +991,7 @@ export default function GlobeView() {
             position={spinePos}
             total={spine.length}
             primaries={primaries}
+            allPins={allPins}
             onMove={handleMove}
             onMoveTo={handleMoveTo}
             onSave={handlePanelSave}

@@ -33,6 +33,8 @@ export const PIN_TYPES: PinTypeMeta[] = [
     description: 'A place you traveled to for leisure — a trip, not a home.' },
   { code: 'traveled_for_work_to', label: 'Professional travel', color: '#8a9bc0', isSpine: false, anchorPrompt: 'Which home were you living in then?',
     description: 'A work trip to a place you didn’t live.' },
+  { code: 'logged_at',            label: 'Log',                 color: '#aa9bd0', isSpine: false, anchorPrompt: 'Associated with which place?',
+    description: 'A place worth marking on the map — a memory to log. Link it to any place you choose (a home, a vacation, anywhere).' },
 ]
 
 export const SPINE_CODE = 'lived_at'
