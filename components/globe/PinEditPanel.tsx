@@ -24,6 +24,7 @@ export interface EditablePin {
   has_memory: boolean
   type_code: string | null
   anchor_residence_id: string | null
+  prior_anchor_residence_id: string | null
 }
 
 interface GalleryImage {
@@ -75,6 +76,28 @@ export default function PinEditPanel({
   const [body, setBody] = useState('')
   const [typeCode, setTypeCode] = useState(pin.type_code ?? SPINE_CODE)
   const [anchorId, setAnchorId] = useState(pin.anchor_residence_id ?? '')
+
+  // When a primary is re-typed to a marker, default the anchor picker to a
+  // sensible primary rather than "standalone" (Phase-5 finding 2): prefer the
+  // anchor this pin carried before it joined the spine (prior_anchor_residence_id),
+  // else the primary immediately before it in the spine, else any other primary.
+  function defaultAnchorFor(): string {
+    const others = primaries.filter((p) => p.relationship_id !== pin.relationship_id)
+    if (others.length === 0) return ''
+    const prior = pin.prior_anchor_residence_id
+    if (prior && others.some((p) => p.relationship_id === prior)) return prior
+    const selfIdx = primaries.findIndex((p) => p.relationship_id === pin.relationship_id)
+    if (selfIdx > 0) return primaries[selfIdx - 1].relationship_id
+    return others[0].relationship_id
+  }
+  function handleTypeChange(next: string) {
+    // Only auto-fill on the spine→marker transition, so an explicit
+    // "standalone" choice on a marker→marker switch is never clobbered.
+    if (typeCode === SPINE_CODE && next !== SPINE_CODE && !anchorId) {
+      setAnchorId(defaultAnchorFor())
+    }
+    setTypeCode(next)
+  }
   const [loading, setLoading] = useState(true)
   // If the recollection fails to load, Save MUST stay disabled: saving the
   // panel's empty textarea would overwrite the real recollection (PATCH
@@ -253,7 +276,7 @@ export default function PinEditPanel({
       <label className="mt-3 block text-xs text-[var(--ink-dim)]">Type of place</label>
       <select
         value={typeCode}
-        onChange={(e) => setTypeCode(e.target.value)}
+        onChange={(e) => handleTypeChange(e.target.value)}
         disabled={saving}
         className="mt-1 w-full rounded-lg border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--ember-soft)]"
       >

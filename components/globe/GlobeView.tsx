@@ -42,6 +42,7 @@ interface Pin {
   has_memory: boolean
   type_code: string | null         // 'lived_at' = spine; others are markers
   anchor_residence_id: string | null  // marker → its primary residence
+  prior_anchor_residence_id: string | null  // last anchor before joining the spine (picker default on revert)
 }
 
 const SPINE_CODE = 'lived_at'
