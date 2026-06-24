@@ -192,6 +192,8 @@ export default function GlobeView() {
   const [hint, setHint] = useState<ProximityHint | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [legendOpen, setLegendOpen] = useState(false)
+  // Hover card (item 1): name + placard at the pin's screen position.
+  const [hovered, setHovered] = useState<{ name: string; description: string | null; x: number; y: number } | null>(null)
   const { setAssistantSuppressed } = useUiChrome()
 
   // Proximity hints are advisory — auto-dismiss after a few seconds.
@@ -439,6 +441,21 @@ export default function GlobeView() {
       el.style.setProperty('--pin-ring', pinTypeMeta(p.type_code).color)
       el.title = p.name
       el.addEventListener('click', (ev) => { ev.stopPropagation(); selectPin(p.relationship_id) })
+      // At-rest temporal chip (item 1): the pin's `when` phrase, glanceable
+      // without interaction. Absolutely positioned below the dot so it never
+      // shifts the dot off its coordinate (pins stay aligned with the arcs).
+      if (p.when_text) {
+        const chip = document.createElement('span')
+        chip.className = 'globe-pin-chip'
+        chip.textContent = p.when_text
+        el.appendChild(chip)
+      }
+      // Hover card (item 1): name + placard, to orient before clicking through.
+      el.addEventListener('mouseenter', () => {
+        const pt = map.project([p.lng, p.lat])
+        setHovered({ name: p.name, description: p.description, x: pt.x, y: pt.y })
+      })
+      el.addEventListener('mouseleave', () => setHovered((h) => (h?.name === p.name ? null : h)))
       const marker = new mapboxgl.Marker({ element: el, draggable: isSel }).setLngLat([p.lng, p.lat]).addTo(map)
       if (isSel) {
         marker.on('dragend', () => {
@@ -800,6 +817,18 @@ export default function GlobeView() {
           onSave={handleSave}
           onCancel={() => setModalOpen(false)}
         />
+      )}
+
+      {hovered && (
+        <div
+          className="glass pointer-events-none absolute z-40 max-w-[240px] -translate-x-1/2 -translate-y-full rounded-xl px-3 py-2"
+          style={{ left: hovered.x, top: hovered.y - 18 }}
+        >
+          <p className="nocturne-display text-sm font-medium leading-tight text-[var(--ink)]">{hovered.name}</p>
+          {hovered.description && (
+            <p className="mt-0.5 text-xs leading-snug text-[var(--ink-dim)]">{hovered.description}</p>
+          )}
+        </div>
       )}
 
       {refining && !editMode && selectedId && (

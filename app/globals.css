@@ -91,6 +91,24 @@ body {
 .globe-pin:hover {
   transform: scale(1.25);
 }
+/* At-rest temporal chip (item 1): the pin's `when` phrase, below the dot.
+   Absolutely positioned against the mapbox-positioned marker element so it
+   never shifts the dot off its coordinate. */
+.globe-pin-chip {
+  position: absolute;
+  top: 17px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1px 6px;
+  font-size: 10px;
+  line-height: 1.4;
+  white-space: nowrap;
+  color: var(--ember-soft);
+  background: rgba(7, 11, 24, 0.78);
+  border-radius: 6px;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
 
 /* ── Per-type pin styling (Slice 3) ───────────────────────────────────
    Base .globe-pin is the Primary residence (bright ember). Modifiers
