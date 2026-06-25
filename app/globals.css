@@ -111,21 +111,34 @@ body {
 }
 /* Origin pin (item 2): the first stop — the launching point of the journey.
    A distinct bright star, lighter/whiter than the ember spine so it reads as
-   iconic "start here" at globe scale. clip-path makes the star; drop-shadow
-   (not box-shadow) gives a glow that follows the star's silhouette. Solid
-   fill (no gradient) so every point stays uniformly bright — a gradient
-   dimmed the lower points to a brown read against the dark map. Static (no
-   twinkle) — it wasn't perceptible and isn't worth the per-frame cost. */
+   iconic "start here" at globe scale.
+
+   CRITICAL: the star lives on ::before, NOT on the marker element itself. The
+   origin is pin #1, which also carries the at-rest year-chip CHILD; a clip-path
+   on the marker root would clip that chip too, and its dark background, clipped
+   to the star silhouette, browned the lower points (the "incomplete/brown" bug).
+   ::before clips only the star; the chip stays unclipped and sits below. Solid
+   fill = uniformly bright; static (no twinkle — not perceptible, not worth the
+   per-frame cost). */
 .globe-pin-origin {
   width: 28px;
   height: 28px;
-  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.globe-pin-origin::before {
+  content: '';
+  position: absolute;
+  inset: 0;
   background: #fff7e8;
-  box-shadow: none; /* base dot glow would be clipped to the star edge */
   clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%,
                      50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
   filter: drop-shadow(0 0 5px rgba(255, 244, 200, 0.95))
-          drop-shadow(0 0 11px rgba(255, 226, 150, 0.6));
+          drop-shadow(0 0 10px rgba(255, 226, 150, 0.55));
+}
+/* The origin star is larger than a normal dot, so its year-chip clears it. */
+.globe-pin-origin .globe-pin-chip {
+  top: 30px;
 }
 
 /* ── Per-type pin styling (Slice 3) ───────────────────────────────────
