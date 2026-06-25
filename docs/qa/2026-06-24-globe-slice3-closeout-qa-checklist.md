@@ -28,10 +28,10 @@ App: **http://localhost:3001** (sign in first). Suggested order top-to-bottom.
 - [ ] It's clearly the start by **shape + colour** (not just size); every other pin is an ordinary dot.
 - [ ] (Reduce-motion on → the star is steady, no twinkle.)
 
-## 4. Chevrons + tether contrast (item 1 + item 3 note) · RETUNED 2026-06-24
-- [ ] The spine **chevrons** are now **fewer and much larger** — direction reads at a glance without repeating down the line. **[taste]** size + spacing.
-- [ ] The chevrons sit **on** the spine line (the wider spacing should have fixed the earlier drift-off-the-arc). Flag any that still float off.
-- [ ] Select a spine pin → its inbound leg's chevrons still brighten over the outbound leg. *(You already approved this.)*
+## 4. Chevrons + tether contrast (item 1 + item 3 note) · REWORKED 2026-06-24 (one icon per leg)
+- [ ] Each spine **leg** now shows exactly **one** filled-chevron marker at its **midpoint, sitting on the line** (no more repeated carets drifting off the arc / looking like floating planes). Flag any that still sit off the line.
+- [ ] The chevron points in the **direction of travel** (earliest → latest) along each leg. **[taste]** the chevron shape + size.
+- [ ] Select a spine pin → its **inbound** leg's chevron brightens over the **outbound** leg. *(You already approved the inbound emphasis.)*
 - [ ] When a trip tether is visible (see §6), it's a **cool slate colour** — clearly *not* a dim copy of the ember spine. **[taste]** the hue.
 
 ## 5. Refine location — drag without the edit panel (Phase-5 finding 1)
