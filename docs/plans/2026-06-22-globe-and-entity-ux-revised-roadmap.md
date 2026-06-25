@@ -118,8 +118,8 @@ Shipped in 7 atomic commits (`12a3392`…`a9183ce`): finding 2 backend+frontend,
 - marker→primary→marker round-trips losslessly: the original anchor and dashed tether are restored, not orphaned to standalone.
 - All six place types + 3 line tiers proof-checked live (the held Phase 5). `tsc + eslint` clean.
 
-### Slice 3.5 — active-lines tray + type filters (item 3, dynamic)  ·  ✅ BUILT 2026-06-23 (`87ffe44`)
-The new stateful interaction, built on Slice 3's hover-preview line-visibility foundation. Apply `interaction-design` skills (`state-machine`, `feedback-patterns`, Fitts'/Hick's for the bottom-left cluster). **Now also owns the class-level type filters** (moved here from Slice 3 — they share the bottom-left selector region and the line-visibility state, per the brief).
+### Slice 3.5 — line visibility (item 3, dynamic)  ·  ✅ BUILT 2026-06-23 (`87ffe44`); REWORKED 2026-06-24 (`cfa7202`)
+**Reworked after QA (Andy 2026-06-24):** the active-lines tray + per-pin "Side lines on/off" were **removed** — their OR-logic created an on-can't-be-overridden conflict and a bug (selecting a pin auto-added it to the tray, so "off" did nothing). New model: **line visibility is global only** — per-class filters in Legend & filters, plus a **"Side lines in view"** toggle that reveals on-screen pins' side lines but only past a regional zoom (`LINES_IN_VIEW_MIN_ZOOM`), so the world view stays clean; hover remains a transient peek. Decouples "reveal lines" from "open card" (which obscured the map). The original tray build is below for history. Apply `interaction-design` skills (`state-machine`, `feedback-patterns`, Fitts'/Hick's for the bottom-left cluster). **Now also owns the class-level type filters** (moved here from Slice 3 — they share the bottom-left selector region and the line-visibility state, per the brief).
 **Acceptance:**
 - Click a pin → its tether set persists + a dismissible chip appears in the tray docked with the type selector.
 - Each chip ✕ removes just that set; Clear-all resets to the bare spine.

@@ -13,24 +13,25 @@ App: **http://localhost:3001** (sign in first). Suggested order top-to-bottom.
 ---
 
 ## 1. Pin legibility — at-rest chips + hover card (item 1)
-- [ ] Every pin shows its **`when` phrase** as a small chip **below the dot**, with no interaction (e.g. `June 1976 to September 1976`). **[taste]** chip position/legibility.
-- [ ] The chip text matches what you typed in "When" (it's the raw phrase, not a parsed year range — proportional/era encoding stays deferred to the Temporal Agent).
-- [ ] **Hover** a pin (don't click) → a compact card appears showing the pin **name** + its **placard** (if set). Mouse off → it disappears. **[taste]** hover-card placement.
-- [ ] Pins still sit exactly on their arcs/tethers (the chip must not have shifted the dot off its coordinate).
+- [x] Every pin shows its **`when` phrase** as a small chip **below the dot**, with no interaction (e.g. `June 1976 to September 1976`). **[taste]** chip position/legibility.
+- [x] The chip text matches what you typed in "When" (it's the raw phrase, not a parsed year range — proportional/era encoding stays deferred to the Temporal Agent).
+- [x] **Hover** a pin (don't click) → a compact card appears showing the pin **name** + its **placard** (if set). Mouse off → it disappears. **[taste]** hover-card placement.
+- [x] Pins still sit exactly on their arcs/tethers (the chip must not have shifted the dot off its coordinate).
 
 ## 2. Placard — the one-line description (item 1)
-- [ ] Open a pin → **Edit** → there's a **Placard** field ("a one-line description, shown on hover"), prefilled if one exists. Type one (≤120 chars) → **Save**.
-- [ ] Hover that pin → the placard shows under the name.
-- [ ] Place a **new** pin → the create modal has a **Placard (optional)** field; what you enter shows on hover after saving.
+- [x] Open a pin → **Edit** → there's a **Placard** field ("a one-line description, shown on hover"), prefilled if one exists. Type one (≤120 chars) → **Save**.
+- [x] Hover that pin → the placard shows under the name.
+- [x] Place a **new** pin → the create modal has a **Placard (optional)** field; what you enter shows on hover after saving.
 
-## 3. Origin pin — "the beginning" (item 2)
-- [ ] Your **first** stop in sequence (Lockbourne) renders **larger** than the others with a **slow, calm breathe**. **[taste]** size + breathe intensity.
-- [ ] It's differentiated as the start without screaming for attention; every other pin looks normal.
-- [ ] (If you have "reduce motion" on in macOS, the breathe is a steady glow instead — optional to check.)
+## 3. Origin pin — "the beginning" (item 2) · REDESIGNED 2026-06-24
+- [ ] Your **first** stop in sequence (Lockbourne) now renders as a distinct **bright star** in a **lighter/whiter gold** than the ember spine — iconic "launching point," readable at globe scale. **[taste]** star size + brightness + the slow twinkle.
+- [ ] It's clearly the start by **shape + colour** (not just size); every other pin is an ordinary dot.
+- [ ] (Reduce-motion on → the star is steady, no twinkle.)
 
-## 4. Chevrons + tether contrast (item 1 + item 3 note)
-- [ ] The spine **chevrons** are bigger / more clearly directional than before (earliest → latest). **[taste]** size + density.
-- [ ] Select a spine pin → its inbound leg's chevrons still brighten over the outbound leg.
+## 4. Chevrons + tether contrast (item 1 + item 3 note) · RETUNED 2026-06-24
+- [ ] The spine **chevrons** are now **fewer and much larger** — direction reads at a glance without repeating down the line. **[taste]** size + spacing.
+- [ ] The chevrons sit **on** the spine line (the wider spacing should have fixed the earlier drift-off-the-arc). Flag any that still float off.
+- [ ] Select a spine pin → its inbound leg's chevrons still brighten over the outbound leg. *(You already approved this.)*
 - [ ] When a trip tether is visible (see §6), it's a **cool slate colour** — clearly *not* a dim copy of the ember spine. **[taste]** the hue.
 
 ## 5. Refine location — drag without the edit panel (Phase-5 finding 1)
@@ -45,20 +46,23 @@ App: **http://localhost:3001** (sign in first). Suggested order top-to-bottom.
 - [ ] **Hover** a home that has trips/workplaces anchored to it → its side lines **preview** transiently; mouse off → they clear.
 - [ ] Hover a **marker** (e.g. a vacation) → its own tether previews.
 
-## 7. Active-lines tray (Slice 3.5)
-- [ ] **Click** a home that has side lines → its tethers stay on **and** a chip (pin name + ✕) appears in a **tray above the bottom-left legend**.
-- [ ] The detail card shows a **Side lines on** toggle; click it **off** → that pin's lines hide and its chip disappears (card stays open). Toggle **on** → they return.
-- [ ] Select a **second** pin with side lines → its set adds; the **first** set stays (multi-pin compare — selecting a new pin no longer wipes the previous lines).
-- [ ] Click a chip's **✕** → only that set clears.
-- [ ] **Clear all** → globe returns to the bare spine (and clears any type filters).
-- [ ] A home/marker with **no** side lines, when selected, adds **no** chip (no empty chips).
+## 7. Line visibility — global only (Slice 3.5, REWORKED 2026-06-24)
+> The tray and the per-pin "Side lines on/off" toggle were **removed** — they
+> caused the on/off conflict you found. Lines are now controlled globally:
+> per-class filters + a "Side lines in view" toggle + transient hover.
+- [ ] There is **no tray** above the legend any more, and the detail card has **no "Side lines on/off"** button.
+- [ ] On load, the globe is the **bare spine** — no tethers.
+- [ ] **Hover** a pin → its side lines preview transiently; mouse off → they clear (unchanged).
+- [ ] Selecting a pin (opening its card) **no longer** auto-shows or "sticks" its lines — that's now the in-view toggle's job (§8).
 
-## 8. Type filters (Slice 3.5)
-- [ ] Open the bottom-left control — it's now **"Legend & filters"**. Expand it.
-- [ ] Each marker row (Workplace, Second residence, Short-term, Vacation, Professional travel, **Log**) is a **toggle** showing **● shown / ○ hidden**.
-- [ ] Turn **Vacation** on → **all** vacation tethers show as a baseline (independent of per-pin chips). Turn it off → they hide.
-- [ ] **Primary residence** is labelled **"spine"** and is not a toggle (the spine is always shown).
-- [ ] Filters set the baseline; per-pin chips/hover still add on top of whatever filters are on.
+## 8. Legend & filters — class toggles + "Side lines in view" (Slice 3.5)
+- [ ] Open the bottom-left **"Legend & filters"**. Expand it.
+- [ ] Each marker row (Workplace, Second residence, Short-term, Vacation, Professional travel, **Log**) is a **toggle** showing **● shown / ○ hidden** — turning one on shows **all** of that class's tethers as a baseline; off hides them.
+- [ ] **Primary residence** is labelled **"spine"** and is not a toggle.
+- [ ] A new **"Side lines in view"** toggle (○ off / ● on) sits below the class rows.
+- [ ] Turn **"Side lines in view" on** while zoomed **all the way out** (whole globe) → **nothing** appears (it's auto-gated so the overview stays clean).
+- [ ] Now **zoom into a region** (e.g. Queenstown, or New England) → the side lines of the pins **on screen** appear; **pan** to another region → those drop and the new region's appear. **[taste]** does the zoom threshold feel right (too eager / not eager enough)?
+- [ ] Turn it **off** → in-view lines clear (class filters, if any, remain).
 
 ## 9. The "Log" pin — new type (Slice 3.6)
 For this you'll place a new pin and choose the **Log** type.
