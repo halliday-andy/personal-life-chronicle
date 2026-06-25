@@ -140,6 +140,25 @@ function arcSegments(pins: Pin[]): GeoJSON.FeatureCollection {
 // Filter that matches no segment (resting state for the active layers).
 const NO_SEGMENT: mapboxgl.FilterSpecification = ['==', ['get', 'seq'], -999]
 
+// A small filled ember chevron, baked as an icon so direction is shown by ONE
+// marker per leg sitting on the line (symbol-placement: line-center), rotated to
+// travel direction — instead of repeated text carets that drift off the curve
+// and read as floating planes. Ember colour baked in; opacity varies per layer.
+function makeArrowImage(): ImageData {
+  const s = 32
+  const c = document.createElement('canvas'); c.width = s; c.height = s
+  const ctx = c.getContext('2d')!
+  ctx.fillStyle = '#f4b14a'
+  ctx.beginPath()                 // a chevron ❯ pointing +x (rotated to the line)
+  ctx.moveTo(s * 0.30, s * 0.16)
+  ctx.lineTo(s * 0.80, s * 0.50)
+  ctx.lineTo(s * 0.30, s * 0.84)
+  ctx.lineTo(s * 0.48, s * 0.50)
+  ctx.closePath()
+  ctx.fill()
+  return ctx.getImageData(0, 0, s, s)
+}
+
 // Tethers: a marker's great-circle line back to the primary residence it
 // anchors to. Workplace tethers are the "commute line" (tier 2); the rest
 // are dashed trip tethers (tier 3). Markers with no anchor draw nothing.
@@ -389,26 +408,24 @@ export default function GlobeView() {
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: { 'line-color': '#f4b14a', 'line-width': 2.4, 'line-opacity': 0.85 },
       })
-      // Faint chevrons along every leg — direction at a glance without
-      // arrowhead clutter on the resting globe.
+      if (!map.hasImage('arc-arrow')) map.addImage('arc-arrow', makeArrowImage())
+      // ONE chevron per leg, placed at the leg's centre ON the line
+      // (line-center) and rotated to travel direction. Guaranteed on-line —
+      // no drift, no floating-plane look (Andy 2026-06-24). A baked icon, not
+      // a text caret, so the shape reads as directional flow.
       map.addLayer({
         id: 'arc-chevrons',
         type: 'symbol',
         source: 'arcs',
         layout: {
-          'symbol-placement': 'line',
-          // Fewer, larger chevrons (Andy 2026-06-24): direction reads at a
-          // glance without repeating, and the wide spacing keeps each glyph
-          // centred on a near-straight stretch so they don't drift off the arc.
-          'symbol-spacing': 260,
-          'text-field': '›',
-          'text-size': 30,
-          'text-keep-upright': false,
-          'text-rotation-alignment': 'map',
-          'text-allow-overlap': true,
-          'text-ignore-placement': true,
+          'symbol-placement': 'line-center',
+          'icon-image': 'arc-arrow',
+          'icon-size': 0.7,
+          'icon-rotation-alignment': 'map',
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true,
         },
-        paint: { 'text-color': '#f4b14a', 'text-opacity': 0.55 },
+        paint: { 'icon-opacity': 0.6 },
       })
       map.addLayer({
         id: 'arc-chevrons-active',
@@ -416,16 +433,14 @@ export default function GlobeView() {
         source: 'arcs',
         filter: NO_SEGMENT,
         layout: {
-          'symbol-placement': 'line',
-          'symbol-spacing': 190,
-          'text-field': '›',
-          'text-size': 38,
-          'text-keep-upright': false,
-          'text-rotation-alignment': 'map',
-          'text-allow-overlap': true,
-          'text-ignore-placement': true,
+          'symbol-placement': 'line-center',
+          'icon-image': 'arc-arrow',
+          'icon-size': 0.95,
+          'icon-rotation-alignment': 'map',
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true,
         },
-        paint: { 'text-color': '#f4b14a', 'text-opacity': 0.95 },
+        paint: { 'icon-opacity': 0.95 },
       })
       map.resize()
       setReady(true)
@@ -528,7 +543,7 @@ export default function GlobeView() {
         map.setPaintProperty('arcs-active', 'line-width', inOut(2.8, 2.2))
       }
       if (map.getLayer('arc-chevrons-active')) {
-        map.setPaintProperty('arc-chevrons-active', 'text-opacity', inOut(0.95, 0.6))
+        map.setPaintProperty('arc-chevrons-active', 'icon-opacity', inOut(0.95, 0.6))
       }
     }
   }, [pins, ready, selectedId, editMode, refining, selectPin])
