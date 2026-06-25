@@ -367,8 +367,14 @@ function EntityCard({
             {busy === 'delete' ? 'Deleting…' : confirmingDelete ? 'Click again to delete' : 'Delete'}
           </button>
           <a
+            href={`/entities/${entity.id}`}
+            className="ml-auto px-2.5 py-1 rounded-md font-medium text-stone-600 hover:text-stone-900 hover:bg-stone-50"
+          >
+            Open ↗
+          </a>
+          <a
             href={`/memories?entity=${entity.id}`}
-            className="ml-auto px-2.5 py-1 rounded-md text-stone-500 hover:text-stone-700 hover:bg-stone-50"
+            className="px-2.5 py-1 rounded-md text-stone-500 hover:text-stone-700 hover:bg-stone-50"
           >
             View memories →
           </a>
