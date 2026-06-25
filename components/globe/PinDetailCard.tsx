@@ -50,9 +50,6 @@ export default function PinDetailCard({
   position,
   total,
   refining,
-  sideLinesOn,
-  hasSideLines,
-  onToggleSideLines,
   onNavigate,
   onRefine,
   onEdit,
@@ -63,9 +60,6 @@ export default function PinDetailCard({
   position: number   // 0-based index in the SPINE sequence; -1 for off-spine markers
   total: number      // number of primary residences (spine length)
   refining: boolean  // drag-to-refine armed from this card (Phase-5 finding 1)
-  sideLinesOn: boolean   // this pin's side lines are in the active-lines tray (Slice 3.5)
-  hasSideLines: boolean  // pin actually has side lines to show (else hide the toggle)
-  onToggleSideLines: () => void  // shortcut into the active-lines tray state
   onNavigate: (dir: -1 | 1) => void  // step prev/next along the spine + fly there
   onRefine: () => void  // arm drag-to-refine without opening the full edit panel
   onEdit: () => void
@@ -214,20 +208,6 @@ export default function PinDetailCard({
                 →
               </button>
             </div>
-          )}
-          {hasSideLines && (
-            <button
-              onClick={onToggleSideLines}
-              title={sideLinesOn ? 'Hide this pin’s side lines' : 'Show this pin’s side lines'}
-              className={
-                'rounded-lg border px-3 py-1.5 text-sm ' +
-                (sideLinesOn
-                  ? 'border-[var(--ember-soft)] text-[var(--ember-soft)]'
-                  : 'border-[var(--glass-border)] text-[var(--ink-dim)] hover:text-[var(--ink)]')
-              }
-            >
-              {sideLinesOn ? 'Side lines on' : 'Side lines off'}
-            </button>
           )}
           <button
             onClick={onRefine}

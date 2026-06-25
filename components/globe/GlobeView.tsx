@@ -48,6 +48,11 @@ interface Pin {
 
 const SPINE_CODE = 'lived_at'
 
+// "Side lines in view" only reveals once the user has zoomed past the
+// whole-globe overview into a region, so the zoomed-out globe never clutters.
+// (Globe starts at zoom 1.4; a continental/regional view is ~3+.) Tunable.
+const LINES_IN_VIEW_MIN_ZOOM = 3
+
 // Per-type pin CSS modifier (base .globe-pin = primary residence).
 function pinTypeClass(typeCode: string | null): string {
   switch (typeCode) {
@@ -195,17 +200,17 @@ export default function GlobeView() {
   const [legendOpen, setLegendOpen] = useState(false)
   // Hover card (item 1): name + placard at the pin's screen position.
   const [hovered, setHovered] = useState<{ name: string; description: string | null; x: number; y: number } | null>(null)
-  // Line declutter (item 3): default view is the bare spine; hovering a pin
-  // transiently previews its associated side lines. `hoverPreview` is the
-  // hovered pin's relationship_id (a primary reveals its markers' tethers; a
-  // marker reveals its own). Click-to-persist + type filters land in Slice 3.5.
+  // Line declutter (item 3 / Slice 3.5, reworked 2026-06-24): default view is
+  // the bare spine. Lines are controlled GLOBALLY only — no per-pin tray.
+  //  - hoverPreview: transient peek of a hovered pin's side lines.
+  //  - typeFilters: per-class baseline ("show all Vacations").
+  //  - linesInView: reveal side lines of pins in the current viewport, but only
+  //    once zoomed past the whole-globe view (auto-gated) so the overview stays
+  //    clean. viewVersion ticks on map move so the tether effect re-evaluates.
   const [hoverPreview, setHoverPreview] = useState<string | null>(null)
-  // Active-lines tray (Slice 3.5): pins whose side lines persist (dismissible
-  // chips). Selecting a pin with side lines adds it; ✕/Clear-all remove.
-  const [activePins, setActivePins] = useState<string[]>([])
-  // Class-level type filters (Slice 3.5): marker codes whose tethers show as a
-  // baseline. Empty = bare spine (the per-pin chips + hover add on top).
   const [typeFilters, setTypeFilters] = useState<Set<string>>(new Set())
+  const [linesInView, setLinesInView] = useState(false)
+  const [viewVersion, setViewVersion] = useState(0)
   const { setAssistantSuppressed } = useUiChrome()
 
   // Proximity hints are advisory — auto-dismiss after a few seconds.
@@ -223,16 +228,6 @@ export default function GlobeView() {
   }, [notice])
 
   const hasPins = pins.length > 0
-
-  // Active-lines tray derivations (Slice 3.5): a pin earns a chip only if it
-  // actually has side lines — a marker with an anchor, or a primary that some
-  // marker tethers to.
-  const markerPins = pins.filter((p) => p.type_code !== SPINE_CODE)
-  const pinHasSideLines = (id: string) =>
-    markerPins.some((m) => (m.relationship_id === id && m.anchor_residence_id !== null) || m.anchor_residence_id === id)
-  const activeChips = activePins
-    .map((id) => pins.find((p) => p.relationship_id === id))
-    .filter((p): p is Pin => !!p && pinHasSideLines(p.relationship_id))
 
   // Suppress the global CaptureAssistant FAB only while the pin EDIT
   // panel is open — it's fixed z-50 and would overlap the panel (it was
@@ -304,9 +299,6 @@ export default function GlobeView() {
     // over the detail card (and persist into Edit) for the just-clicked pin.
     setHovered(null)
     setHoverPreview(null)
-    // Default on-click: this pin's side lines ON, persisted in the tray
-    // (Slice 3.5). A chip only renders if the pin actually has side lines.
-    setActivePins((cur) => (cur.includes(relId) ? cur : [...cur, relId]))
   }, [])
 
   // Step to the previous/next home along the residential spine and fly the
@@ -440,6 +432,9 @@ export default function GlobeView() {
       loadPins()
     })
 
+    // Tick on pan/zoom so the "side lines in view" reveal re-evaluates.
+    map.on('moveend', () => setViewVersion((v) => v + 1))
+
     map.on('click', (e) => {
       // Clicking empty globe: deselect an open pin, else drop a new draft.
       if (selectedIdRef.current) { deselect(); return }
@@ -547,21 +542,25 @@ export default function GlobeView() {
     const map = mapRef.current!
     const markers = pins.filter((p) => p.type_code !== SPINE_CODE)
     const byId = new Map(pins.map((p) => [p.relationship_id, p]))
+    // "In view" reveal is gated to regional zoom so the world view stays clean.
+    const bounds = map.getBounds()
+    const inViewActive = linesInView && map.getZoom() >= LINES_IN_VIEW_MIN_ZOOM && bounds !== null
+    const within = (p: Pin | undefined) => !!p && !!bounds && bounds.contains([p.lng, p.lat])
     // A marker's tether shows if (baseline) its class is filter-enabled, OR
-    // (persisted) it/its anchor is in the active-lines tray, OR (transient)
+    // (in view) it or its anchor is on screen at regional zoom, OR (transient)
     // it/its anchor is the hovered pin.
     const visible = markers.filter((m) => {
       const inFilter = typeFilters.has(m.type_code ?? '')
-      const inActive = activePins.includes(m.relationship_id) ||
-        (m.anchor_residence_id !== null && activePins.includes(m.anchor_residence_id))
+      const inView = inViewActive &&
+        (within(m) || (m.anchor_residence_id !== null && within(byId.get(m.anchor_residence_id))))
       const inHover = hoverPreview !== null &&
         (m.relationship_id === hoverPreview || m.anchor_residence_id === hoverPreview)
-      return inFilter || inActive || inHover
+      return inFilter || inView || inHover
     })
     const { commute, trip } = tetherFeatures(visible, byId)
     ;(map.getSource('commute-lines') as mapboxgl.GeoJSONSource | undefined)?.setData(commute)
     ;(map.getSource('trip-tethers') as mapboxgl.GeoJSONSource | undefined)?.setData(trip)
-  }, [pins, ready, hoverPreview, activePins, typeFilters])
+  }, [pins, ready, hoverPreview, typeFilters, linesInView, viewVersion])
 
   const handleRetrieve = useCallback((place: RetrievedPlace) => {
     const map = mapRef.current
@@ -675,23 +674,13 @@ export default function GlobeView() {
     setStagedCoords(null) // toggling refining re-renders markers back to saved coords
   }, [])
 
-  // Active-lines tray + type filters (Slice 3.5).
+  // Per-class type filters (Legend & filters).
   const toggleTypeFilter = useCallback((code: string) => {
     setTypeFilters((cur) => {
       const next = new Set(cur)
       if (next.has(code)) next.delete(code); else next.add(code)
       return next
     })
-  }, [])
-  const removeActivePin = useCallback((id: string) => {
-    setActivePins((cur) => cur.filter((x) => x !== id))
-  }, [])
-  const clearActiveLines = useCallback(() => {
-    setActivePins([])
-    setTypeFilters(new Set())
-  }, [])
-  const toggleSideLines = useCallback((id: string) => {
-    setActivePins((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]))
   }, [])
 
   // Persist a full spine ordering. Reorder operates on the residential spine
@@ -784,37 +773,11 @@ export default function GlobeView() {
         ← Dashboard
       </a>
 
-      {/* Bottom-left control stack (Slice 3.5): the active-lines tray docked
-          above the legend, which doubles as the class-level type filter. */}
+      {/* Bottom-left Legend & filters — the sole control for line visibility:
+          per-class baseline toggles + a "side lines in view" reveal. No tray;
+          lines are global only (reworked 2026-06-24). */}
       {hasPins && (
         <div className="absolute bottom-6 left-6 z-20 flex flex-col items-start gap-2">
-          {/* Active-lines tray — persisted per-pin side-line sets as chips. */}
-          {(activeChips.length > 0 || typeFilters.size > 0) && (
-            <div className="glass flex max-w-[min(380px,80vw)] flex-wrap items-center gap-1.5 rounded-xl px-2.5 py-2 text-xs">
-              <span className="px-1 text-[var(--ink-dim)]">Lines</span>
-              {activeChips.map((p) => (
-                <span key={p.relationship_id} className="flex items-center gap-1 rounded-full border border-[var(--glass-border)] bg-black/20 py-0.5 pl-2 pr-1 text-[var(--ink)]">
-                  <span className="max-w-[120px] truncate">{p.name}</span>
-                  <button
-                    onClick={() => removeActivePin(p.relationship_id)}
-                    aria-label={`Remove ${p.name} lines`}
-                    className="rounded-full px-1 text-[var(--ink-dim)] hover:text-[var(--ink)]"
-                  >
-                    ✕
-                  </button>
-                </span>
-              ))}
-              <button
-                onClick={clearActiveLines}
-                className="ml-0.5 rounded-full px-2 py-0.5 text-[var(--ember-soft)] hover:text-[var(--ember)]"
-              >
-                Clear all
-              </button>
-            </div>
-          )}
-
-          {/* Legend + type filters — keys the pin types and toggles each
-              class's tethers as a baseline. Collapsed by default. */}
           <div className="glass rounded-xl text-xs text-[var(--ink-dim)]">
             <button
               onClick={() => setLegendOpen((o) => !o)}
@@ -855,6 +818,22 @@ export default function GlobeView() {
                     </button>
                   )
                 })}
+                {/* Side lines in view — reveal on-screen pins' side lines when
+                    zoomed into a region (auto-gated; off at the world view). */}
+                <button
+                  onClick={() => setLinesInView((v) => !v)}
+                  title="Show side lines for places currently on screen (when zoomed in)"
+                  className={
+                    'mt-1 flex w-full items-center gap-2.5 rounded-lg border-t border-[var(--glass-border)] px-1 pt-2 text-left hover:bg-white/5 ' +
+                    (linesInView ? 'text-[var(--ink)]' : 'text-[var(--ink-dim)]')
+                  }
+                >
+                  <span className="inline-flex h-3.5 w-3.5 items-center justify-center text-[var(--ember-soft)]">⊙</span>
+                  <span>Side lines in view</span>
+                  <span className={'ml-auto text-[10px] ' + (linesInView ? 'text-[var(--ember-soft)]' : 'text-[var(--ink-dim)]/50')}>
+                    {linesInView ? '● on' : '○ off'}
+                  </span>
+                </button>
                 <div className="mt-1 space-y-1.5 border-t border-[var(--glass-border)] px-1 pt-2">
                   <div className="flex items-center gap-2.5">
                     <span className="inline-block h-0 w-6 border-t-2 border-[var(--ember)]" style={{ boxShadow: '0 0 6px var(--ember)' }} />
@@ -1013,9 +992,6 @@ export default function GlobeView() {
             position={spinePos}
             total={spine.length}
             refining={refining}
-            sideLinesOn={activePins.includes(sel.relationship_id)}
-            hasSideLines={pinHasSideLines(sel.relationship_id)}
-            onToggleSideLines={() => toggleSideLines(sel.relationship_id)}
             onNavigate={navigateSpine}
             onRefine={() => { setStagedCoords(null); setRefining(true) }}
             onEdit={() => { setRefining(false); setEditMode(true) }}
