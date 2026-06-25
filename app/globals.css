@@ -112,26 +112,20 @@ body {
 /* Origin pin (item 2): the first stop — the launching point of the journey.
    A distinct bright star, lighter/whiter than the ember spine so it reads as
    iconic "start here" at globe scale. clip-path makes the star; drop-shadow
-   (not box-shadow) gives a glow that follows the star's silhouette. A slow
-   twinkle keeps it alive without pulling focus; honors reduced-motion. */
+   (not box-shadow) gives a glow that follows the star's silhouette. Solid
+   fill (no gradient) so every point stays uniformly bright — a gradient
+   dimmed the lower points to a brown read against the dark map. Static (no
+   twinkle) — it wasn't perceptible and isn't worth the per-frame cost. */
 .globe-pin-origin {
   width: 28px;
   height: 28px;
   border-radius: 0;
-  background: radial-gradient(circle at 50% 42%, #fffdf6, #ffe9ad);
+  background: #fff7e8;
   box-shadow: none; /* base dot glow would be clipped to the star edge */
   clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%,
                      50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
   filter: drop-shadow(0 0 5px rgba(255, 244, 200, 0.95))
-          drop-shadow(0 0 11px rgba(255, 226, 150, 0.65));
-  animation: origin-twinkle 4.5s ease-in-out infinite;
-}
-@keyframes origin-twinkle {
-  0%, 100% { filter: drop-shadow(0 0 4px rgba(255, 244, 200, 0.9))  drop-shadow(0 0 9px rgba(255, 226, 150, 0.5)); }
-  50%      { filter: drop-shadow(0 0 7px rgba(255, 248, 220, 1))    drop-shadow(0 0 15px rgba(255, 230, 160, 0.75)); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .globe-pin-origin { animation: none; }
+          drop-shadow(0 0 11px rgba(255, 226, 150, 0.6));
 }
 
 /* ── Per-type pin styling (Slice 3) ───────────────────────────────────
