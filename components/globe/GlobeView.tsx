@@ -285,6 +285,8 @@ export default function GlobeView() {
     setEditMode(false)
     setRefining(false)
     setStagedCoords(null)
+    setHovered(null)
+    setHoverPreview(null)
   }, [])
 
   // Select an existing pin — opens the detail card (and clears any
@@ -298,6 +300,10 @@ export default function GlobeView() {
     setEditMode(false)
     setRefining(false)
     setStagedCoords(null)
+    // Clear the hover card/preview so the floating name flag can't superimpose
+    // over the detail card (and persist into Edit) for the just-clicked pin.
+    setHovered(null)
+    setHoverPreview(null)
     // Default on-click: this pin's side lines ON, persisted in the tray
     // (Slice 3.5). A chip only renders if the pin actually has side lines.
     setActivePins((cur) => (cur.includes(relId) ? cur : [...cur, relId]))
@@ -399,15 +405,18 @@ export default function GlobeView() {
         source: 'arcs',
         layout: {
           'symbol-placement': 'line',
-          'symbol-spacing': 95,
+          // Fewer, larger chevrons (Andy 2026-06-24): direction reads at a
+          // glance without repeating, and the wide spacing keeps each glyph
+          // centred on a near-straight stretch so they don't drift off the arc.
+          'symbol-spacing': 260,
           'text-field': '›',
-          'text-size': 18,
+          'text-size': 30,
           'text-keep-upright': false,
           'text-rotation-alignment': 'map',
           'text-allow-overlap': true,
           'text-ignore-placement': true,
         },
-        paint: { 'text-color': '#f4b14a', 'text-opacity': 0.5 },
+        paint: { 'text-color': '#f4b14a', 'text-opacity': 0.55 },
       })
       map.addLayer({
         id: 'arc-chevrons-active',
@@ -416,9 +425,9 @@ export default function GlobeView() {
         filter: NO_SEGMENT,
         layout: {
           'symbol-placement': 'line',
-          'symbol-spacing': 72,
+          'symbol-spacing': 190,
           'text-field': '›',
-          'text-size': 22,
+          'text-size': 38,
           'text-keep-upright': false,
           'text-rotation-alignment': 'map',
           'text-allow-overlap': true,
@@ -940,7 +949,7 @@ export default function GlobeView() {
         />
       )}
 
-      {hovered && (
+      {hovered && !selectedId && (
         <div
           className="glass pointer-events-none absolute z-40 max-w-[240px] -translate-x-1/2 -translate-y-full rounded-xl px-3 py-2"
           style={{ left: hovered.x, top: hovered.y - 18 }}
