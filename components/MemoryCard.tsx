@@ -45,6 +45,9 @@ export interface MemoryRow {
   source_submission_id: string | null
   source_session_id: string | null
   private_notes: string | null
+  // Entities this recollection mentions — chips link to each Entity View
+  // (Slice 6.4), the path to add context.
+  entities?: { id: string; canonical_name: string; type: string }[]
 }
 
 const PRECISION_OPTIONS = [
@@ -407,6 +410,23 @@ export default function MemoryCard({ m }: { m: MemoryRow }) {
         <Markdown className={`text-sm ${dimmed ? 'text-stone-600' : 'text-stone-900'}`}>
           {memory.content_raw}
         </Markdown>
+      )}
+
+      {/* Entity chips — link out to each mentioned entity's View (where its
+          context notes live). The path from a recollection to "add context". */}
+      {!editing && (memory.entities?.length ?? 0) > 0 && (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          {memory.entities!.map((e) => (
+            <a
+              key={e.id}
+              href={`/entities/${e.id}`}
+              title={`Open ${e.canonical_name}`}
+              className="rounded-full border border-stone-200 bg-stone-50 px-2 py-0.5 text-[11px] text-stone-600 hover:border-stone-400 hover:text-stone-900"
+            >
+              {e.canonical_name}
+            </a>
+          ))}
+        </div>
       )}
 
       {/* Error */}

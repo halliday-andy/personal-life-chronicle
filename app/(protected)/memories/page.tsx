@@ -98,6 +98,27 @@ export default async function MemoriesPage({
   const { data: memories, error } = await query
 
   const rows = (memories ?? []) as MemoryRow[]
+
+  // Entity chips per memory (Slice 6.4): one join over the listed memories,
+  // grouped by memory_id, so each card can link out to its entities' Views.
+  const memIds = rows.map((m) => m.id)
+  if (memIds.length > 0) {
+    const { data: links } = await admin
+      .from('memory_entities')
+      .select('memory_id, entities!inner(id, canonical_name, type)')
+      .in('memory_id', memIds)
+    type Ent = { id: string; canonical_name: string; type: string }
+    const byMem = new Map<string, Ent[]>()
+    for (const l of (links ?? []) as { memory_id: string; entities: Ent | Ent[] | null }[]) {
+      const e = Array.isArray(l.entities) ? l.entities[0] : l.entities
+      if (!e) continue
+      const arr = byMem.get(l.memory_id) ?? []
+      if (!arr.some((x) => x.id === e.id)) arr.push(e)
+      byMem.set(l.memory_id, arr)
+    }
+    for (const m of rows) m.entities = byMem.get(m.id) ?? []
+  }
+
   const draftCount = rows.filter((m) => m.is_draft).length
   const finalisedCount = rows.length - draftCount
 
