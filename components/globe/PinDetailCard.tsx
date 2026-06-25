@@ -185,6 +185,10 @@ export default function PinDetailCard({
           </p>
           <h2 className="nocturne-display mt-0.5 text-2xl font-medium leading-tight">{pin.name}</h2>
           {pin.when_text && <p className="mt-0.5 text-sm text-[var(--ember-soft)]">{pin.when_text}</p>}
+          {/* Into the entity/context surfaces — where this place's context notes live (Slice 6). */}
+          <a href={`/entities/${pin.place_entity_id}`} className="mt-0.5 inline-block text-xs text-[var(--ink-dim)] hover:text-[var(--ink)]">
+            Open place page ↗
+          </a>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {onSpine && (
