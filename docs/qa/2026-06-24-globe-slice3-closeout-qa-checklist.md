@@ -23,10 +23,10 @@ App: **http://localhost:3001** (sign in first). Suggested order top-to-bottom.
 - [x] Hover that pin → the placard shows under the name.
 - [x] Place a **new** pin → the create modal has a **Placard (optional)** field; what you enter shows on hover after saving.
 
-## 3. Origin pin — "the beginning" (item 2) · REDESIGNED 2026-06-24
-- [ ] Your **first** stop in sequence (Lockbourne) now renders as a distinct **bright star** in a **lighter/whiter gold** than the ember spine — iconic "launching point," readable at globe scale. **[taste]** star size + brightness + the slow twinkle.
-- [ ] It's clearly the start by **shape + colour** (not just size); every other pin is an ordinary dot.
-- [ ] (Reduce-motion on → the star is steady, no twinkle.)
+## 3. Origin pin — "the beginning" (item 2) · STAR FIXED 2026-06-24
+- [ ] Your **first** stop in sequence (Lockbourne) renders as a distinct **bright star** in a **lighter/whiter gold** than the ember spine — and the whole star is **uniformly bright** (the earlier brown/incomplete lower half is gone — it was the year-chip being clipped by the star). **[taste]** star size + brightness.
+- [ ] Its **year chip** sits cleanly **below** the star (not overlapping/clipped).
+- [ ] It's clearly the start by **shape + colour**; every other pin is an ordinary dot. (Static — no twinkle, by your call.)
 
 ## 4. Chevrons + tether contrast (item 1 + item 3 note) · REWORKED 2026-06-24 (one icon per leg)
 - [ ] Each spine **leg** now shows exactly **one** filled-chevron marker at its **midpoint, sitting on the line** (no more repeated carets drifting off the arc / looking like floating planes). Flag any that still sit off the line.
@@ -95,6 +95,7 @@ For this you'll place a new pin and choose the **Log** type.
 - **Auto-declutter of dense pin clusters** (spiderfy) is deferred to a later slice — "Refine location" is the manual way to array close markers for now.
 - **Workplace icon overwhelming the primary at zoom-out** (your Queenstown screenshot) is parked for the dedicated pin-visual redesign.
 - **"Log" label** is an MVP trial — easy to rename.
+- **Comet-flow directionality** (animated pulse travelling along the arcs) is **deferred as a possible enhancement** — Andy's framing: best as an *opening flourish* running along the primary-residence spine on the zoomed-out globe view, fading once the user zooms in so it never clutters. The on-line chevrons (§4) are the shipped solution.
 - The unsafe `verify-globe-slice4b` script (which once shifted your spine ordering) has a separate fix queued; your spine `sort_order` is confirmed intact at 0–9.
 
 Anything that fails or feels off — note it against the item number and I'll pick it up.
