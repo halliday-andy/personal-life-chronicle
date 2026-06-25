@@ -122,6 +122,10 @@ try {
         await client.query(sql)
         await client.query('INSERT INTO public._claude_migrations(filename) VALUES ($1) ON CONFLICT DO NOTHING', [f])
         await client.query('COMMIT')
+        // Nudge PostgREST to reload its schema cache so new tables/columns are
+        // immediately visible to supabase-js (otherwise a fresh table reads as
+        // "Could not find the table in the schema cache" until the cache ages out).
+        await client.query("NOTIFY pgrst, 'reload schema'")
         console.log('ok')
       } catch (e) {
         await client.query('ROLLBACK')
