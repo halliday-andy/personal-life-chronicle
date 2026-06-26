@@ -41,10 +41,15 @@
 - [ ] "Add context" never appears on the recollection editing form (context is entity-scoped — it lives only on the Entity View).
 - [ ] *(Deferred)* full-text **search** on /memories — not built yet.
 
-## Phase 6.5 — propose-and-confirm context capture  ·  ⬜
-- [ ] Pasting third-person research (e.g. the Zaragoza write-up) into the capture assistant is **proposed as context on an entity** ("attach as context to [X]?") with **Accept / Adjust / Decline**, not dumped into the Raw Vault.
-- [ ] When the paste contains a **URL**, the proposal pre-fills the **source** fields.
-- [ ] Accepting attaches the note to the entity; this **replaces** the old Dismiss-only `memory_elaboration_needed` backlog dead-end.
+## Phase 6.5 — context capture  ·  ◑ 6.5a built (`9e56a58`); 6.5b (orchestrator auto-proposal) pending
+**6.5a — attach research from the backlog (the dead-end fix):**
+- [ ] On **/review**, a research card (`memory_elaboration_needed`, e.g. the Zaragoza write-up) now shows **"Attach as context…"** (not just Dismiss).
+- [ ] Click it → search an entity (people / places / organizations) → pick one → the **full research attaches as a context note** on that entity (visible on its Entity View); a **source URL** in the text is auto-detected.
+- [ ] Choose **Shareable** or **Private** before attaching (defaults shareable for background research).
+- [ ] After attaching, the review item **resolves** (leaves the queue).
+
+**6.5b — orchestrator auto-proposal (pending):**
+- [ ] *(not built)* Pasting research into the capture assistant is **proposed** as context on an identified entity, with **Accept / Adjust / Decline** + source pre-fill — so it never reaches the backlog in the first place.
 
 ---
 
