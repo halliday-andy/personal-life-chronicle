@@ -15,6 +15,7 @@ import { preprocessPinImage } from '@/lib/globe/image-preprocess'
 import { PIN_TYPES, pinTypeMeta, SPINE_CODE } from '@/lib/globe/pin-types'
 import { spineSlotOptions } from '@/lib/globe/reorder'
 import PhotoLightbox from './PhotoLightbox'
+import Markdown from '../Markdown'
 
 export interface EditablePin {
   relationship_id: string
@@ -78,6 +79,9 @@ export default function PinEditPanel({
   const [whenText, setWhenText] = useState(pin.when_text ?? '')
   const [placard, setPlacard] = useState(pin.description ?? '')
   const [body, setBody] = useState('')
+  // The recollection shows RENDERED markdown by default (so formatting isn't
+  // "lost" behind raw ** / # syntax); "Edit text" reveals the raw editor.
+  const [bodyEditing, setBodyEditing] = useState(false)
   const [typeCode, setTypeCode] = useState(pin.type_code ?? SPINE_CODE)
   const [anchorId, setAnchorId] = useState(pin.anchor_residence_id ?? '')
 
@@ -325,14 +329,32 @@ export default function PinEditPanel({
         </>
       )}
 
-      <label className="mt-3 block text-xs text-[var(--ink-dim)]">Recollection</label>
-      <textarea
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
-        disabled={saving || loading || loadError}
-        placeholder={loading ? 'Loading…' : 'Add a memory of this place…'}
-        className="mt-1 min-h-[8rem] flex-1 resize-none rounded-lg border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm leading-relaxed text-[var(--ink)] placeholder-[var(--ink-dim)]/70 outline-none focus:border-[var(--ember-soft)]"
-      />
+      <div className="mt-3 flex items-center justify-between">
+        <label className="block text-xs text-[var(--ink-dim)]">Recollection</label>
+        {!loading && !loadError && body.trim() && (
+          <button
+            type="button"
+            onClick={() => setBodyEditing((v) => !v)}
+            className="text-xs text-[var(--ember-soft)] hover:text-[var(--ember)]"
+          >
+            {bodyEditing ? 'Done editing' : 'Edit text'}
+          </button>
+        )}
+      </div>
+      {!loading && !loadError && body.trim() && !bodyEditing ? (
+        // Rendered view — markdown formatting preserved, not raw syntax.
+        <div className="mt-1 max-h-60 flex-1 overflow-y-auto rounded-lg border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm leading-relaxed text-[var(--ink)]">
+          <Markdown>{body}</Markdown>
+        </div>
+      ) : (
+        <textarea
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          disabled={saving || loading || loadError}
+          placeholder={loading ? 'Loading…' : 'Add a memory of this place…'}
+          className="mt-1 min-h-[8rem] flex-1 resize-none rounded-lg border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm leading-relaxed text-[var(--ink)] placeholder-[var(--ink-dim)]/70 outline-none focus:border-[var(--ember-soft)]"
+        />
+      )}
 
       {loadError && (
         <div className="mt-2 flex items-center gap-2 rounded-lg border border-rose-400/30 bg-rose-950/30 px-3 py-2 text-xs text-rose-200">
