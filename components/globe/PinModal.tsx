@@ -21,6 +21,7 @@ const GHOST_TEXTS = [
 ]
 
 export interface PinDraftData {
+  name: string              // the name shown on the pin (editable; overrides the search label)
   whenText: string
   description: string        // placard — a short one-line description (item 1)
   body: string
@@ -44,6 +45,7 @@ export default function PinModal({
   onSave: (data: PinDraftData) => void
   onCancel: () => void
 }) {
+  const [name, setName] = useState(placeLabel === 'This place' ? '' : placeLabel)
   const [body, setBody] = useState('')
   const [whenText, setWhenText] = useState('')
   const [placard, setPlacard] = useState('')
@@ -72,9 +74,15 @@ export default function PinModal({
         <p className="text-xs uppercase tracking-[0.18em] text-[var(--ink-dim)]">
           A place in your life
         </p>
-        <h2 className="nocturne-display mt-1 text-3xl font-medium leading-tight">
-          {placeLabel}
-        </h2>
+        <label className="mt-1 block text-xs text-[var(--ink-dim)]">Name on the pin</label>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          disabled={saving}
+          autoFocus
+          placeholder="Name this place"
+          className="nocturne-display mt-1 w-full rounded-xl border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-2xl font-medium leading-tight text-[var(--ink)] placeholder-[var(--ink-dim)]/50 outline-none focus:border-[var(--ember-soft)]"
+        />
 
         <label className="mt-5 block text-sm text-[var(--ink-dim)]">What kind of place?</label>
         <select
@@ -176,6 +184,7 @@ export default function PinModal({
           <button
             type="button"
             onClick={() => onSave({
+              name,
               whenText,
               description: placard,
               body,

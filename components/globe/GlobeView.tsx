@@ -608,7 +608,7 @@ export default function GlobeView() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          lng: draft.lng, lat: draft.lat, label: draft.label,
+          lng: draft.lng, lat: draft.lat, label: data.name?.trim() || draft.label,
           whenText: data.whenText, body: data.body, position: data.position,
           typeCode: data.typeCode, anchorId: data.anchorId, description: data.description,
         }),
