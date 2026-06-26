@@ -18,6 +18,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Markdown from './Markdown'
 
 type ResolveFn = (
   item: ReviewItem,
@@ -502,8 +503,8 @@ function MemoryElaborationBody({
 
   return (
     <div>
-      <div className="text-sm text-stone-700 mb-2 max-h-64 overflow-y-auto whitespace-pre-wrap rounded bg-stone-50 p-2">
-        {body}
+      <div className="text-sm text-stone-700 mb-2 max-h-64 overflow-y-auto rounded bg-stone-50 p-2">
+        <Markdown>{body}</Markdown>
       </div>
       {rationale && (
         <p className="text-xs text-stone-500 italic mb-3">Queued because: {rationale}</p>
