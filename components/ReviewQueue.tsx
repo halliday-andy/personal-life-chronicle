@@ -461,6 +461,45 @@ function MemoryElaborationBody({
   const prompt = typeof ctx.prompt === 'string' ? ctx.prompt : null
   const rationale = typeof ctx.rationale === 'string' ? ctx.rationale : null
   const body = item.fullText ?? summary ?? prompt ?? 'Elaboration prompt'
+
+  // Attach-as-context (Slice 6.5): give this research a home on an entity
+  // instead of the old Dismiss-only dead-end.
+  const [attaching, setAttaching] = useState(false)
+  const [q, setQ] = useState('')
+  const [results, setResults] = useState<{ id: string; type: string; canonical_name: string }[]>([])
+  const [visibility, setVisibility] = useState<'private' | 'shareable'>('shareable')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!attaching) return
+    const t = setTimeout(() => {
+      fetch(`/api/entity?q=${encodeURIComponent(q)}&limit=8`)
+        .then((r) => r.json())
+        .then((d) => setResults(d.items ?? []))
+        .catch(() => setResults([]))
+    }, 200)
+    return () => clearTimeout(t)
+  }, [q, attaching])
+
+  async function attach(entityId: string, entityName: string) {
+    setBusy(true); setError(null)
+    try {
+      const sourceUrl = (body.match(/https?:\/\/[^\s)]+/) || [])[0] ?? ''
+      const res = await fetch(`/api/entity/${entityId}/context`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body, sourceUrl, visibility }),
+      })
+      const d = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(d.detail || d.error || `HTTP ${res.status}`)
+      await onResolve(item, 'confirmed', { attached_as_context: true, entity_id: entityId }, `Attached as context to ${entityName}`)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not attach.')
+      setBusy(false)
+    }
+  }
+
   return (
     <div>
       <div className="text-sm text-stone-700 mb-2 max-h-64 overflow-y-auto whitespace-pre-wrap rounded bg-stone-50 p-2">
@@ -474,14 +513,53 @@ function MemoryElaborationBody({
           {memory.content_raw}
         </p>
       )}
-      <div className="flex items-center gap-2">
-        <button
-          className="px-3 py-1.5 text-xs font-medium rounded-md bg-stone-100 hover:bg-stone-200 text-stone-700"
-          onClick={() => onResolve(item, 'dismissed')}
-        >
-          Dismiss
-        </button>
-      </div>
+      {!attaching ? (
+        <div className="flex items-center gap-2">
+          <button
+            className="px-3 py-1.5 text-xs font-medium rounded-md bg-stone-800 hover:bg-stone-700 text-white"
+            onClick={() => setAttaching(true)}
+          >
+            Attach as context…
+          </button>
+          <button
+            className="px-3 py-1.5 text-xs font-medium rounded-md bg-stone-100 hover:bg-stone-200 text-stone-700"
+            onClick={() => onResolve(item, 'dismissed')}
+          >
+            Dismiss
+          </button>
+        </div>
+      ) : (
+        <div className="rounded-lg border border-stone-200 bg-white p-2">
+          <p className="mb-1 text-xs text-stone-500">Attach this research as a context note on…</p>
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search people, places, organizations…"
+            autoFocus
+            className="w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm outline-none focus:border-stone-500"
+          />
+          <div className="mt-1 max-h-40 overflow-y-auto">
+            {results.map((r) => (
+              <button
+                key={r.id}
+                disabled={busy}
+                onClick={() => attach(r.id, r.canonical_name)}
+                className="block w-full rounded px-2 py-1 text-left text-sm text-stone-800 hover:bg-stone-100 disabled:opacity-50"
+              >
+                {r.canonical_name} <span className="text-xs text-stone-400">· {r.type}</span>
+              </button>
+            ))}
+            {q && results.length === 0 && <p className="px-2 py-1 text-xs text-stone-400">No matches.</p>}
+          </div>
+          <div className="mt-2 flex items-center gap-3 text-xs">
+            <span className="text-stone-500">Visibility:</span>
+            <label className="flex items-center gap-1 text-stone-700"><input type="radio" checked={visibility === 'shareable'} onChange={() => setVisibility('shareable')} /> Shareable</label>
+            <label className="flex items-center gap-1 text-stone-700"><input type="radio" checked={visibility === 'private'} onChange={() => setVisibility('private')} /> Private</label>
+            <button onClick={() => { setAttaching(false); setError(null) }} disabled={busy} className="ml-auto text-stone-500 hover:text-stone-800">Cancel</button>
+          </div>
+          {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
+        </div>
+      )}
     </div>
   )
 }
