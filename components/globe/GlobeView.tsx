@@ -197,6 +197,8 @@ export default function GlobeView() {
   const draftMarkerRef = useRef<mapboxgl.Marker | null>(null)
   const bloomIdRef = useRef<string | null>(null)
   const selectedIdRef = useRef<string | null>(null)
+  // Mirrors `refining` for the once-bound map click handler (closures are stale).
+  const refiningRef = useRef(false)
 
   const [ready, setReady] = useState(false)
   const [pins, setPins] = useState<Pin[]>([])
@@ -247,6 +249,8 @@ export default function GlobeView() {
   }, [notice])
 
   const hasPins = pins.length > 0
+
+  useEffect(() => { refiningRef.current = refining }, [refining])
 
   // Suppress the global CaptureAssistant FAB only while the pin EDIT
   // panel is open — it's fixed z-50 and would overlap the panel (it was
@@ -451,6 +455,9 @@ export default function GlobeView() {
     map.on('moveend', () => setViewVersion((v) => v + 1))
 
     map.on('click', (e) => {
+      // While refining a pin's location, ignore stray map clicks (e.g. a
+      // drag-release) — the refine banner owns Save/Cancel.
+      if (refiningRef.current) return
       // Clicking empty globe: deselect an open pin, else drop a new draft.
       if (selectedIdRef.current) { deselect(); return }
       setDraftAt(e.lngLat.lng, e.lngLat.lat, '')
@@ -488,7 +495,14 @@ export default function GlobeView() {
       // Selection ring/glow read this var so they match the pin's type hue.
       el.style.setProperty('--pin-ring', pinTypeMeta(p.type_code).color)
       el.title = p.name
-      el.addEventListener('click', (ev) => { ev.stopPropagation(); selectPin(p.relationship_id) })
+      el.addEventListener('click', (ev) => {
+        ev.stopPropagation()
+        // A post-drag click on the pin currently being refined/edited must NOT
+        // re-select it — selectPin resets refining, which was wiping the "Save
+        // location" banner before you could click it (Refine location was broken).
+        if (isSel) return
+        selectPin(p.relationship_id)
+      })
       // At-rest temporal chip (item 1): the pin's `when` phrase, glanceable
       // without interaction. Absolutely positioned below the dot so it never
       // shifts the dot off its coordinate (pins stay aligned with the arcs).
