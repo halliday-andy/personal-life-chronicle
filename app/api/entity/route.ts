@@ -49,7 +49,11 @@ export async function GET(request: NextRequest) {
     .select('id, type, canonical_name, aliases')
     .eq('user_id', user.id)
     .order('canonical_name', { ascending: true })
-    .limit(limit)
+    // When filtering by q, scan the full set (the substring + alias match is a
+    // client-side JS filter below); applying `limit` to the DB fetch here would
+    // only consider the first N alphabetically, so e.g. "zaragoza" never appears
+    // behind a small typeahead limit. Without q, the requested limit is exact.
+    .limit(q ? MAX_LIMIT : limit)
 
   if (type) query = query.eq('type', type)
   if (exclude) query = query.neq('id', exclude)
@@ -77,5 +81,6 @@ export async function GET(request: NextRequest) {
     })
   }
 
-  return NextResponse.json({ items: rows })
+  // Apply the requested limit AFTER filtering, so q narrows the full set.
+  return NextResponse.json({ items: rows.slice(0, limit) })
 }
