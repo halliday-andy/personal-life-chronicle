@@ -11,6 +11,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Markdown from './Markdown'
 
 export interface ContextNote {
   id: string
@@ -190,7 +191,9 @@ export default function EntityView({ entity, notes: initialNotes, recollections 
 function NoteCard({ note, onRemove }: { note: ContextNote; onRemove: () => void }) {
   return (
     <div className="group rounded-lg border border-stone-200 bg-white p-3">
-      <p className="whitespace-pre-wrap text-sm text-stone-800">{note.body}</p>
+      <div className="text-sm text-stone-800">
+        <Markdown>{note.body}</Markdown>
+      </div>
       <div className="mt-1.5 flex items-center gap-2 text-xs text-stone-400">
         {note.source_url ? (
           <a href={note.source_url} target="_blank" rel="noopener noreferrer" className="text-stone-500 hover:underline">
