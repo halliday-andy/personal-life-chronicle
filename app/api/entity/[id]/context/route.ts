@@ -2,6 +2,7 @@
  * /api/entity/[id]/context — context notes on an entity (Slice 6.3).
  *
  *   POST   { body, sourceLabel?, sourceUrl?, visibility }  → add a note
+ *   PATCH  ?note=<uuid> { body, sourceLabel?, sourceUrl?, visibility }  → edit
  *   DELETE ?note=<uuid>                                    → remove a note
  *
  * Ownership is enforced at the app layer (entity + note must belong to the
@@ -58,6 +59,43 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     .select('id, body, source_label, source_url, created_by, visibility, created_at')
     .single()
   if (error) return NextResponse.json({ error: 'Could not add the note', detail: error.message }, { status: 500 })
+
+  return NextResponse.json({ note })
+}
+
+export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+  const user = await getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!UUID_RE.test(params.id)) return NextResponse.json({ error: 'Bad entity id' }, { status: 400 })
+  const noteId = new URL(request.url).searchParams.get('note')
+  if (!noteId || !UUID_RE.test(noteId)) return NextResponse.json({ error: 'Bad note id' }, { status: 400 })
+
+  let p: PostBody
+  try { p = (await request.json()) as PostBody } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
+
+  const body = (p.body ?? '').trim()
+  if (!body) return NextResponse.json({ error: 'A note body is required' }, { status: 400 })
+  const visibility = p.visibility === 'shareable' ? 'shareable' : 'private'
+
+  const admin = createAdminClient()
+  // Scope the update to this user + this entity so a note can't be edited
+  // across ownership or off another entity. The .select() returns no rows if
+  // the scope misses, which we surface as 404.
+  const { data: note, error } = await admin
+    .from('entity_context_notes')
+    .update({
+      body,
+      source_label: p.sourceLabel?.trim() || null,
+      source_url: p.sourceUrl?.trim() || null,
+      visibility,
+    })
+    .eq('id', noteId)
+    .eq('user_id', user.id)
+    .eq('entity_id', params.id)
+    .select('id, body, source_label, source_url, created_by, visibility, created_at')
+    .maybeSingle()
+  if (error) return NextResponse.json({ error: 'Could not update the note', detail: error.message }, { status: 500 })
+  if (!note) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   return NextResponse.json({ note })
 }
