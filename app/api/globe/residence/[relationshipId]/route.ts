@@ -20,6 +20,7 @@ import { reverseGeocode } from '@/lib/globe/geocoding'
 import { proximityHint } from '@/lib/globe/proximity'
 import { listPinImages, removeAllPinImages } from '@/lib/globe/pin-image'
 import { sendEventQuick } from '@/lib/inngest/send-quick'
+import { deriveContextTitle } from '@/lib/context/derive-title'
 
 async function getUser() {
   const { data: { user } } = await createUserClient().auth.getUser()
@@ -115,6 +116,21 @@ export async function GET(_req: NextRequest, { params }: { params: { relationshi
     }))
   }
 
+  // Context notes on this place entity (Slice 6.5). Titles are derived
+  // server-side so the pin card and the entity page agree. The card links
+  // out to the entity page rather than per-note, so body isn't returned.
+  const { data: ctxRows } = await admin
+    .from('entity_context_notes')
+    .select('id, body, visibility, created_at')
+    .eq('entity_id', rel.object_id)
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+  const context = (ctxRows ?? []).map((n) => ({
+    id: n.id,
+    title: deriveContextTitle(n.body ?? ''),
+    visibility: n.visibility,
+  }))
+
   // Full gallery, primary first; `image` (the primary) kept for the
   // detail card, `images` powers the edit-panel gallery.
   const images = await listPinImages(admin, user.id, rel.object_id)
@@ -132,7 +148,7 @@ export async function GET(_req: NextRequest, { params }: { params: { relationshi
       }
     : null
 
-  return NextResponse.json({ memoryId, body, isDraft, image, images, facts, linked, anchored })
+  return NextResponse.json({ memoryId, body, isDraft, image, images, facts, linked, anchored, context })
 }
 
 const PIN_TYPE_CODES = [

@@ -43,6 +43,17 @@ export interface AnchoredPin {
   excerpt: string
 }
 
+export interface ContextEntry {
+  id: string
+  title: string
+  visibility: string
+}
+
+// Which secondary collection is expanded under the body. Only one opens at a
+// time so the card never grows tall enough to occlude its own pin — presence
+// stays visible as counts, content is opt-in (2026-06-26 reframe).
+type OpenChip = 'recollections' | 'context' | 'anchored' | null
+
 const label = (s: string) => s.replace(/_/g, ' ')
 
 export default function PinDetailCard({
@@ -75,6 +86,8 @@ export default function PinDetailCard({
   const [facts, setFacts] = useState<PinFacts | null>(null)
   const [linked, setLinked] = useState<LinkedRecollection[]>([])
   const [anchored, setAnchored] = useState<AnchoredPin[]>([])
+  const [context, setContext] = useState<ContextEntry[]>([])
+  const [openChip, setOpenChip] = useState<OpenChip>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   // A failed load must look like a failure, never like an empty pin —
@@ -92,6 +105,8 @@ export default function PinDetailCard({
     let active = true
     setLoading(true)
     setLoadError(false)
+    setOpenChip(null)
+    setExpandedId(null)
     fetch(`/api/globe/residence/${pin.relationship_id}`)
       .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
       .then((d) => {
@@ -102,6 +117,7 @@ export default function PinDetailCard({
         setFacts(d.facts ?? null)
         setLinked(d.linked ?? [])
         setAnchored(d.anchored ?? [])
+        setContext(d.context ?? [])
         setLoading(false)
       })
       .catch(() => { if (active) { setLoadError(true); setLoading(false) } })
@@ -326,12 +342,39 @@ export default function PinDetailCard({
               ))}
             </div>
           )}
-          {linked.length > 0 && (
-            <div className="mt-3 border-t border-[var(--glass-border)] pt-2">
-              <div className="flex items-baseline justify-between gap-2">
-                <p className="text-xs uppercase tracking-[0.18em] text-[var(--ink-dim)]">
-                  More recollections here · {linked.length}
-                </p>
+          {/* Secondary collections collapse to a single count-chip row so the
+              card stays short over its own pin; tapping a chip discloses just
+              that list (single-open), tapping again collapses (2026-06-26). */}
+          {(linked.length > 0 || context.length > 0 || anchored.length > 0) && (
+            <div className="mt-3 flex flex-wrap gap-1.5 border-t border-[var(--glass-border)] pt-3">
+              {([
+                linked.length > 0 && { key: 'recollections' as const, label: `${linked.length} recollection${linked.length === 1 ? '' : 's'}` },
+                context.length > 0 && { key: 'context' as const, label: `${context.length} context` },
+                anchored.length > 0 && { key: 'anchored' as const, label: `${anchored.length} anchored` },
+              ].filter(Boolean) as { key: Exclude<OpenChip, null>; label: string }[]).map((c) => {
+                const open = openChip === c.key
+                return (
+                  <button
+                    key={c.key}
+                    onClick={() => setOpenChip(open ? null : c.key)}
+                    aria-expanded={open}
+                    className={
+                      'rounded-full border px-2.5 py-0.5 text-xs transition ' +
+                      (open
+                        ? 'border-[var(--ember-soft)] text-[var(--ember-soft)]'
+                        : 'border-[var(--glass-border)] text-[var(--ink-dim)] hover:text-[var(--ink)]')
+                    }
+                  >
+                    {c.label}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
+          {openChip === 'recollections' && linked.length > 0 && (
+            <div className="mt-2">
+              <div className="flex items-baseline justify-end">
                 <a
                   href={`/memories?entity=${pin.place_entity_id}`}
                   className="shrink-0 text-xs text-[var(--ember-soft)] hover:text-[var(--ember)]"
@@ -368,12 +411,31 @@ export default function PinDetailCard({
               </ul>
             </div>
           )}
-          {anchored.length > 0 && (
-            <div className="mt-3 border-t border-[var(--glass-border)] pt-2">
-              <p className="text-xs uppercase tracking-[0.18em] text-[var(--ink-dim)]">
-                Anchored here · {anchored.length}
-              </p>
-              <ul className="mt-1.5 max-h-40 space-y-1 overflow-y-auto">
+
+          {openChip === 'context' && context.length > 0 && (
+            <div className="mt-2">
+              <ul className="max-h-40 space-y-1 overflow-y-auto">
+                {context.map((c) => (
+                  <li key={c.id}>
+                    {/* All context lives on the place's entity page; rows link
+                        there rather than deep-linking each note (YAGNI). */}
+                    <a
+                      href={`/entities/${pin.place_entity_id}`}
+                      title={`Open ${pin.name} context`}
+                      className="flex w-full items-center gap-1.5 rounded-lg px-1 py-0.5 text-left text-xs leading-relaxed text-[var(--ink)]/80 hover:bg-white/5 hover:text-[var(--ink)]"
+                    >
+                      {c.visibility === 'private' && <span title="Private — only you can see this">🔒</span>}
+                      <span className="truncate">{c.title}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {openChip === 'anchored' && anchored.length > 0 && (
+            <div className="mt-2">
+              <ul className="max-h-40 space-y-1 overflow-y-auto">
                 {anchored.map((a) => (
                   <li key={a.relationship_id}>
                     <button
