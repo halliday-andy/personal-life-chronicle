@@ -32,7 +32,7 @@
 - [ ] An **"Add context"** action on the Entity View takes a note **body**, an optional **source label + URL**, and a **Private / Shareable** choice.
 - [ ] Saving adds the note; it appears immediately under the right section (private vs shareable).
 - [ ] Notes accumulate (many per entity — a footnotes/bibliography model); nothing is overwritten.
-- [ ] A note can be **removed** by the owner (hover a note → Remove). *(In-place edit deferred — remove + re-add for now.)*
+- [ ] A note can be **removed** by the owner (hover a note → Remove). *(In-place **edit** now built — see Phase 6.6.)*
 
 ## Phase 6.4 — /memories entity chips + globe link  ·  ◑ mostly built (`474915e`, `04d8acd`)
 - [x] A recollection has an **editable detail** — `/memories` cards already have inline Edit (no longer only via globe → pin → Edit).
@@ -50,6 +50,31 @@
 
 **6.5b — orchestrator auto-proposal (pending):**
 - [ ] *(not built)* Pasting research into the capture assistant is **proposed** as context on an identified entity, with **Accept / Adjust / Decline** + source pre-fill — so it never reaches the backlog in the first place.
+
+## Phase 6.6 — context legibility, titles, in-place edit + globe surfacing  ·  ✅ built (2026-06-26)
+*(Continued the 6.5b thread. Verified tsc + eslint; `deriveContextTitle` exercised against 11 cases. No component test harness in this project yet, so the UI items below are walk-through proofs.)*
+
+**Markdown rendering of notes (`90aed81`)**
+- [ ] A context note written with markdown (`## A heading`, `[label](url)`, `[1]` refs) renders **formatted** on the Entity View — headings styled, links collapsed to their labels — not as raw source. (Mirror of the review-card fix `409b8e2`.)
+
+**Title convention + derivation (`e356815`)**
+- [ ] The **Add context** form shows a greyed hint + heading-led placeholder nudging you to start with `## A short title`.
+- [x] (proof) `deriveContextTitle()` returns the first markdown heading, else the first ~8 words of the first non-empty line, else "Untitled note" — the label used wherever a note has no title field.
+
+**Edit a note in place (`6f27c90`)** — *(was deferred in 6.3)*
+- [ ] Hover a note → **Edit** (beside Remove) opens an inline editor with the **same fields as Add** (body, source label/URL, Private/Shareable).
+- [ ] Saving updates the note in place; **adding a `## title`** to a previously untitled note now gives it one.
+- [ ] Switching a note's **visibility** in the editor moves it between the shareable and 🔒 private sections on save.
+- [ ] **Cancel** discards changes cleanly — reopen Edit and the original text is back (no leakage between edits).
+- [ ] Edit is **owner + entity scoped** server-side (a note can't be edited off another entity or across ownership → 404).
+
+**Context on the globe pin card + count-chip disclosure (`b452302`)**
+- [ ] Open a globe pin's detail card. The previously always-open lists ("More recollections here", "Anchored here") are now one compact **count-chip row** under the recollection, e.g. `N recollections · N context · N anchored`. `[taste]` the density vs. the old stacked lists.
+- [ ] Tapping a chip **expands just that list** inline; tapping again collapses; opening another **closes the first** (single-open) — so the card stays short enough not to occlude its own pin on the globe.
+- [ ] A **context** chip appears when the pin's place has context notes; its rows show each note's **derived title** (🔒 on private ones) and link to the place's Entity View.
+- [ ] After editing a note's body to add a `## title` on the Entity View, that title is what the **context chip rows** show on the pin card.
+- [ ] Switching to another pin **resets** which chip is open.
+- [ ] A pin with no recollections / context / anchored shows **no chip row** (just the recollection + photo).
 
 ---
 
