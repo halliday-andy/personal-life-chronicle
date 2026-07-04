@@ -21,9 +21,19 @@
           {
             "type": "command",
             "if": "Bash(git commit *)",
-            "command": "git push origin HEAD 2>/dev/null || true",
+            "command": "git push origin HEAD || true",
             "async": true,
             "statusMessage": "Backing up to origin..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "branch=$(git branch --show-current); up=$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null); if [ -z \"$up\" ]; then echo \"BACKUP WARNING: branch '$branch' has no upstream — nothing is backed up to origin. Run: git push -u origin HEAD\" >&2; exit 2; fi; n=$(git rev-list --count @{u}..HEAD 2>/dev/null || echo '?'); if [ \"$n\" != \"0\" ]; then echo \"BACKUP WARNING: $n commit(s) on '$branch' are NOT on $up — the auto-push did not reach origin. Run: git push\" >&2; exit 2; fi"
           }
         ]
       }
