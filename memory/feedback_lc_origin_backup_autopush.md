@@ -36,3 +36,10 @@ days. Durable objectives must be encoded where the harness enforces them (a
 hook), not just where a human or agent might recall them. See
 [[feedback_lc_memory_dual_write]] (same failure mode — a mirror silently
 drifting because nothing automated kept it in sync).
+
+**Update 2026-07-04:** the `2>/dev/null` in this hook was found to hide
+*permanent* push failures (a read-only remote sandbox returning 403), silently
+recreating the very drift above — the hook "succeeded" while origin never
+moved. Fixed: removed `2>/dev/null`, added a Stop hook that verifies HEAD
+reached its upstream and warns loudly otherwise. Full write-up:
+[[feedback_lc_silent_backup_and_sandbox]].
