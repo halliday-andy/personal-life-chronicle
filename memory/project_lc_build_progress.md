@@ -57,11 +57,22 @@ Supersedes the 2026-06-17 block below, which had gone nine days stale. The
   routed to the tool ONLY; Raw Vault + backlog untouched; nothing
   persisted pre-Accept). **Slice 6 build COMPLETE** (only /memories
   full-text search deferred). Detail: [[project_lc_globe_entity_ux_brief]].
-- **NEXT:** Andy's full Slice 6 QA walkthrough
-  (`docs/qa/2026-06-24-slice6-entity-view-context-qa-checklist.md` — he
-  deferred it until 6.5b landed) + the outstanding globe re-tests; then
-  **Resume View** (roadmap order), then Slice 7 (Person page + Life's
-  Cast + Hopper), which rides on Slice 6.
+- **Journey view designed 2026-07-05** — "Resume View" renamed + redesigned
+  after Claude Code's review; canonical spec
+  `docs/plans/2026-07-05-journey-view-design.md` (standalone `/journey`,
+  `?pin=` handoff, summary rows + lazy detail, ember-spine emotional layer
+  in MVP, mobile-first; phases J1–J5). Same session the **Hopper split**:
+  5a (pin notepad) pulled forward, 5b (assistant consume loop + person
+  host) stays with Slice 7.
+- **Hopper 5a BUILT 2026-07-05** (`ac11a61` data layer, `95e7627` UI):
+  `memory_stubs` table (roadmap M2, applied) + merge_entities repoint
+  (proof `verify-memory-stubs.mjs` 7/7); `/api/entity/[id]/stubs`;
+  `PinHopper` — always-present "✎ jot" chip on the detail card (live
+  count) + full "Memories to write" section on the edit panel (check off,
+  reopen, delete). QA: `docs/qa/2026-07-05-hopper-5a-qa-checklist.md`.
+- **NEXT:** Andy's QA (Slice 6 walkthrough + Hopper 5a + outstanding globe
+  re-tests); then **Journey J1–J5**; then Slice 7 (Person page + Life's
+  Cast + Hopper 5b), riding on Slice 6.
 
 ## Session handoff — 2026-06-17 (QA remediation pass, superseded)
 
