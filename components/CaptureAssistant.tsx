@@ -14,6 +14,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ProposalCard, type MemoryCardData } from './ProposalCard'
+import { ContextProposalCard, type ContextProposalData } from './ContextProposalCard'
 import { useUiChrome } from './UiChromeContext'
 
 type ConversationTurn = { role: 'user' | 'assistant'; content: string }
@@ -271,6 +272,10 @@ export default function CaptureAssistant() {
                       <ProposalCard key={card.memory.memory_id} initial={card} />
                     ))}
 
+                    {grouped.contextCards.map((card, j) => (
+                      <ContextProposalCard key={`ctx-${j}`} initial={card} />
+                    ))}
+
                     {grouped.otherProposals.length > 0 && (
                       <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 space-y-1">
                         {grouped.otherProposals.map((p, j) => (
@@ -357,13 +362,36 @@ export default function CaptureAssistant() {
 
 function groupProposalsByMemory(proposals: ProposalSummary[]): {
   memoryCards: MemoryCardData[]
+  contextCards: ContextProposalData[]
   otherProposals: ProposalSummary[]
 } {
   const memoryCards: MemoryCardData[] = []
+  const contextCards: ContextProposalData[] = []
   const otherProposals: ProposalSummary[] = []
   let currentCard: MemoryCardData | null = null
 
   for (const p of proposals) {
+    if (p.tool === 'propose_context_note') {
+      // Context proposals stand alone — they never persist server-side, so
+      // a well-formed payload becomes an Accept/Adjust/Decline card and a
+      // handler error falls through to the thin proposal line.
+      const d = p.data as Partial<ContextProposalData> & { error?: string }
+      if (!d.error && typeof d.body === 'string' && d.body) {
+        contextCards.push({
+          body: d.body,
+          entity: d.entity ?? null,
+          suggested_entity_name: d.suggested_entity_name ?? '',
+          candidates: d.candidates ?? [],
+          visibility: d.visibility === 'private' ? 'private' : 'shareable',
+          source_label: d.source_label ?? null,
+          source_url: d.source_url ?? null,
+          rationale: p.rationale,
+        })
+      } else {
+        otherProposals.push(p)
+      }
+      continue
+    }
     if (p.tool === 'create_memory' && p.persisted) {
       const d = p.data as {
         memory_id?: string
@@ -422,7 +450,7 @@ function groupProposalsByMemory(proposals: ProposalSummary[]): {
     }
   }
 
-  return { memoryCards, otherProposals }
+  return { memoryCards, contextCards, otherProposals }
 }
 
 function ProposalLine({ p }: { p: ProposalSummary }) {
@@ -462,6 +490,11 @@ function ProposalLine({ p }: { p: ProposalSummary }) {
       }
       case 'flag_for_private_notes':
         return 'Flagged for private notes layer'
+      case 'propose_context_note': {
+        // Only error payloads land here (well-formed ones become cards).
+        const d = p.data as { suggested_entity_name?: string; error?: string }
+        return `Context note proposal${d.suggested_entity_name ? ` for ${d.suggested_entity_name}` : ''}${d.error ? ` — ${d.error}` : ''}`
+      }
       case 'add_to_backlog':
         return `Queued for later: "${String((p.data as { text?: string }).text ?? '').slice(0, 60)}"`
       case 'search_chronicle':
