@@ -170,9 +170,49 @@ export const ORCHESTRATOR_TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: 'propose_context_note',
+    description:
+      "Propose attaching third-person background material — research, historical notes, an article, an obituary — as a context note on the entity it is ABOUT. Context is not a recollection: it never enters the Raw Vault and must not be captured via create_memory or parked via add_to_backlog. This tool persists NOTHING; it returns a proposal card the user accepts, adjusts, or declines. The system resolves entity_name against the user's existing entities server-side and auto-detects a source URL in the text.",
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        entity_name: {
+          type: 'string',
+          description:
+            "The person, place, or organization the material is about — use the exact name from Layer B when it's an existing entity.",
+        },
+        body: {
+          type: 'string',
+          description:
+            'The context text, verbatim (keep formatting, citations, markdown). Omit when use_full_submission=true.',
+        },
+        use_full_submission: {
+          type: 'boolean',
+          description:
+            "Pass true when the ENTIRE submission is the context material — the system then attaches the user's submission text verbatim, which is safer than echoing it.",
+        },
+        visibility: {
+          type: 'string',
+          enum: ['shareable', 'private'],
+          description:
+            "Default 'shareable' for background research; use 'private' for sensitive personal commentary about a person.",
+        },
+        source_label: {
+          type: 'string',
+          description: 'Short label for the source when one is evident (e.g. "Wikipedia", "unit history").',
+        },
+        rationale: {
+          type: 'string',
+          description: 'One sentence on why this is context rather than a recollection.',
+        },
+      },
+      required: ['entity_name', 'rationale'],
+    },
+  },
+  {
     name: 'add_to_backlog',
     description:
-      "Queue a Things-to-come-back-to item — a thought the user wants to develop later. Use when the submission is intentionally incomplete (a stub) or when an interesting tangent comes up that the user hasn't asked you to develop now. Persists as a review_queue row with item_type='memory_elaboration_needed' linked to the current capture_submissions row.",
+      "Queue a Things-to-come-back-to item — a thought the user wants to develop later. Use when the submission is intentionally incomplete (a stub) or when an interesting tangent comes up that the user hasn't asked you to develop now. NOT for research or background material about an entity — that goes through propose_context_note. Persists as a review_queue row with item_type='memory_elaboration_needed' linked to the current capture_submissions row.",
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -211,6 +251,8 @@ export async function executeTool(
         return handleProposeInterview(input)
       case 'flag_for_private_notes':
         return await handleFlagPrivateNotes(input, context)
+      case 'propose_context_note':
+        return await handleProposeContextNote(input, context)
       case 'add_to_backlog':
         return await handleAddBacklog(input, context)
       default:
@@ -506,6 +548,101 @@ async function handleFlagPrivateNotes(
       appended_length: passage.length,
       total_length: updated.length,
     },
+  }
+}
+
+async function handleProposeContextNote(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResultPayload> {
+  const entity_name = String(input.entity_name ?? '').trim()
+  const rationale = String(input.rationale ?? '')
+  const visibility = input.visibility === 'private' ? 'private' : 'shareable'
+  const source_label = input.source_label ? String(input.source_label).trim() : null
+
+  // Verbatim-fidelity guard: when the whole submission is the context
+  // material, read it back from capture_submissions rather than trusting
+  // the model to echo thousands of characters unchanged (the Zaragoza
+  // backlog card once carried a 753-char summary of a 6,911-char paste).
+  let body = String(input.body ?? '').trim()
+  let used_full_submission = false
+  if (input.use_full_submission === true && ctx.source_submission_id) {
+    const { data: sub, error: subErr } = await ctx.supabase
+      .from('capture_submissions')
+      .select('input_text')
+      .eq('id', ctx.source_submission_id)
+      .single()
+    if (!subErr && sub?.input_text) {
+      body = String(sub.input_text)
+      used_full_submission = true
+    }
+  }
+
+  if (!entity_name) {
+    return {
+      tool: 'propose_context_note',
+      persisted: false,
+      rationale,
+      data: { error: 'entity_name is empty' },
+    }
+  }
+  if (!body) {
+    return {
+      tool: 'propose_context_note',
+      persisted: false,
+      rationale,
+      data: { error: 'no context text (body empty and full submission unavailable)' },
+    }
+  }
+
+  // Resolve the named entity against the user's graph. Layer B lists
+  // names, not ids, so resolution happens here: an exact case-insensitive
+  // canonical/alias match wins; a single substring candidate is proposed;
+  // anything else ships the candidates for the card's picker.
+  const { data: rows } = await ctx.supabase
+    .from('entities')
+    .select('id, type, canonical_name, aliases')
+    .eq('user_id', ctx.user_id)
+    .or(`canonical_name.ilike.%${entity_name}%,aliases.cs.{${entity_name}}`)
+    .limit(6)
+
+  const lower = entity_name.toLowerCase()
+  const candidates = (rows ?? []) as Array<{
+    id: string
+    type: string
+    canonical_name: string
+    aliases: string[] | null
+  }>
+  const exact = candidates.find(
+    (e) =>
+      e.canonical_name.toLowerCase() === lower ||
+      (e.aliases ?? []).some((a) => a.toLowerCase() === lower),
+  )
+  const resolved = exact ?? (candidates.length === 1 ? candidates[0] : null)
+
+  const source_url = (body.match(/https?:\/\/[^\s)]+/) ?? [null])[0]
+
+  return {
+    tool: 'propose_context_note',
+    persisted: false,
+    rationale,
+    data: {
+      body,
+      entity: resolved
+        ? { id: resolved.id, type: resolved.type, canonical_name: resolved.canonical_name }
+        : null,
+      suggested_entity_name: entity_name,
+      candidates: candidates.map((e) => ({
+        id: e.id,
+        type: e.type,
+        canonical_name: e.canonical_name,
+      })),
+      visibility,
+      source_label,
+      source_url,
+      used_full_submission,
+    },
+    confidence: resolved ? (exact ? 0.95 : 0.7) : 0.4,
   }
 }
 

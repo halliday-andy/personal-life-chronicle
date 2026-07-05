@@ -261,7 +261,8 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Orchest
       p.tool === 'create_memory' ||
       p.tool === 'add_to_backlog' ||
       p.tool === 'flag_for_private_notes' ||
-      p.tool === 'propose_interview',
+      p.tool === 'propose_interview' ||
+      p.tool === 'propose_context_note',
   )
   await supabase
     .from('capture_submissions')
