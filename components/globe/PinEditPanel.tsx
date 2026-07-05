@@ -15,6 +15,7 @@ import { preprocessPinImage } from '@/lib/globe/image-preprocess'
 import { PIN_TYPES, pinTypeMeta, SPINE_CODE } from '@/lib/globe/pin-types'
 import { spineSlotOptions } from '@/lib/globe/reorder'
 import PhotoLightbox from './PhotoLightbox'
+import PinHopper from './PinHopper'
 import Markdown from '../Markdown'
 
 export interface EditablePin {
@@ -455,6 +456,10 @@ export default function PinEditPanel({
           {galleryNotice && <p className="mt-1 text-xs text-amber-300/90">{galleryNotice}</p>}
         </div>
       )}
+
+      {/* The hopper (Hopper 5a) — jotted memories still to be written up as
+          recollections. Full variant: add, check off, reopen, delete. */}
+      <PinHopper entityId={pin.place_entity_id} variant="panel" />
 
       {/* Other memories that mention this place — edited in the
           Recollections surface, not here (this panel owns only the

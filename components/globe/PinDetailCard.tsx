@@ -13,6 +13,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { preprocessPinImage } from '@/lib/globe/image-preprocess'
 import { pinTypeMeta } from '@/lib/globe/pin-types'
 import PhotoLightbox from './PhotoLightbox'
+import PinHopper from './PinHopper'
 import Markdown from '../Markdown'
 
 export interface PinFacts {
@@ -52,7 +53,7 @@ export interface ContextEntry {
 // Which secondary collection is expanded under the body. Only one opens at a
 // time so the card never grows tall enough to occlude its own pin — presence
 // stays visible as counts, content is opt-in (2026-06-26 reframe).
-type OpenChip = 'recollections' | 'context' | 'anchored' | null
+type OpenChip = 'recollections' | 'context' | 'anchored' | 'hopper' | null
 
 const label = (s: string) => s.replace(/_/g, ' ')
 
@@ -87,6 +88,7 @@ export default function PinDetailCard({
   const [linked, setLinked] = useState<LinkedRecollection[]>([])
   const [anchored, setAnchored] = useState<AnchoredPin[]>([])
   const [context, setContext] = useState<ContextEntry[]>([])
+  const [stubCount, setStubCount] = useState(0)
   const [openChip, setOpenChip] = useState<OpenChip>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -344,13 +346,16 @@ export default function PinDetailCard({
           )}
           {/* Secondary collections collapse to a single count-chip row so the
               card stays short over its own pin; tapping a chip discloses just
-              that list (single-open), tapping again collapses (2026-06-26). */}
-          {(linked.length > 0 || context.length > 0 || anchored.length > 0) && (
+              that list (single-open), tapping again collapses (2026-06-26).
+              The hopper chip is ALWAYS present (Hopper 5a) — jotting a memory
+              at the moment a pin surfaces it is the point of the feature. */}
+          {(
             <div className="mt-3 flex flex-wrap gap-1.5 border-t border-[var(--glass-border)] pt-3">
               {([
                 linked.length > 0 && { key: 'recollections' as const, label: `${linked.length} recollection${linked.length === 1 ? '' : 's'}` },
                 context.length > 0 && { key: 'context' as const, label: `${context.length} context` },
                 anchored.length > 0 && { key: 'anchored' as const, label: `${anchored.length} anchored` },
+                { key: 'hopper' as const, label: stubCount > 0 ? `✎ ${stubCount} to write` : '✎ jot' },
               ].filter(Boolean) as { key: Exclude<OpenChip, null>; label: string }[]).map((c) => {
                 const open = openChip === c.key
                 return (
@@ -432,6 +437,15 @@ export default function PinDetailCard({
               </ul>
             </div>
           )}
+
+          {/* Mounted regardless of which chip is open so the stub count stays
+              live on the chip; it renders its UI only while its chip is open. */}
+          <PinHopper
+            entityId={pin.place_entity_id}
+            variant="card"
+            open={openChip === 'hopper'}
+            onCountChange={setStubCount}
+          />
 
           {openChip === 'anchored' && anchored.length > 0 && (
             <div className="mt-2">
