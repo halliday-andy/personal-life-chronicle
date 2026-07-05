@@ -41,15 +41,22 @@
 - [ ] "Add context" never appears on the recollection editing form (context is entity-scoped — it lives only on the Entity View).
 - [ ] *(Deferred)* full-text **search** on /memories — not built yet.
 
-## Phase 6.5 — context capture  ·  ◑ 6.5a built (`9e56a58`); 6.5b (orchestrator auto-proposal) pending
+## Phase 6.5 — context capture  ·  ✅ 6.5a built (`9e56a58`); 6.5b built 2026-07-05
 **6.5a — attach research from the backlog (the dead-end fix):**
 - [ ] On **/review**, a research card (`memory_elaboration_needed`, e.g. the Zaragoza write-up) now shows **"Attach as context…"** (not just Dismiss).
 - [ ] Click it → search an entity (people / places / organizations) → pick one → the **full research attaches as a context note** on that entity (visible on its Entity View); a **source URL** in the text is auto-detected.
 - [ ] Choose **Shareable** or **Private** before attaching (defaults shareable for background research).
 - [ ] After attaching, the review item **resolves** (leaves the queue).
 
-**6.5b — orchestrator auto-proposal (pending):**
-- [ ] *(not built)* Pasting research into the capture assistant is **proposed** as context on an identified entity, with **Accept / Adjust / Decline** + source pre-fill — so it never reaches the backlog in the first place.
+**6.5b — orchestrator auto-proposal  ·  ✅ built (2026-07-05)**
+*(Backend `09cf680`, card UI `8f8d8c6`. Proofs: `verify-context-proposal-tool.mjs` — direct dispatch, 9/9 — and `verify-orchestrator-context-proposal.mjs` — a REAL orchestrator run that routed a research paste to propose_context_note only: no Raw Vault memory, no backlog row, nothing persisted before Accept.)*
+- [ ] Paste a **research blob** (third-person background about a place/person you have) into the **capture assistant** (⌘K) → the reply proposes it as **context**, and a teal **"Context note"** card appears naming the entity — **no** draft-memory card, and nothing lands on /review.
+- [ ] The card shows the note **rendered as markdown**, the **auto-detected source URL**, the visibility (defaults **shareable** for research), and the assistant's rationale. `[taste]` the card density.
+- [ ] **Accept** → the note saves to that entity; "Open its page ↗" shows it on the Entity View.
+- [ ] **Adjust** → re-pick the entity (typeahead), switch Private/Shareable, edit body/source; Accept then saves the adjusted version.
+- [ ] **Decline** → the card dismisses and **nothing** was saved anywhere (Entity View unchanged).
+- [ ] Name the entity vaguely (or one you don't have) → the card opens in **picker mode** ("about X — pick the entity below"); Accept is disabled until you choose.
+- [ ] A **mixed** submission (a first-person recollection *plus* pasted background) yields BOTH a draft-memory card and a context card, each part routed to the right place.
 
 ## Phase 6.6 — context legibility, titles, in-place edit + globe surfacing  ·  ✅ built (2026-06-26)
 *(Continued the 6.5b thread. Verified tsc + eslint; `deriveContextTitle` exercised against 11 cases. No component test harness in this project yet, so the UI items below are walk-through proofs.)*

@@ -45,11 +45,23 @@ Supersedes the 2026-06-17 block below, which had gone nine days stale. The
   §14 naming/markdown). **Slice 6 walkthrough deliberately deferred by Andy
   until Slice 6 completes.** The 06-15 UI checklist pass is committed
   (`b2cd6fb`).
-- **NOW BUILDING: Slice 6.5b** — orchestrator auto-proposal of context
-  (classify a pasted research blob as context, propose the entity with
-  Accept/Adjust/Decline + source pre-fill, so it never reaches the backlog).
-  Completes Slice 6; Slice 7 (Person page + Life's Cast + Hopper) rides on
-  it; Resume View next per the roadmap order.
+- **Slice 6.5b BUILT 2026-07-05** (`09cf680` backend, `8f8d8c6` card UI,
+  `4ffbf86` behavioral proof): proposal-only `propose_context_note` tool
+  (entity resolution by name, source-URL auto-detect,
+  `use_full_submission` reads the verbatim paste from
+  capture_submissions), "Context vs recollection" prompt section
+  (SYSTEM_PROMPT_VERSION 2026-07-05.0), `ContextProposalCard`
+  (Accept→6.5a context POST / Adjust→typeahead+visibility / Decline).
+  Proofs: `verify-context-proposal-tool.mjs` 9/9 +
+  `verify-orchestrator-context-proposal.mjs` (real run — research paste
+  routed to the tool ONLY; Raw Vault + backlog untouched; nothing
+  persisted pre-Accept). **Slice 6 build COMPLETE** (only /memories
+  full-text search deferred). Detail: [[project_lc_globe_entity_ux_brief]].
+- **NEXT:** Andy's full Slice 6 QA walkthrough
+  (`docs/qa/2026-06-24-slice6-entity-view-context-qa-checklist.md` — he
+  deferred it until 6.5b landed) + the outstanding globe re-tests; then
+  **Resume View** (roadmap order), then Slice 7 (Person page + Life's
+  Cast + Hopper), which rides on Slice 6.
 
 ## Session handoff — 2026-06-17 (QA remediation pass, superseded)
 
