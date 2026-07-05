@@ -160,7 +160,12 @@ The person-specialization of the Entity View, plus the host-agnostic Hopper (the
 - Promotion is a deliberate act; Life's Cast never auto-populates; the content-only filter hides blank pages.
 - Hopper: add/check-off/consume on both a pin and a person; consuming a stub via the assistant produces a real recollection and marks the stub consumed; the assistant offers newly-triggered memories back into the hopper.
 
-### Resume View (item 4)  ·  *near-term, slot after Slice 3.5*
+### Resume View (item 4)  ·  *near-term, slot after Slice 3.5*  ·  ⚠ SUPERSEDED 2026-07-05
+> Renamed **Journey** and redesigned — canonical spec is now
+> [2026-07-05-journey-view-design.md](2026-07-05-journey-view-design.md)
+> (standalone `/journey` route, URL-param handoff instead of live sync,
+> summary-card rows + lazy detail, ember-spine emotional layer, mobile-first).
+> The section below is retained as the original intent record.
 Per Andy: near-term, after globe legibility. Low-risk, reuse-heavy. Independent of Slices 6/7 — can land in parallel or interleave.
 **Includes:** new vertically scrollable, chronological, card-oriented list of residential pins; each row = the pin's detail card drilling to recollections / photo collections / full edit panel; associated recollections + side/related pins nested indented as children; bidirectional globe↔list selection sync (low-criticality — keeps both centered on last-attended stop on surface switch); **Hopper explicitly NOT shown here.**
 **Acceptance:**
