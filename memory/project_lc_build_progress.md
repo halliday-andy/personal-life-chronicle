@@ -4,7 +4,54 @@ description: What's been built so far in the Claude Code implementation of Life 
 type: project
 ---
 
-## Session handoff — 2026-06-17 (QA remediation pass)
+## Session handoff — 2026-07-05 (reconciliation; Slice 6.5b in progress)
+
+Supersedes the 2026-06-17 block below, which had gone nine days stale. The
+06-22→06-26 interval is fully recorded in
+`docs/plans/2026-06-22-globe-and-entity-ux-revised-roadmap.md`,
+`docs/qa/2026-06-24-globe-slice3-closeout-qa-checklist.md`,
+`docs/qa/2026-06-24-slice6-entity-view-context-qa-checklist.md`, and
+[[project_lc_globe_entity_ux_brief]]; this block makes this file current again.
+
+- **Slice 3 close-out BUILT 2026-06-23** (`12a3392`…`a9183ce`, 7 atomic commits):
+  placard (reuses `entities.description`), at-rest when-chips + hover card,
+  origin-pin treatment, "Refine location" detail-card action, re-type
+  anchor stash/restore (`metadata.prior_anchor_residence_id`), chevron/tether
+  contrast. Migrations `20260623120000` + `20260623130000` (additive).
+- **Slice 3.5 BUILT 06-23 (`87ffe44`), REWORKED 06-24 (`cfa7202`)** after Andy's
+  QA: the active-lines tray + per-pin toggle were REMOVED (OR-logic conflict);
+  line visibility is now global-only — class filters + a zoom-gated
+  "Side lines in view" toggle + transient hover preview.
+- **Slice 3.6 "Log" pin BUILT 06-23** (`3219462`/`3650151`/`f19b39d`):
+  `logged_at` type, `validate_pin_anchor` generalizes anchoring to any own
+  globe pin, recollection roll-up ("Anchored here"). Andy proofed it live
+  (globe QA §§9–11 ✓).
+- **QA rounds 1–3 (06-24)** drove fixes: origin star rework (`f91f9b4`),
+  one-chevron-per-leg (`1f4c8e9`), refine-drag guard (`c15b118`), editable
+  pin name (`ac7c72a`), re-type inserts after the anchor home (`89c7266`),
+  edit-panel markdown (`44fa2a9`).
+- **Slice 6 (Entity View + context substrate) BUILT through Phase 6.6**
+  (06-24→06-26): 6.1 `entity_context_notes` + merge repoint (`8dbbcd0`);
+  6.2/6.3 Entity View `/entities/[id]` + add/remove context (`6ab7481`);
+  6.4 entity chips + globe→Entity-View link (`474915e`, `04d8acd`;
+  /memories full-text search deferred); 6.5a attach-research-as-context
+  from /review (`9e56a58`); 6.6 note markdown, derived titles, in-place
+  edit, pin-card count-chips (`90aed81`, `e356815`, `6f27c90`, `b452302`).
+- **2026-07-04 session:** `verify-globe-slice4b.mjs` made live-DB-safe
+  (`9ce8116`) after it had shifted the real spine; origin-backup hook made
+  observable (`ab30e12`). See [[feedback_lc_silent_backup_and_sandbox]].
+- **Andy's QA state:** globe checklist mostly ✓; re-tests outstanding
+  (§4 chevron-on-line, §5 refine, §12 retype round-trip, §13 orphan,
+  §14 naming/markdown). **Slice 6 walkthrough deliberately deferred by Andy
+  until Slice 6 completes.** The 06-15 UI checklist pass is committed
+  (`b2cd6fb`).
+- **NOW BUILDING: Slice 6.5b** — orchestrator auto-proposal of context
+  (classify a pasted research blob as context, propose the entity with
+  Accept/Adjust/Decline + source pre-fill, so it never reaches the backlog).
+  Completes Slice 6; Slice 7 (Person page + Life's Cast + Hopper) rides on
+  it; Resume View next per the roadmap order.
+
+## Session handoff — 2026-06-17 (QA remediation pass, superseded)
 
 Worked from Andy's hands-on QA of the recent UI/features (`docs/qa/2026-06-15-ui-qa-checklist.md`). All shipped to `main`, **not pushed** (11 commits, `0f37c5a`…`7474a99`):
 
