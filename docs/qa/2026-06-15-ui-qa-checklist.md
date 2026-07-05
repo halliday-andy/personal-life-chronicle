@@ -8,36 +8,36 @@ App: **http://localhost:3001** (sign in first). Suggested order top-to-bottom.
 ---
 
 ## 1. Global navigation (new shared AppNav)
-- [ ] On any admin page (Dashboard/Memories/Entities/Review/Interview) a single top bar shows **Life Chronicle** + links: Dashboard · Globe · Memories · Entities · Review · Interview, with your email + **Sign out** on the right.
-- [ ] The **current page is highlighted** (darker/bolder) in the bar.
-- [ ] Click through every link — each page loads, no dead ends, no doubled-up headers.
-- [ ] Open **/globe** — the top bar is **absent** (globe is full-screen) and instead a glass **← Dashboard** link sits top-right. Click it → back to Dashboard.
-- [ ] Dashboard shows a dark **Life Globe** card with your residence count; click it → globe.
+- [x] On any admin page (Dashboard/Memories/Entities/Review/Interview) a single top bar shows **Life Chronicle** + links: Dashboard · Globe · Memories · Entities · Review · Interview, with your email + **Sign out** on the right.
+- [x] The **current page is highlighted** (darker/bolder) in the bar.
+- [x] Click through every link — each page loads, no dead ends, no doubled-up headers.
+- [x] Open **/globe** — the top bar is **absent** (globe is full-screen) and instead a glass **← Dashboard** link sits top-right. Click it → back to Dashboard.
+- [x] Dashboard shows a dark **Life Globe** card with your residence count; click it → globe.
 
 ## 2. Globe — the visual language (place types, tethers, legend)
-- [ ] Bottom-left **Legend** (collapsible) keys 6 pin types + 3 line tiers. Expand it.
-- [ ] The **primary-residence spine** is a solid glowing **chevron** arc connecting your homes in order; chevrons point earliest → latest.
-- [ ] Select a spine pin → its **inbound leg brightens** more than its outbound leg (approached-from vs. egressed-to).
-- [ ] Confirm pin colors differ by type per the legend (primary = bright ember; workplace = cyan; second residence = double-ring ember; short-term = dim dot; vacation = rose; professional travel = slate).
+- [x] Bottom-left **Legend** (collapsible) keys 6 pin types + 3 line tiers. Expand it.
+- [x] The **primary-residence spine** is a solid glowing **chevron** arc connecting your homes in order; chevrons point earliest → latest.
+- [x] Select a spine pin → its **inbound leg brightens** more than its outbound leg (approached-from vs. egressed-to).
+- [x] Confirm pin colors differ by type per the legend (primary = bright ember; workplace = cyan; second residence = double-ring ember; short-term = dim dot; vacation = rose; professional travel = slate).
 
 ## 3. Globe — place a pin of each type
 For each, use search box → drag the pin → **Add this place** → pick the **type** (read the one-line description under the selector) → pick the **anchor** ("which home were you living in then?" / Workplace: "which home did you commute from?").
-- [ ] **Primary residence** — appears on the spine; asks "where does this fall in your life?" (sequence), not an anchor.
-- [ ] **Workplace** — anchored to a home → draws a **solid cyan commute line** to that home.
-- [ ] **Vacation** — anchored → **dashed** tether to its home. (Playa Comaruga already exists as a Short-term stay → Zaragoza.)
-- [ ] **Second residence / Short-term stay / Professional travel** — each draws a dashed tether to its chosen home.
+- [x] **Primary residence** — appears on the spine; asks "where does this fall in your life?" (sequence), not an anchor.
+- [x] **Workplace** — anchored to a home → draws a **solid cyan commute line** to that home.
+- [x] **Vacation** — anchored → **dashed** tether to its home. (Playa Comaruga already exists as a Short-term stay → Zaragoza.)
+- [x] **Second residence / Short-term stay / Professional travel** — each draws a dashed tether to its chosen home.
 - [ ] Choose **"Not sure / standalone"** for a marker → it places with **no tether**.
 
 ## 4. Globe — edit, re-type, reorder
-- [ ] Click a pin → **detail card** shows a **colored type chip + label**, the *when* phrase, the recollection (scrollable), any **fact chips**, and a photo area.
-- [ ] Click **Edit** → the right panel has a **Type** dropdown (with description) and, for markers, an **anchor** selector.
-- [ ] **Re-type a vacation → Primary residence** → it joins the spine (gets sequence position, gains the glow). Re-type it **back** → returns to a dashed marker.
+- [x] Click a pin → **detail card** shows a **colored type chip + label**, the *when* phrase, the recollection (scrollable), any **fact chips**, and a photo area.
+- [x] Click **Edit** → the right panel has a **Type** dropdown (with description) and, for markers, an **anchor** selector.
+- [x] **Re-type a vacation → Primary residence** → it joins the spine (gets sequence position, gains the glow). Re-type it **back** → returns to a dashed marker.
 - [ ] **Re-type a Primary that has markers anchored to it → Second residence** → those markers' **tethers disappear** (they orphan to standalone). *(This is the anchor-safety fix.)*
-- [ ] On a **primary** pin only, the panel shows **↑ Earlier / ↓ Later** reorder; markers don't.
+- [x] On a **primary** pin only, the panel shows **↑ Earlier / ↓ Later** reorder; markers don't.
 - [ ] Drag a selected pin to relocate; **Save** → it stays; you land back on the refreshed detail card with a "Saved" toast.
 
 ## 5. Photos (HEIC + multi-photo gallery) — do this in Chrome
-- [ ] On a pin detail card, **Add a photo** using a **.HEIC** file from your iPhone → it uploads **and displays** (no broken image, no "Photo action failed"). *(Server now converts HEIC→JPEG.)*
+- [x] On a pin detail card, **Add a photo** using a **.HEIC** file from your iPhone → it uploads **and displays** (no broken image, no "Photo action failed"). *(Server now converts HEIC→JPEG.)*
 - [ ] Open **Edit** → the gallery: **+ Add photo** several times; each appears.
 - [ ] Hover a non-primary thumbnail → **★ primary** to promote it; the card's main photo updates.
 - [ ] Hover → **✕ remove** one; it disappears, and if you removed the primary another is promoted.
@@ -45,13 +45,13 @@ For each, use search box → drag the pin → **Add this place** → pick the **
 - [ ] **Double-click** any photo (detail-card image or a gallery thumbnail) → it opens **full-size**; close with the **✕**, a backdrop click, or **Escape**.
 
 ## 6. Recollections & Review
-- [ ] **/memories** lists your recollections in full text (Lockbourne shows the long aviation-story memory).
-- [ ] On a **finalized** memory, a subtle **Delete** (top-right) needs **two clicks** ("click again — permanent") before it removes. *(Don't delete anything you want to keep.)*
-- [ ] Back on the globe, open the **Lockbourne** detail card → **"More recollections here"** lists the aviation story; click it to **expand the full text**; **"View all in Recollections →"** opens /memories filtered to that place.
-- [ ] **/review** — the backlog card for your **Zaragoza / Operation Reflex** research now shows the **full research text** (scrollable) + "Queued because…", with a **Dismiss** action.
+- [x] **/memories** lists your recollections in full text (Lockbourne shows the long aviation-story memory).
+- [x] On a **finalized** memory, a subtle **Delete** (top-right) needs **two clicks** ("click again — permanent") before it removes. *(Don't delete anything you want to keep.)*
+- [x] Back on the globe, open the **Lockbourne** detail card → **"More recollections here"** lists the aviation story; click it to **expand the full text**; **"View all in Recollections →"** opens /memories filtered to that place.
+- [x] **/review** — the backlog card for your **Zaragoza / Operation Reflex** research now shows the **full research text** (scrollable) + "Queued because…", with a **Dismiss** action.
 
 ## 7. Round-trip navigation
-- [ ] Globe pin → (Recollections link) → /memories → AppNav → Entities → Review → Dashboard → Globe. Confirm you can always get everywhere.
+- [x] Globe pin → (Recollections link) → /memories → AppNav → Entities → Review → Dashboard → Globe. Confirm you can always get everywhere.
 
 ---
 
