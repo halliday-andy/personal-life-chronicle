@@ -49,7 +49,10 @@ const TYPE_LABELS: Record<string, string> = {
   concept: 'Concepts',
   artifact: 'Artifacts',
   vehicle: 'Vehicles',
-  event_series: 'Event series',
+  // "Events", not "Event series" — a single historical event (the
+  // Challenger disaster) is a valid entity; curated series/timelines are
+  // a different, future UI. Enum code stays event_series (Andy 2026-07-06).
+  event_series: 'Events',
 }
 const TYPE_BADGE_CLASSES: Record<string, string> = {
   person: 'bg-sky-50 text-sky-700 border-sky-200',

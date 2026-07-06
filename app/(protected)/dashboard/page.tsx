@@ -11,7 +11,9 @@ function labelForEntityType(t: string): string {
     case 'place': return 'places'
     case 'organization': return 'orgs'
     case 'artifact': return 'artifacts'
-    case 'event_series': return 'event series'
+    // Displayed as "events" — an entity here can be a single event (the
+    // Challenger disaster); the enum code stays event_series (Andy 2026-07-06).
+    case 'event_series': return 'events'
     default: return t
   }
 }

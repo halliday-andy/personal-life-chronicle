@@ -48,7 +48,7 @@ interface Entity {
 const TYPE_LABEL: Record<string, string> = {
   person: 'Person', place: 'Place', organization: 'Organization',
   concept: 'Concept', artifact: 'Artifact', vehicle: 'Vehicle',
-  event_series: 'Event series',
+  event_series: 'Event', // singular badge; "Events" tab label in EntitiesList
 }
 
 export default function EntityView({ entity, notes: initialNotes, recollections }: {
