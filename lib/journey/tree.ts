@@ -26,7 +26,33 @@ export interface JourneyPin {
   type_code: string | null
   anchor_residence_id: string | null
   description: string | null
+  /** Extraction's why-they-moved-here (J2 transition narration); null = render nothing. */
+  move_reason: string | null
   created_at: string
+}
+
+/**
+ * Quiet, human phrasing for the extraction's move_reason vocabulary —
+ * rendered on the thread between stops. Unknown/unmapped values fall
+ * back to the raw label with underscores spaced; null renders nothing
+ * (never fabricate connective tissue — design §4).
+ */
+export function transitionPhrase(moveReason: string | null): string | null {
+  if (!moveReason || moveReason === 'unknown') return null
+  const phrases: Record<string, string> = {
+    career_relocation: 'moved for work',
+    military_posting: 'a new posting',
+    marriage: 'marriage',
+    divorce_separation: 'a parting of ways',
+    education: 'off to study',
+    family_care: 'to care for family',
+    financial: 'for financial reasons',
+    retirement: 'into retirement',
+    health: 'for health',
+    displacement: 'displaced',
+    adventure: 'chasing adventure',
+  }
+  return phrases[moveReason] ?? moveReason.replace(/_/g, ' ')
 }
 
 export interface JourneyNode extends JourneyPin {

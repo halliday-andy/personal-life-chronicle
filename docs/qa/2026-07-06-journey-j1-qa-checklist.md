@@ -1,4 +1,4 @@
-# QA Walkthrough — Journey J1 (walking skeleton)
+# QA Walkthrough — Journey J1 + J2
 
 App: **http://localhost:3001/journey** (sign in first).
 
@@ -34,9 +34,28 @@ App: **http://localhost:3001/journey** (sign in first).
 - [ ] Desktop → the column stays a comfortable reading measure (max-w-2xl),
       not full-bleed.
 
-## Known scope (J2–J4, not bugs)
-- No vertical ember thread / origin star artwork / move-reason transitions
-  yet (**J2**).
+## 4. J2 — the ember thread (built same session)
+- [ ] A **continuous warm thread** runs down the left of the column,
+      connecting every stop — segments meet cleanly whatever the card
+      heights; it **ends at "now"** (nothing dangles past the last stop).
+      **[taste]** thread weight/colour.
+- [ ] The thread is **topped by a glowing ★** at Lockbourne (the globe's
+      origin star, rotated into the column). **[taste]** star size/glow.
+- [ ] The "now" stop's marker is slightly larger with a pale ring.
+- [ ] **Transition phrases** appear on the thread between stops — quiet
+      italic amber: five "↓ a new posting" through the childhood bases,
+      "↓ moved for work" into Tokyo and the ski years. **[taste]** the
+      phrase vocabulary (career_relocation → "moved for work",
+      military_posting → "a new posting", education → "off to study" …).
+- [ ] Where extraction found no reason (into Dartmouth, into NZ year 2),
+      **nothing** is written — no fabricated connective tissue. (Dartmouth's
+      pin has no recollection yet; write one and the extraction + phrase
+      will appear after the next save.)
+- [ ] Nothing on the page animates (reduced-motion safe by construction).
+
+## Known scope (J3–J4, not bugs)
 - Cards don't expand to recollections/photos yet (**J3**) and don't link to
   the globe yet (**J4**).
 - The Hopper deliberately does not appear here (design decision 9).
+- Origin stop's own move_reason never renders — there is no transition INTO
+  the beginning.

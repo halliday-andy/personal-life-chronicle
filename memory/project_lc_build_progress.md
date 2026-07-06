@@ -149,10 +149,15 @@ Supersedes the 2026-06-17 block below, which had gone nine days stale. The
   disappears — dead-anchor + cycle guards), mobile-first max-w-2xl.
   AppNav gains Journey. Tree core `lib/journey/tree.ts`, pure-function
   proof `verify-journey-tree.mjs` 6/6. QA:
-  `docs/qa/2026-07-06-journey-j1-qa-checklist.md`. **Next build: J2**
-  (ember spine + move_reason transitions — needs the additive
-  get_residence_pins widening), then J3 lazy expand, J4 `?pin=` handoff,
-  J5 a11y proof.
+  `docs/qa/2026-07-06-journey-j1-qa-checklist.md`. **J2 BUILT same
+  session:** per-stop rail segments = continuous ember thread (clean at
+  any card height, ends at "now"), glowing origin ★, ringed "now"
+  marker, `transitionPhrase()` vocabulary over the extraction's
+  move_reason (9/11 live stops carry one; absent → nothing rendered);
+  migration `20260706140000` widens get_residence_pins with move_reason
+  (proof `verify-journey-move-reason.mjs` 3/3). Static by design —
+  reduced-motion safe. **Next build: J3** lazy expand, J4 `?pin=`
+  handoff, J5 a11y proof.
 - **NEXT:** Andy's QA (Journey J1 + 57 stub proposals on /review +
   Exeter merge + Slice 6 walkthrough + Hopper 5a + outstanding globe
   re-tests); build continues J2–J5; then Slice 7 (Person page + Life's

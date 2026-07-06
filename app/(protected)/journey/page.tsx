@@ -13,7 +13,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { buildJourneyTree, type JourneyNode, type JourneyPin } from '@/lib/journey/tree'
+import { buildJourneyTree, transitionPhrase, type JourneyNode, type JourneyPin } from '@/lib/journey/tree'
 import { pinTypeMeta } from '@/lib/globe/pin-types'
 
 export const dynamic = 'force-dynamic'
@@ -65,7 +65,11 @@ export default async function JourneyPage() {
         </div>
       ) : (
         <>
-          <ol className="mt-6 space-y-4">
+          {/* The ember thread (J2): each stop draws its own rail segment —
+              marker + a line running to the next stop — so the thread stays
+              continuous at any card height and ends cleanly at "now".
+              Static by design; nothing here animates (reduced-motion safe). */}
+          <ol className="mt-6">
             {tree.stops.map((stop, i) => (
               <StopCard
                 key={stop.relationship_id}
@@ -73,6 +77,9 @@ export default async function JourneyPage() {
                 index={i}
                 isOrigin={i === 0}
                 isCurrent={i === tree.stops.length - 1}
+                nextMoveReason={
+                  i < tree.stops.length - 1 ? tree.stops[i + 1].move_reason : null
+                }
               />
             ))}
           </ol>
@@ -99,56 +106,89 @@ export default async function JourneyPage() {
   )
 }
 
-// ── Stop card — one primary residence ─────────────────────────────
+// ── Stop card — one primary residence on the ember thread ─────────
 
 function StopCard({
   node,
   index,
   isOrigin,
   isCurrent,
+  nextMoveReason,
 }: {
   node: JourneyNode
   index: number
   isOrigin: boolean
   isCurrent: boolean
+  nextMoveReason: string | null
 }) {
+  const phrase = transitionPhrase(nextMoveReason)
   return (
-    <li className="rounded-xl border border-stone-200 bg-white p-4">
-      <div className="flex items-baseline gap-2">
-        <span
-          aria-hidden
-          className={isOrigin ? 'text-amber-500' : 'text-amber-600/70'}
-          title={isOrigin ? 'The beginning' : `Stop ${index + 1}`}
-        >
-          {isOrigin ? '★' : '●'}
-        </span>
-        <h2 className="min-w-0 flex-1 truncate text-lg font-semibold text-stone-900">
-          {node.name}
-        </h2>
-        {isCurrent && (
-          <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-700">
-            now
+    <li className="flex gap-3 sm:gap-4">
+      {/* Rail: the marker + this stop's segment of the thread. */}
+      <div className="flex w-5 shrink-0 flex-col items-center" aria-hidden>
+        {isOrigin ? (
+          <span
+            className="text-xl leading-none text-amber-500 drop-shadow-[0_0_5px_rgba(245,158,11,0.55)]"
+            title="The beginning"
+          >
+            ★
           </span>
+        ) : (
+          <span
+            className={
+              'mt-1.5 block rounded-full ' +
+              (isCurrent
+                ? 'h-3 w-3 bg-amber-400 ring-2 ring-amber-200'
+                : 'h-2.5 w-2.5 bg-amber-500/80')
+            }
+            title={`Stop ${index + 1}`}
+          />
+        )}
+        {!isCurrent && (
+          <span className="mt-1 w-px flex-1 bg-gradient-to-b from-amber-400/70 via-amber-300/50 to-amber-400/70" />
         )}
       </div>
-      <div className="mt-1 flex flex-wrap items-center gap-2 pl-6 text-xs">
-        {isOrigin && <span className="text-amber-600">The beginning</span>}
-        {node.when_text && (
-          <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-amber-800">
-            {node.when_text}
-          </span>
+
+      {/* Card + (below it) the transition toward the next stop. */}
+      <div className={'min-w-0 flex-1 ' + (isCurrent ? '' : 'pb-2')}>
+        <div className="rounded-xl border border-stone-200 bg-white p-4">
+          <div className="flex items-baseline gap-2">
+            <h2 className="min-w-0 flex-1 truncate text-lg font-semibold text-stone-900">
+              {node.name}
+            </h2>
+            {isCurrent && (
+              <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-700">
+                now
+              </span>
+            )}
+          </div>
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+            {isOrigin && <span className="text-amber-600">The beginning</span>}
+            {node.when_text && (
+              <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-amber-800">
+                {node.when_text}
+              </span>
+            )}
+          </div>
+          {node.description && (
+            <p className="mt-1.5 text-sm italic text-stone-500">{node.description}</p>
+          )}
+          {node.children.length > 0 && (
+            <ul className="mt-3 space-y-1.5 border-l border-stone-200 pl-4">
+              {node.children.map((c) => (
+                <ChildRow key={c.relationship_id} node={c} depth={1} />
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Transition narration: the NEXT stop's move_reason, spoken on the
+            thread. Absent data renders nothing (design §4). */}
+        {phrase && (
+          <p className="mb-1 mt-2 text-[11px] italic text-amber-700/70">↓ {phrase}</p>
         )}
+        {!isCurrent && !phrase && <div className="h-4" />}
       </div>
-      {node.description && (
-        <p className="mt-1.5 pl-6 text-sm italic text-stone-500">{node.description}</p>
-      )}
-      {node.children.length > 0 && (
-        <ul className="mt-3 space-y-1.5 border-l border-stone-200 pl-4 sm:ml-6 sm:pl-5">
-          {node.children.map((c) => (
-            <ChildRow key={c.relationship_id} node={c} depth={1} />
-          ))}
-        </ul>
-      )}
     </li>
   )
 }
