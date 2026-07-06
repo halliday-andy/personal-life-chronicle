@@ -108,9 +108,27 @@ Supersedes the 2026-06-17 block below, which had gone nine days stale. The
   substring false-positive) is unremovable in the UI and could
   false-match a real Leo. Fix = alias remove/add on /entities/[id] +
   PATCH aliases support. Spawned as a background task chip 2026-07-06.
-- **NEXT:** Andy's QA (Slice 6 walkthrough + Hopper 5a + owner-edit/Leola
-  repair ✓ §1 done + outstanding globe re-tests); then **Journey J1–J5**;
-  then Slice 7 (Person page + Life's Cast + Hopper 5b), riding on Slice 6.
+- **Globe stub resolution BUILT + SWEPT 2026-07-06** (`102f825` + sweep),
+  from Andy's QA finding: 19 pin recollections had ZERO person links —
+  30+ names stranded in `metadata.globe_extraction` (the Slice-2
+  deferral come due). `lib/globe/stub-resolution.ts`: exact
+  canonical/alias match → direct memory_entities link; else a
+  review_queue `entity_stub_proposal` (new item_type, additive CHECK
+  migration `20260706120000`) with fuzzy suggestion ≥0.8 — never silent
+  entity creation (propose-and-confirm). /review "New mention" card:
+  editable name ("my father" → real name, stub kept as alias) +
+  Add / Link-to-existing / Same-link-them / Dismiss
+  (`resolve-stub` route reuses linkEntityToMemory). Extraction agent
+  chains resolution after every pin save; bookkeeping in
+  `metadata.globe_stub_resolution` keeps re-runs idempotent. **Live
+  sweep result: 17 pins → 11 linked directly, 57 proposals queued.**
+  Proofs: `verify-globe-stub-resolution.mjs` 9/9;
+  `scripts/sweep-globe-stub-resolution.mjs` re-runnable. QA:
+  `docs/qa/2026-07-06-stub-resolution-qa-checklist.md`.
+- **NEXT:** Andy's QA (57 stub proposals on /review + Slice 6 walkthrough
+  + Hopper 5a + owner-edit ✓ §1–2 done + outstanding globe re-tests);
+  then **Journey J1–J5**; then Slice 7 (Person page + Life's Cast +
+  Hopper 5b), riding on Slice 6.
 
 ## Session handoff — 2026-06-17 (QA remediation pass, superseded)
 
