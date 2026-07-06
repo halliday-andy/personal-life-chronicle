@@ -125,10 +125,25 @@ Supersedes the 2026-06-17 block below, which had gone nine days stale. The
   Proofs: `verify-globe-stub-resolution.mjs` 9/9;
   `scripts/sweep-globe-stub-resolution.mjs` re-runnable. QA:
   `docs/qa/2026-07-06-stub-resolution-qa-checklist.md`.
-- **NEXT:** Andy's QA (57 stub proposals on /review + Slice 6 walkthrough
-  + Hopper 5a + owner-edit ✓ §1–2 done + outstanding globe re-tests);
-  then **Journey J1–J5**; then Slice 7 (Person page + Life's Cast +
-  Hopper 5b), riding on Slice 6.
+- **Incident + hardening (2026-07-06 late): reverse-direction merge
+  stripped the Dartmouth pin.** Andy merged the Hanover PIN entity INTO
+  the Dartmouth extraction entity; merge_entities repointed links +
+  folded the alias but entity-level columns died with the source row —
+  geom gone, pin vanished from the globe (relationship survived, sort 6,
+  all 5 memory links intact). **Repaired:** geom restored at the
+  Dartmouth green (43.7044, −72.2887, subtype city; Andy refines).
+  **Hardened:** migration `20260706130000` — merge_entities now COALESCEs
+  geom / place_subtype / description / location_entity_id / born/died/
+  founded from source onto a NULL target before delete, so merge
+  DIRECTION can no longer destroy substance. Proof
+  `verify-merge-preserves-substance.mjs` 6/6 (reproduces the incident
+  shape). **Class-of-bug: any owner-facing merge of twins where one side
+  carries unique columns — the function must union substance, not just
+  links.** Exeter twins still unmerged (safe in either direction now).
+- **NEXT:** Andy's QA (57 stub proposals on /review + Exeter merge +
+  Slice 6 walkthrough + Hopper 5a + owner-edit ✓ §1–2 done + outstanding
+  globe re-tests); then **Journey J1–J5**; then Slice 7 (Person page +
+  Life's Cast + Hopper 5b), riding on Slice 6.
 
 ## Session handoff — 2026-06-17 (QA remediation pass, superseded)
 
