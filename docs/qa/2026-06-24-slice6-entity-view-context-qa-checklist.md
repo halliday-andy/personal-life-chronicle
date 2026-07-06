@@ -35,7 +35,7 @@
 - [ ] A note can be **removed** by the owner (hover a note → Remove). *(In-place **edit** now built — see Phase 6.6.)*
 
 ## Phase 6.4 — /memories entity chips + globe link  ·  ◑ mostly built (`474915e`, `04d8acd`)
-- [x] A recollection has an **editable detail** — `/memories` cards already have inline Edit (no longer only via globe → pin → Edit).
+- [x] A recollection has an **editable detail** — `/memories` cards already have inline Edit (no longer only via globe → pin → Edit). *(Correction 2026-07-06: that Edit was drafts-only. FINAL memories gained revision-preserving Edit + entity-link editing in the owner-edit micro-slice — see `2026-07-06-memories-owner-edit-qa-checklist.md`.)*
 - [ ] Each memory card shows **entity chips** below its text; clicking a chip opens that **Entity View** (the path to add context).
 - [ ] A **globe pin's** detail card has an **"Open place page ↗"** link to its place's **Entity View**.
 - [ ] "Add context" never appears on the recollection editing form (context is entity-scoped — it lives only on the Entity View).

@@ -85,9 +85,26 @@ Supersedes the 2026-06-17 block below, which had gone nine days stale. The
   linking is by name/alias identity, never by date-range overlap
   (invariant #5; temporal overlap ≠ identity — at most a future
   Temporal-Agent *suggestion*).
-- **NEXT:** Andy's QA (Slice 6 walkthrough + Hopper 5a + outstanding globe
-  re-tests); then **Journey J1–J5**; then Slice 7 (Person page + Life's
-  Cast + Hopper 5b), riding on Slice 6.
+- **Owner-edit micro-slice BUILT 2026-07-06** (`e4c9cb5`), from Andy's
+  Leola finding (a recollection ABOUT Leola Lapides carried no link to
+  her — pronoun-only references are invisible to per-memory extraction;
+  the conversational context that resolved "she" was discarded).
+  /memories cards now have: (1) **Edit on FINAL memories** —
+  revision-preserving (prior content_raw → memory_revisions, then
+  overwrite; the globe's Slice-4a owner-edit pattern; temporal metadata
+  edits freely); (2) **entity-link editing** — × unlink + "+ link"
+  typeahead (person→participant, place→location, idempotent): graph
+  repair without prose rewrite. Logic in `lib/memory/owner-edit.ts`,
+  proof `verify-memory-owner-edit.mjs` 9/9. QA:
+  `docs/qa/2026-07-06-memories-owner-edit-qa-checklist.md` (§1 = the
+  Leola repair walkthrough). **Queued enhancements from the same
+  discussion:** offer re-extraction after a finalized text edit;
+  capture-time prevention = orchestrator passes pronoun referents
+  ("she" = Leola) to extract_entities (bundle with the orchestrator/5b
+  work).
+- **NEXT:** Andy's QA (Slice 6 walkthrough + Hopper 5a + owner-edit/Leola
+  repair + outstanding globe re-tests); then **Journey J1–J5**; then
+  Slice 7 (Person page + Life's Cast + Hopper 5b), riding on Slice 6.
 
 ## Session handoff — 2026-06-17 (QA remediation pass, superseded)
 
