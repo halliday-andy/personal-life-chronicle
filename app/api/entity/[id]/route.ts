@@ -27,11 +27,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createUserClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+// All seven entity_type enum values (schema_v1). concept + vehicle were
+// missing here too when the /entities UI gained them (2026-07-06) — keep
+// this list in sync with the DB enum AND components/EntitiesList.tsx.
 const ALLOWED_TYPES = [
   'person',
   'place',
   'organization',
+  'concept',
   'artifact',
+  'vehicle',
   'event_series',
 ] as const
 
