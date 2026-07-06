@@ -1,4 +1,4 @@
-# QA Walkthrough — Journey J1 + J2
+# QA Walkthrough — Journey J1 + J2 + J3
 
 App: **http://localhost:3001/journey** (sign in first).
 
@@ -53,9 +53,29 @@ App: **http://localhost:3001/journey** (sign in first).
       will appear after the next save.)
 - [ ] Nothing on the page animates (reduced-motion safe by construction).
 
-## Known scope (J3–J4, not bugs)
-- Cards don't expand to recollections/photos yet (**J3**) and don't link to
-  the globe yet (**J4**).
+## 5. J3 — tap a stop to open it (built after Andy's "flat listing" QA note)
+- [ ] Stop headers are now buttons (hover tint, ▸/▾). **Tap Mount Snow** →
+      the card expands in place with its **recollection rendered as
+      markdown**, the **photo** (when one exists), and **fact chips**
+      (residence type, move reason, household).
+- [ ] While it loads (~instant) a skeleton shimmer shows, never a blank.
+- [ ] **Recollections from this time** lists linked recollection excerpts →
+      clicking goes to /memories filtered to the place. **Context** lists
+      note titles (🔒 on private) → the place's Entity View. Footer links:
+      **Open place page ↗** and **All recollections →**.
+- [ ] With the stop open, its **children gain their excerpts** (the Logs/
+      vacations show a line of their own recollection under their name).
+- [ ] Opening a second stop **closes the first** (single-open — the column
+      stays a column). Reopening a stop is instant (cached, no refetch).
+- [ ] Initial page load still makes **zero** detail requests (open DevTools
+      Network: /api/globe/residence/<id> fires only on tap).
+- [ ] A stop with no recollection (Dartmouth) says so and points at the
+      globe — no empty void.
+
+## Known scope (J4–J5, not bugs)
+- No "Show on globe →" / globe→journey handoff yet (**J4** — next).
+- Child rows don't open their own detail yet (excerpt only; their full
+  detail lives on their pin — globe link arrives with J4).
 - The Hopper deliberately does not appear here (design decision 9).
 - Origin stop's own move_reason never renders — there is no transition INTO
   the beginning.

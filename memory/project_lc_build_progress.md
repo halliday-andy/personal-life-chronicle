@@ -156,8 +156,27 @@ Supersedes the 2026-06-17 block below, which had gone nine days stale. The
   move_reason (9/11 live stops carry one; absent → nothing rendered);
   migration `20260706140000` widens get_residence_pins with move_reason
   (proof `verify-journey-move-reason.mjs` 3/3). Static by design —
-  reduced-motion safe. **Next build: J3** lazy expand, J4 `?pin=`
-  handoff, J5 a11y proof.
+  reduced-motion safe. **J3 BUILT same night** (Andy's QA: "flat and
+  non-interactive"): stop headers expand in place — lazy single-open
+  detail (recollection markdown, photo, fact chips, linked-recollection
+  excerpts → /memories, context titles → Entity View, per-child
+  excerpts from the roll-up), cached per stop, zero detail requests
+  until tap; rendering moved to `components/journey/JourneyList.tsx`
+  (client), page stays a one-RPC server shell. **Next: J4** `?pin=`
+  handoff + Show-on-globe links, then J5 a11y proof.
+- **Incident + guards (2026-07-06 late): orchestrator narrated a save
+  with ZERO tool calls.** Andy pasted Harry Leonard ski-show research
+  mid-conversation; the reply claimed it was "added as context to
+  McCormick Place" — audit log shows `tools: []`; nothing persisted
+  anywhere. **Class-of-bug: words-are-not-actions hallucination — the
+  reply-accuracy rule assumed there was a tool result to misreport.**
+  Fixes: (1) "Words are not actions" prompt directive
+  (SYSTEM_PROMPT_VERSION 2026-07-06.0); (2) deterministic UI backstop —
+  substantial submission + zero tool calls ⇒ "no action was taken this
+  turn" notice under the reply; (3) behavioral proof now runs the paste
+  mid-conversation (the incident shape) — PASS. The lost material was
+  recovered from capture_submissions into a review_queue
+  attach-as-context card.
 - **NEXT:** Andy's QA (Journey J1 + 57 stub proposals on /review +
   Exeter merge + Slice 6 walkthrough + Hopper 5a + outstanding globe
   re-tests); build continues J2–J5; then Slice 7 (Person page + Life's
