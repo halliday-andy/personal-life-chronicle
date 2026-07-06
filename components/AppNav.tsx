@@ -19,6 +19,7 @@ import SignOutButton from '@/app/(protected)/dashboard/sign-out-button'
 const LINKS: { href: string; label: string }[] = [
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/globe', label: 'Globe' },
+  { href: '/journey', label: 'Journey' },
   { href: '/memories', label: 'Memories' },
   { href: '/entities', label: 'Entities' },
   { href: '/review', label: 'Review' },

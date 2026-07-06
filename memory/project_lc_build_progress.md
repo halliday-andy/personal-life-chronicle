@@ -140,10 +140,23 @@ Supersedes the 2026-06-17 block below, which had gone nine days stale. The
   shape). **Class-of-bug: any owner-facing merge of twins where one side
   carries unique columns — the function must union substance, not just
   links.** Exeter twins still unmerged (safe in either direction now).
-- **NEXT:** Andy's QA (57 stub proposals on /review + Exeter merge +
-  Slice 6 walkthrough + Hopper 5a + owner-edit ✓ §1–2 done + outstanding
-  globe re-tests); then **Journey J1–J5**; then Slice 7 (Person page +
-  Life's Cast + Hopper 5b), riding on Slice 6.
+- **Journey J1 BUILT 2026-07-06** (owner-edit QA ✓ complete, Andy's go):
+  `/journey` server-rendered from ONE `get_residence_pins` call —
+  spine-ordered stop cards (name + verbatim when-chip + placard), origin
+  ★/"The beginning" + "now" badge, anchored markers nested under their
+  actual anchor (Log-on-vacation under the vacation; visual indent caps
+  at 2), "Elsewhere · not yet anchored" section (nothing ever
+  disappears — dead-anchor + cycle guards), mobile-first max-w-2xl.
+  AppNav gains Journey. Tree core `lib/journey/tree.ts`, pure-function
+  proof `verify-journey-tree.mjs` 6/6. QA:
+  `docs/qa/2026-07-06-journey-j1-qa-checklist.md`. **Next build: J2**
+  (ember spine + move_reason transitions — needs the additive
+  get_residence_pins widening), then J3 lazy expand, J4 `?pin=` handoff,
+  J5 a11y proof.
+- **NEXT:** Andy's QA (Journey J1 + 57 stub proposals on /review +
+  Exeter merge + Slice 6 walkthrough + Hopper 5a + outstanding globe
+  re-tests); build continues J2–J5; then Slice 7 (Person page + Life's
+  Cast + Hopper 5b), riding on Slice 6.
 
 ## Session handoff — 2026-06-17 (QA remediation pass, superseded)
 
