@@ -10,13 +10,13 @@ App: **http://localhost:3001/memories** (sign in first).
 > is the human proof.
 
 ## 1. The Leola repair (the case that motivated this)
-- [ ] Open /memories and find the senior-year recollection ("We had known
+- [x] Open /memories and find the senior-year recollection ("We had known
       each other superficially through high school…", `5cc85be3`).
-- [ ] Its chip row now ends with a dashed **+ link** chip. Click it → type
+- [x] Its chip row now ends with a dashed **+ link** chip. Click it → type
       "Leola" → pick **Leola Lapides** → the chip appears immediately.
-- [ ] Click the **Leola Lapides** chip → her Entity View opens and this
+- [x] Click the **Leola Lapides** chip → her Entity View opens and this
       recollection now appears under "recollections that mention" her.
-- [ ] (The person↔place↔memory graph is now complete for this memory —
+- [x] (The person↔place↔memory graph is now complete for this memory —
       exactly the repair discussed; no prose was rewritten.)
 
 ## 2. Entity-link editing generally

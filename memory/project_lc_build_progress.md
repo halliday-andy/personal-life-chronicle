@@ -102,9 +102,15 @@ Supersedes the 2026-06-17 block below, which had gone nine days stale. The
   capture-time prevention = orchestrator passes pronoun referents
   ("she" = Leola) to extract_entities (bundle with the orchestrator/5b
   work).
+- **Queued (not urgent, Andy 2026-07-06): alias editing on the Entity
+  View.** Aliases only ever grow (merge + extraction append; nothing
+  prunes) — the junk "Leo" alias on Leola Lapides (May-22 pre-#38
+  substring false-positive) is unremovable in the UI and could
+  false-match a real Leo. Fix = alias remove/add on /entities/[id] +
+  PATCH aliases support. Spawned as a background task chip 2026-07-06.
 - **NEXT:** Andy's QA (Slice 6 walkthrough + Hopper 5a + owner-edit/Leola
-  repair + outstanding globe re-tests); then **Journey J1–J5**; then
-  Slice 7 (Person page + Life's Cast + Hopper 5b), riding on Slice 6.
+  repair ✓ §1 done + outstanding globe re-tests); then **Journey J1–J5**;
+  then Slice 7 (Person page + Life's Cast + Hopper 5b), riding on Slice 6.
 
 ## Session handoff — 2026-06-17 (QA remediation pass, superseded)
 
