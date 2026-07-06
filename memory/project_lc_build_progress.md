@@ -70,6 +70,21 @@ Supersedes the 2026-06-17 block below, which had gone nine days stale. The
   `PinHopper` — always-present "✎ jot" chip on the detail card (live
   count) + full "Memories to write" section on the edit panel (check off,
   reopen, delete). QA: `docs/qa/2026-07-05-hopper-5a-qa-checklist.md`.
+- **Known gap (2026-07-06, two live occurrences): pin creation does NO
+  entity resolution.** `create_residence_pin` mints a fresh place entity
+  unconditionally — even an exact-name match against an existing entity
+  isn't checked (the #38 matcher + #39 vigilance live only on the
+  capture/extraction path). Live duplicates: "Phillips Exeter Academy"
+  (extraction-born 05-20 as organization, later re-typed place, no geom
+  vs pin-born 06-19 "Summer 1970") and the cross-name Hanover/Dartmouth
+  pair (3 recollections invisible from the pin). Data heal = /entities
+  merge INTO the pin entity (pin survives, owns globe identity; aliases
+  fold so future mentions resolve). Fix spawned as background task:
+  PinModal "this looks like your existing X — pin it?" + optional
+  `p_entity_id` on create_residence_pin. General answers given to Andy:
+  linking is by name/alias identity, never by date-range overlap
+  (invariant #5; temporal overlap ≠ identity — at most a future
+  Temporal-Agent *suggestion*).
 - **NEXT:** Andy's QA (Slice 6 walkthrough + Hopper 5a + outstanding globe
   re-tests); then **Journey J1–J5**; then Slice 7 (Person page + Life's
   Cast + Hopper 5b), riding on Slice 6.
