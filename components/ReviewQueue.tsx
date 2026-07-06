@@ -586,6 +586,19 @@ function MemoryElaborationBody({
 // entity_stub_proposal (globe stub resolution, 2026-07-06)
 // ------------------------------------------------------------------
 
+// All seven entity_type enum values (keep in sync with the DB enum +
+// EntitiesList.tsx). Singular labels; event_series reads "event".
+const STUB_TYPE_OPTIONS: [string, string][] = [
+  ['person', 'person'],
+  ['place', 'place'],
+  ['organization', 'organization'],
+  ['concept', 'concept'],
+  ['artifact', 'artifact'],
+  ['vehicle', 'vehicle'],
+  ['event_series', 'event'],
+]
+const STUB_TYPE_LABEL: Record<string, string> = Object.fromEntries(STUB_TYPE_OPTIONS)
+
 function EntityStubProposalBody({
   item,
   onRemove,
@@ -603,11 +616,15 @@ function EntityStubProposalBody({
     suggested?: { entity_id: string; canonical_name: string; score: number } | null
   }
   const stubName = ctx.name ?? '(unnamed)'
-  const entityType = ctx.entity_type === 'organization' ? 'organization' : 'person'
+  const proposedType = ctx.entity_type === 'organization' ? 'organization' : 'person'
 
   // Editable name: "my father" should become a real name at creation; the
   // stub phrasing is kept as an alias server-side when renamed.
   const [name, setName] = useState(stubName)
+  // Editable type: the extractor's nomination is the default, not a verdict
+  // ("Tachikawa Air Base" proposed as organization, corrected to place —
+  // Andy 2026-07-06, the physical-location-wins rule in user hands).
+  const [entityType, setEntityType] = useState(proposedType as string)
   const [linkingExisting, setLinkingExisting] = useState(false)
   const [q, setQ] = useState('')
   const [results, setResults] = useState<{ id: string; type: string; canonical_name: string }[]>([])
@@ -625,7 +642,7 @@ function EntityStubProposalBody({
     return () => clearTimeout(t)
   }, [q, linkingExisting])
 
-  async function act(body: { action: 'create' | 'link' | 'dismiss'; name?: string; entityId?: string }) {
+  async function act(body: { action: 'create' | 'link' | 'dismiss'; name?: string; entityId?: string; entityType?: string }) {
     setBusy(true)
     setError(null)
     onRemove(item) // optimistic, matching the queue's resolve pattern
@@ -648,8 +665,8 @@ function EntityStubProposalBody({
     <div>
       <p className="text-sm text-stone-800">
         <strong>{stubName}</strong> is mentioned in your recollection at{' '}
-        <strong>{ctx.pin_name ?? 'a pin'}</strong> — add {entityType === 'person' ? 'them' : 'it'} as
-        a {entityType} in your chronicle?
+        <strong>{ctx.pin_name ?? 'a pin'}</strong> — add {proposedType === 'person' ? 'them' : 'it'} to
+        your chronicle?
       </p>
       {ctx.excerpt && (
         <p className="mt-1 text-xs italic text-stone-500 line-clamp-2">“{ctx.excerpt}…”</p>
@@ -677,12 +694,22 @@ function EntityStubProposalBody({
           title="Edit before adding — e.g. give “my father” his real name (the original phrasing is kept as an alias)"
           className="w-56 rounded-md border border-stone-300 px-2 py-1.5 text-sm outline-none focus:border-stone-500"
         />
+        <select
+          value={entityType}
+          onChange={(e) => setEntityType(e.target.value)}
+          title="The proposed type is a best guess — correct it before adding (a physical location is a place even when it sounds institutional)"
+          className="rounded-md border border-stone-300 px-2 py-1.5 text-sm bg-white outline-none focus:border-stone-500"
+        >
+          {STUB_TYPE_OPTIONS.map(([v, l]) => (
+            <option key={v} value={v}>{l}</option>
+          ))}
+        </select>
         <button
-          onClick={() => act({ action: 'create', name })}
+          onClick={() => act({ action: 'create', name, entityType })}
           disabled={busy || !name.trim()}
           className="px-3 py-1.5 text-xs font-medium rounded-md bg-stone-800 hover:bg-stone-700 text-white disabled:opacity-50"
         >
-          Add as {entityType}
+          Add as {STUB_TYPE_LABEL[entityType] ?? entityType}
         </button>
         <button
           onClick={() => setLinkingExisting((v) => !v)}

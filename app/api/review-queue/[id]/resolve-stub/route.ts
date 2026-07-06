@@ -24,7 +24,16 @@ interface Body {
   action?: 'create' | 'link' | 'dismiss'
   name?: string
   entityId?: string
+  /** Optional override of the proposed entity type — the extractor's
+   *  nomination is a default, not a verdict (e.g. "Tachikawa Air Base"
+   *  proposed as organization, corrected to place by the user). */
+  entityType?: string
 }
+
+// Keep in sync with the DB entity_type enum + EntitiesList.tsx.
+const ALLOWED_ENTITY_TYPES = [
+  'person', 'place', 'organization', 'concept', 'artifact', 'vehicle', 'event_series',
+]
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   const userClient = createUserClient()
@@ -70,9 +79,16 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     if (body.action === 'create') {
       const name = (body.name ?? ctx.name).trim()
       if (!name) return NextResponse.json({ error: 'A name is required' }, { status: 400 })
+      const createType = body.entityType ?? ctx.entity_type
+      if (!ALLOWED_ENTITY_TYPES.includes(createType)) {
+        return NextResponse.json(
+          { error: `entityType must be one of: ${ALLOWED_ENTITY_TYPES.join(', ')}` },
+          { status: 400 },
+        )
+      }
       const { data: ent, error: entErr } = await admin
         .from('entities')
-        .insert({ user_id: user.id, type: ctx.entity_type, canonical_name: name })
+        .insert({ user_id: user.id, type: createType, canonical_name: name })
         .select('id, canonical_name')
         .single()
       if (entErr || !ent) {
