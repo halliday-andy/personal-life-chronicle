@@ -70,6 +70,10 @@ const TYPE_BADGE: Record<string, { label: string; classes: string }> = {
     label: 'Tell me more',
     classes: 'bg-amber-50 text-amber-700 border-amber-200',
   },
+  entity_stub_proposal: {
+    label: 'New mention',
+    classes: 'bg-lime-50 text-lime-700 border-lime-200',
+  },
   temporal_constraint: {
     label: 'Time clarification',
     classes: 'bg-teal-50 text-teal-700 border-teal-200',
@@ -162,7 +166,13 @@ export default function ReviewQueue({ initialItems }: { initialItems: ReviewItem
         </div>
       )}
       {items.map((item) => (
-        <ReviewItemCard key={item.id} item={item} onResolve={resolveItem} />
+        <ReviewItemCard
+          key={item.id}
+          item={item}
+          onResolve={resolveItem}
+          onRemove={(it) => { setItems((prev) => prev.filter((i) => i.id !== it.id)); setErrorBanner(null) }}
+          onRestore={(it, msg) => { setItems((prev) => [it, ...prev]); setErrorBanner(msg) }}
+        />
       ))}
     </div>
   )
@@ -171,9 +181,13 @@ export default function ReviewQueue({ initialItems }: { initialItems: ReviewItem
 function ReviewItemCard({
   item,
   onResolve,
+  onRemove,
+  onRestore,
 }: {
   item: ReviewItem
   onResolve: ResolveFn
+  onRemove: (item: ReviewItem) => void
+  onRestore: (item: ReviewItem, msg: string) => void
 }) {
   const badge = TYPE_BADGE[item.item_type] ?? {
     label: item.item_type,
@@ -197,7 +211,10 @@ function ReviewItemCard({
       {item.item_type === 'memory_elaboration_needed' && (
         <MemoryElaborationBody item={item} onResolve={onResolve} />
       )}
-      {!['entity_confirmation_needed', 'entity_merge_proposal', 'memory_elaboration_needed'].includes(item.item_type) && (
+      {item.item_type === 'entity_stub_proposal' && (
+        <EntityStubProposalBody item={item} onRemove={onRemove} onRestore={onRestore} />
+      )}
+      {!['entity_confirmation_needed', 'entity_merge_proposal', 'memory_elaboration_needed', 'entity_stub_proposal'].includes(item.item_type) && (
         <GenericBody item={item} onResolve={onResolve} />
       )}
     </article>
@@ -561,6 +578,154 @@ function MemoryElaborationBody({
           {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
         </div>
       )}
+    </div>
+  )
+}
+
+// ------------------------------------------------------------------
+// entity_stub_proposal (globe stub resolution, 2026-07-06)
+// ------------------------------------------------------------------
+
+function EntityStubProposalBody({
+  item,
+  onRemove,
+  onRestore,
+}: {
+  item: ReviewItem
+  onRemove: (item: ReviewItem) => void
+  onRestore: (item: ReviewItem, msg: string) => void
+}) {
+  const ctx = (item.context_json ?? {}) as {
+    name?: string
+    entity_type?: string
+    pin_name?: string
+    excerpt?: string
+    suggested?: { entity_id: string; canonical_name: string; score: number } | null
+  }
+  const stubName = ctx.name ?? '(unnamed)'
+  const entityType = ctx.entity_type === 'organization' ? 'organization' : 'person'
+
+  // Editable name: "my father" should become a real name at creation; the
+  // stub phrasing is kept as an alias server-side when renamed.
+  const [name, setName] = useState(stubName)
+  const [linkingExisting, setLinkingExisting] = useState(false)
+  const [q, setQ] = useState('')
+  const [results, setResults] = useState<{ id: string; type: string; canonical_name: string }[]>([])
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!linkingExisting) return
+    const t = setTimeout(() => {
+      fetch(`/api/entity?q=${encodeURIComponent(q)}&limit=8`)
+        .then((r) => r.json())
+        .then((d) => setResults(d.items ?? []))
+        .catch(() => setResults([]))
+    }, 200)
+    return () => clearTimeout(t)
+  }, [q, linkingExisting])
+
+  async function act(body: { action: 'create' | 'link' | 'dismiss'; name?: string; entityId?: string }) {
+    setBusy(true)
+    setError(null)
+    onRemove(item) // optimistic, matching the queue's resolve pattern
+    try {
+      const res = await fetch(`/api/review-queue/${item.id}/resolve-stub`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      const d = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(d.detail || d.error || `HTTP ${res.status}`)
+    } catch (e) {
+      onRestore(item, `Could not resolve: ${e instanceof Error ? e.message : String(e)}`)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div>
+      <p className="text-sm text-stone-800">
+        <strong>{stubName}</strong> is mentioned in your recollection at{' '}
+        <strong>{ctx.pin_name ?? 'a pin'}</strong> — add {entityType === 'person' ? 'them' : 'it'} as
+        a {entityType} in your chronicle?
+      </p>
+      {ctx.excerpt && (
+        <p className="mt-1 text-xs italic text-stone-500 line-clamp-2">“{ctx.excerpt}…”</p>
+      )}
+
+      {ctx.suggested && (
+        <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-[11px] text-sky-900">
+          <span>
+            Looks like your existing <strong>{ctx.suggested.canonical_name}</strong>?
+          </span>
+          <button
+            onClick={() => act({ action: 'link', entityId: ctx.suggested!.entity_id })}
+            disabled={busy}
+            className="ml-auto rounded-md bg-sky-700 px-2 py-0.5 text-white hover:bg-sky-800 disabled:opacity-50"
+          >
+            Same — link them
+          </button>
+        </div>
+      )}
+
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          title="Edit before adding — e.g. give “my father” his real name (the original phrasing is kept as an alias)"
+          className="w-56 rounded-md border border-stone-300 px-2 py-1.5 text-sm outline-none focus:border-stone-500"
+        />
+        <button
+          onClick={() => act({ action: 'create', name })}
+          disabled={busy || !name.trim()}
+          className="px-3 py-1.5 text-xs font-medium rounded-md bg-stone-800 hover:bg-stone-700 text-white disabled:opacity-50"
+        >
+          Add as {entityType}
+        </button>
+        <button
+          onClick={() => setLinkingExisting((v) => !v)}
+          disabled={busy}
+          className="px-3 py-1.5 text-xs font-medium rounded-md border border-stone-300 text-stone-700 hover:bg-stone-100 disabled:opacity-50"
+        >
+          Link to existing…
+        </button>
+        <button
+          onClick={() => act({ action: 'dismiss' })}
+          disabled={busy}
+          className="px-3 py-1.5 text-xs font-medium rounded-md bg-stone-100 hover:bg-stone-200 text-stone-700 disabled:opacity-50"
+        >
+          Dismiss
+        </button>
+      </div>
+
+      {linkingExisting && (
+        <div className="mt-2 rounded-lg border border-stone-200 bg-white p-2">
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search your entities…"
+            autoFocus
+            className="w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm outline-none focus:border-stone-500"
+          />
+          <div className="mt-1 max-h-40 overflow-y-auto">
+            {results.map((r) => (
+              <button
+                key={r.id}
+                disabled={busy}
+                onClick={() => act({ action: 'link', entityId: r.id })}
+                className="block w-full rounded px-2 py-1 text-left text-sm text-stone-800 hover:bg-stone-100 disabled:opacity-50"
+              >
+                {r.canonical_name} <span className="text-xs text-stone-400">· {r.type}</span>
+              </button>
+            ))}
+            {q && results.length === 0 && <p className="px-2 py-1 text-xs text-stone-400">No matches.</p>}
+          </div>
+        </div>
+      )}
+
+      {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
     </div>
   )
 }

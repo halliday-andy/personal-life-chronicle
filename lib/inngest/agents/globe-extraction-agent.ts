@@ -1,6 +1,7 @@
 import { inngest } from '@/lib/inngest/client'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { runGlobeExtraction } from '@/lib/globe/extraction'
+import { resolveGlobePinStubs } from '@/lib/globe/stub-resolution'
 
 /**
  * Globe Extraction Agent — Step 7 Slice 2.
@@ -25,6 +26,16 @@ export const globeExtractionAgent = inngest.createFunction(
         memoryId: memory_id,
       }),
     )
-    return { ...result, relationship_id }
+    // Resolve the freshly extracted people/organisation stubs (2026-07-06):
+    // exact matches link directly; new names become review-queue proposals.
+    // Idempotent per stub, so re-extraction only surfaces NEW names.
+    const stubResolution = await step.run('resolve-stubs', async () =>
+      resolveGlobePinStubs(createAdminClient(), {
+        userId: user_id,
+        relationshipId: relationship_id,
+        memoryId: memory_id,
+      }),
+    )
+    return { ...result, relationship_id, stubResolution }
   },
 )
