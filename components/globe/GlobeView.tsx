@@ -324,6 +324,46 @@ export default function GlobeView() {
     setHoverPreview(null)
   }, [])
 
+  // ── ?pin= handoff (Journey J4) ────────────────────────────────────
+  // Arriving with /globe?pin=<relationshipId> (from a Journey card or a
+  // shared link) selects that pin and flies to it once the pins and map
+  // are ready. One-shot; read via window.location to keep the map free
+  // of router re-renders.
+  const deepLinkDoneRef = useRef(false)
+  useEffect(() => {
+    if (deepLinkDoneRef.current || pins.length === 0) return
+    const wanted = new URLSearchParams(window.location.search).get('pin')
+    if (!wanted) { deepLinkDoneRef.current = true; return }
+    const target = pins.find((p) => p.relationship_id === wanted)
+    deepLinkDoneRef.current = true
+    if (!target) return
+    selectPin(target.relationship_id)
+    // The map may still be initializing on a cold load — retry the fly
+    // briefly rather than racing it.
+    let tries = 0
+    const fly = () => {
+      if (mapRef.current) {
+        mapRef.current.flyTo({
+          center: [target.lng, target.lat],
+          zoom: Math.max(mapRef.current.getZoom(), 5),
+          speed: 0.9,
+          essential: true,
+        })
+        return
+      }
+      if (++tries < 15) setTimeout(fly, 200)
+    }
+    fly()
+  }, [pins, selectPin])
+
+  // Mirror the current selection into ?pin= (replace, never push) so
+  // switching to Journey — or copying the URL — lands on the same stop.
+  useEffect(() => {
+    if (!deepLinkDoneRef.current) return
+    const url = selectedId ? `${window.location.pathname}?pin=${selectedId}` : window.location.pathname
+    window.history.replaceState(null, '', url)
+  }, [selectedId])
+
   // Step to the previous/next home along the residential spine and fly the
   // globe to it (QA feature request). Spine-only for MVP; significant
   // marker "children" (workplaces, second residences) are a deferred design

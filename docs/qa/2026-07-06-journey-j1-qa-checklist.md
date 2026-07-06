@@ -1,4 +1,4 @@
-# QA Walkthrough — Journey J1 + J2 + J3
+# QA Walkthrough — Journey J1 + J2 + J3 + J4
 
 App: **http://localhost:3001/journey** (sign in first).
 
@@ -72,10 +72,28 @@ App: **http://localhost:3001/journey** (sign in first).
 - [ ] A stop with no recollection (Dartmouth) says so and points at the
       globe — no empty void.
 
-## Known scope (J4–J5, not bugs)
-- No "Show on globe →" / globe→journey handoff yet (**J4** — next).
-- Child rows don't open their own detail yet (excerpt only; their full
-  detail lives on their pin — globe link arrives with J4).
+## 6. J4 — the globe↔journey handoff
+- [ ] Open a stop in Journey → its expanded footer has **Show on globe →**;
+      clicking it lands on /globe with that pin **selected (card open) and
+      flown to**.
+- [ ] On the globe, a pin's detail card now has **Read in journey →** (next
+      to "Open place page") → lands on /journey with that stop **expanded
+      and scrolled into view**.
+- [ ] **Child names in Journey are now links** — clicking a Log/vacation/
+      workplace name flies the globe to *that marker* and opens its card;
+      arriving back in Journey with that child's link scrolls to it under
+      its expanded parent.
+- [ ] Expanding/collapsing stops in Journey keeps the URL in sync
+      (`?pin=…`) without polluting Back-button history; selecting pins on
+      the globe does the same. **Copy either URL into a fresh tab** → cold
+      deep link lands oriented (sign-in first if needed).
+- [ ] The globe still opts out of AppNav (full-screen nocturne unchanged).
+
+## Known scope (J5, not bugs)
+- Full keyboard/screen-reader pass is **J5** (headers are real buttons with
+  aria-expanded already).
+- Child rows still show excerpt-only in Journey; their full detail lives on
+  their globe pin (one tap away via their name link).
 - The Hopper deliberately does not appear here (design decision 9).
 - Origin stop's own move_reason never renders — there is no transition INTO
   the beginning.

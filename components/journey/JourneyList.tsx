@@ -17,9 +17,20 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import Markdown from '../Markdown'
 import { transitionPhrase, type JourneyNode } from '@/lib/journey/tree'
 import { pinTypeMeta } from '@/lib/globe/pin-types'
+
+/** The stop that hosts a pin id — the stop itself, or the stop whose
+ *  subtree (anchored markers, any depth) contains it. */
+function owningStopId(stops: JourneyNode[], pinId: string | null): string | null {
+  if (!pinId) return null
+  const contains = (n: JourneyNode): boolean =>
+    n.relationship_id === pinId || n.children.some(contains)
+  for (const s of stops) if (contains(s)) return s.relationship_id
+  return null
+}
 
 interface StopDetail {
   body: string
@@ -40,14 +51,41 @@ const label = (s: string) => s.replace(/_/g, ' ')
 export default function JourneyList({
   stops,
   unanchored,
+  initialPin = null,
 }: {
   stops: JourneyNode[]
   unanchored: JourneyNode[]
+  /** ?pin= deep link (J4): the stop hosting this pin opens on load and
+   *  the pin's row scrolls into view. */
+  initialPin?: string | null
 }) {
+  const router = useRouter()
   // Single-open accordion + per-stop detail cache (an expanded stop that
   // was closed and reopened doesn't refetch).
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [expandedId, setExpandedId] = useState<string | null>(() => owningStopId(stops, initialPin))
   const [details, setDetails] = useState<Record<string, StopDetail | 'loading' | 'error'>>({})
+
+  // Deep-link arrival: bring the linked pin's row into view once, without
+  // scroll-jacking later interactions. Reduced motion → instant jump.
+  useEffect(() => {
+    if (!initialPin) return
+    const el = document.getElementById(`journey-pin-${initialPin}`)
+    if (!el) return
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    el.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- arrival-only
+  }, [])
+
+  // Keep ?pin= in the URL matching the open stop, so surface switches and
+  // shared links land oriented here (J4). replace, never push — expanding
+  // shouldn't pollute browser history.
+  function toggle(stopId: string) {
+    setExpandedId((cur) => {
+      const next = cur === stopId ? null : stopId
+      router.replace(next ? `/journey?pin=${next}` : '/journey', { scroll: false })
+      return next
+    })
+  }
 
   useEffect(() => {
     if (!expandedId) return
@@ -89,9 +127,7 @@ export default function JourneyList({
             nextMoveReason={i < stops.length - 1 ? stops[i + 1].move_reason : null}
             expanded={expandedId === stop.relationship_id}
             detail={details[stop.relationship_id]}
-            onToggle={() =>
-              setExpandedId((cur) => (cur === stop.relationship_id ? null : stop.relationship_id))
-            }
+            onToggle={() => toggle(stop.relationship_id)}
           />
         ))}
       </ol>
@@ -139,7 +175,7 @@ function StopCard({
 }) {
   const phrase = transitionPhrase(nextMoveReason)
   return (
-    <li className="flex gap-3 sm:gap-4">
+    <li id={`journey-pin-${node.relationship_id}`} className="flex gap-3 sm:gap-4">
       {/* Rail: marker + this stop's thread segment (J2). */}
       <div className="flex w-5 shrink-0 flex-col items-center" aria-hidden>
         {isOrigin ? (
@@ -341,6 +377,12 @@ function StopDetailBody({
 
       <div className="flex flex-wrap gap-3 pt-1 text-xs">
         <Link
+          href={`/globe?pin=${node.relationship_id}`}
+          className="text-amber-700 hover:text-amber-900 hover:underline"
+        >
+          Show on globe →
+        </Link>
+        <Link
           href={`/entities/${node.place_entity_id}`}
           className="text-amber-700 hover:text-amber-900 hover:underline"
         >
@@ -370,7 +412,7 @@ function ChildRow({
 }) {
   const meta = pinTypeMeta(node.type_code)
   return (
-    <li>
+    <li id={`journey-pin-${node.relationship_id}`}>
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm">
         <span
           aria-hidden
@@ -378,7 +420,13 @@ function ChildRow({
           style={{ backgroundColor: meta.color }}
           title={meta.label}
         />
-        <span className="font-medium text-stone-800">{node.name}</span>
+        <Link
+          href={`/globe?pin=${node.relationship_id}`}
+          title={`Show ${node.name} on the globe`}
+          className="font-medium text-stone-800 hover:text-amber-800 hover:underline"
+        >
+          {node.name}
+        </Link>
         <span className="text-[11px] text-stone-400">{meta.label}</span>
         {node.when_text && <span className="text-[11px] text-stone-500">· {node.when_text}</span>}
       </div>

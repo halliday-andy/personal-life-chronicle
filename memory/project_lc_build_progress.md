@@ -162,8 +162,17 @@ Supersedes the 2026-06-17 block below, which had gone nine days stale. The
   excerpts → /memories, context titles → Entity View, per-child
   excerpts from the roll-up), cached per stop, zero detail requests
   until tap; rendering moved to `components/journey/JourneyList.tsx`
-  (client), page stays a one-RPC server shell. **Next: J4** `?pin=`
-  handoff + Show-on-globe links, then J5 a11y proof.
+  (client), page stays a one-RPC server shell. **J4 BUILT same night:**
+  `?pin=<relationshipId>` read/written by BOTH surfaces — Journey opens
+  the owning stop + scrolls the linked row into view (markers resolve
+  to their ancestor stop; reduced-motion → instant jump) and mirrors
+  expand/collapse into the URL via router.replace; the globe consumes
+  the param post-pins-load (selectPin + flyTo with map-ready retry) and
+  mirrors selection via history.replaceState. Links: journey stop
+  footer "Show on globe →", child NAMES link to their marker's pin,
+  globe detail card "Read in journey →". Cold deep links work; globe
+  stays out of AppNav. **Next: J5** a11y/keyboard proof — then the
+  Journey arc is complete.
 - **Incident + guards (2026-07-06 late): orchestrator narrated a save
   with ZERO tool calls.** Andy pasted Harry Leonard ski-show research
   mid-conversation; the reply claimed it was "added as context to

@@ -22,7 +22,11 @@ import JourneyList from '@/components/journey/JourneyList'
 
 export const dynamic = 'force-dynamic'
 
-export default async function JourneyPage() {
+export default async function JourneyPage({
+  searchParams,
+}: {
+  searchParams: { pin?: string }
+}) {
   const { data: { user } } = await createClient().auth.getUser()
   if (!user) return null // layout guard redirects; belt and braces
 
@@ -66,7 +70,11 @@ export default async function JourneyPage() {
           </Link>
         </div>
       ) : (
-        <JourneyList stops={tree.stops} unanchored={tree.unanchored} />
+        <JourneyList
+          stops={tree.stops}
+          unanchored={tree.unanchored}
+          initialPin={searchParams.pin ?? null}
+        />
       )}
     </main>
   )
