@@ -47,7 +47,8 @@ interface Entity {
 
 const TYPE_LABEL: Record<string, string> = {
   person: 'Person', place: 'Place', organization: 'Organization',
-  artifact: 'Artifact', event_series: 'Event series',
+  concept: 'Concept', artifact: 'Artifact', vehicle: 'Vehicle',
+  event_series: 'Event series',
 }
 
 export default function EntityView({ entity, notes: initialNotes, recollections }: {

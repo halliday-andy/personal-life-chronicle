@@ -38,19 +38,26 @@ export interface EntityRow {
   created_at: string
 }
 
-const TYPE_ORDER = ['person', 'place', 'organization', 'artifact', 'event_series'] as const
+// All seven entity_type enum values. concept + vehicle were missing here
+// (found 2026-07-06 when a ski method mistyped as 'place' could not be
+// re-typed to Concept — the dropdown never offered it).
+const TYPE_ORDER = ['person', 'place', 'organization', 'concept', 'artifact', 'vehicle', 'event_series'] as const
 const TYPE_LABELS: Record<string, string> = {
   person: 'People',
   place: 'Places',
   organization: 'Organizations',
+  concept: 'Concepts',
   artifact: 'Artifacts',
+  vehicle: 'Vehicles',
   event_series: 'Event series',
 }
 const TYPE_BADGE_CLASSES: Record<string, string> = {
   person: 'bg-sky-50 text-sky-700 border-sky-200',
   place: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   organization: 'bg-violet-50 text-violet-700 border-violet-200',
+  concept: 'bg-lime-50 text-lime-700 border-lime-200',
   artifact: 'bg-amber-50 text-amber-700 border-amber-200',
+  vehicle: 'bg-cyan-50 text-cyan-700 border-cyan-200',
   event_series: 'bg-teal-50 text-teal-700 border-teal-200',
 }
 

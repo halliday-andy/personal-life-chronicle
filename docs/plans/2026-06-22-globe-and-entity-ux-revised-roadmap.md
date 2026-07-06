@@ -150,6 +150,14 @@ Builds the 2026-06-14 design as the shared foundation. Serves **all** entity typ
 - `/memories` lists, searches, and edits recollections; detail shows entity chips that navigate to the Entity View.
 - A pasted research blob is proposed as context-on-entity (Accept/Adjust/Decline), with source auto-fill when a URL is present.
 
+**Deferred within Slice 6 (queued together, 2026-07-06):** `/memories` full-text
+search, and **row-level deep links into `/memories`** — a per-memory anchor
+(`/memories?entity=X#<memory_id>`, scroll-to + highlight) so surfaces that list
+individual recollections can land on the exact one. Driver: the Entity View's
+mention rows (built 2026-07-06) all target the same filtered list — fine at 2–3
+mentions, inadequate at 20. Journey's expanded cards (J3) will want the same
+anchor, so build it with (or just before) the /memories search pass.
+
 ### Slice 7 — Person page + Life's Cast + the Hopper  ·  *rides on Slice 6*
 The person-specialization of the Entity View, plus the host-agnostic Hopper (the person page hosts one; so does the pin edit panel — same component, two hosts).
 **Includes:** M2 + M3 migrations; Person Entity View variant = mentions aggregator (links out, never hosts recollections) + open/private commentary via `entity_context_notes` + person-anchored-recollection-without-a-pin capture path + "promote to Life's Cast" act + a content-only filter (hide blank entity pages); the **Hopper** component on both the pin edit panel and the person page (`memory_stubs`, open/consumed, check-off); capture-assistant interview loop — pick a stub → interview to flesh into a recollection → mark consumed; newly triggered memories during an interview → offer to add as new stubs.
