@@ -36,7 +36,15 @@ App: **http://localhost:3001/memories** (sign in first).
       revision notice (temporal metadata isn't the verbatim narrative).
 - [ ] Draft memories behave as before (Accept / Decline / Edit row).
 
-## 4. Not broken elsewhere
+## 4. Entity View mention rows (follow-on fix, same session)
+- [ ] On an Entity View (e.g. Leola Lapides), each "recollection that
+      mentions" is now a **distinct bordered row** — separation visible at
+      rest, no hover needed. **[taste]** row density.
+- [ ] Each row shows a metadata line: the memory's own **time phrase**
+      (when present) + capture date + an at-rest **"open in Recollections →"**
+      affordance that brightens on hover.
+
+## 5. Not broken elsewhere
 - [ ] The globe pin edit panel still edits its own recollection as before
       (its separate revision path is untouched).
 - [ ] ProposalCard draft editing in the capture panel is unaffected.

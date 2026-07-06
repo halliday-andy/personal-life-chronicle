@@ -48,18 +48,23 @@ export default async function EntityViewPage({ params }: { params: { id: string 
   // Recollections that mention this entity (links out; never hosted here).
   const { data: linkRows } = await admin
     .from('memory_entities')
-    .select('memory_id, memories!inner(id, content_raw, created_at, user_id)')
+    .select('memory_id, memories!inner(id, content_raw, occurred_at_fuzzy, created_at, user_id)')
     .eq('entity_id', entity.id)
     .eq('memories.user_id', user.id)
     .limit(50)
-  type MemRow = { id: string; content_raw: string | null; created_at: string }
+  type MemRow = { id: string; content_raw: string | null; occurred_at_fuzzy: string | null; created_at: string }
   const seen = new Set<string>()
   const recollections: MentionRecollection[] = []
   for (const row of (linkRows ?? []) as { memories: MemRow | MemRow[] | null }[]) {
     const m = Array.isArray(row.memories) ? row.memories[0] : row.memories
     if (!m || seen.has(m.id)) continue
     seen.add(m.id)
-    recollections.push({ id: m.id, excerpt: (m.content_raw ?? '').slice(0, 200), created_at: m.created_at })
+    recollections.push({
+      id: m.id,
+      excerpt: (m.content_raw ?? '').slice(0, 200),
+      occurred_at_fuzzy: m.occurred_at_fuzzy,
+      created_at: m.created_at,
+    })
   }
   recollections.sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
 

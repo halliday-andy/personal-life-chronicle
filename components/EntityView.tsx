@@ -33,6 +33,7 @@ interface NoteDraft {
 export interface MentionRecollection {
   id: string
   excerpt: string
+  occurred_at_fuzzy: string | null
   created_at: string
 }
 
@@ -179,11 +180,28 @@ export default function EntityView({ entity, notes: initialNotes, recollections 
           {recollections.length === 0 ? (
             <p className="mt-2 text-sm text-stone-400">None yet.</p>
           ) : (
-            <ul className="mt-2 space-y-1.5">
+            // Each mention is a distinct bordered row — separation and the
+            // link affordance must read at rest, not only on hover
+            // (Andy's QA, 2026-07-06). Metadata = the memory's own fuzzy
+            // time phrase + capture date.
+            <ul className="mt-2 space-y-2">
               {recollections.map((r) => (
-                <li key={r.id} className="text-sm text-stone-700">
-                  <Link href={`/memories?entity=${entity.id}`} className="hover:text-stone-900 hover:underline">
-                    {r.excerpt || '(untitled recollection)'}{r.excerpt.length >= 200 ? '…' : ''}
+                <li key={r.id}>
+                  <Link
+                    href={`/memories?entity=${entity.id}`}
+                    title="Open in Recollections"
+                    className="group block rounded-lg border border-stone-200 bg-white px-3 py-2 transition-colors hover:border-stone-400 hover:bg-stone-50"
+                  >
+                    <span className="block text-sm leading-relaxed text-stone-700 group-hover:text-stone-900">
+                      {r.excerpt || '(untitled recollection)'}{r.excerpt.length >= 200 ? '…' : ''}
+                    </span>
+                    <span className="mt-1 flex items-baseline gap-2 text-[11px] text-stone-400">
+                      {r.occurred_at_fuzzy && <span className="text-stone-500">{r.occurred_at_fuzzy}</span>}
+                      <span>captured {new Date(r.created_at).toLocaleDateString()}</span>
+                      <span className="ml-auto text-stone-300 transition-colors group-hover:text-stone-500">
+                        open in Recollections →
+                      </span>
+                    </span>
                   </Link>
                 </li>
               ))}
