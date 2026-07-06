@@ -29,7 +29,7 @@
  * the Raw Vault invariant.
  */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import PrivateNotesPanel from './PrivateNotesPanel'
 import Markdown from './Markdown'
@@ -83,8 +83,29 @@ export default function MemoryCard({ m }: { m: MemoryRow }) {
   )
 
   // Action-in-flight + error.
-  const [busy, setBusy] = useState<null | 'accept' | 'decline' | 'save' | 'edit'>(null)
+  const [busy, setBusy] = useState<null | 'accept' | 'decline' | 'save' | 'edit' | 'link'>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // Entity-link editing (micro-slice 2026-07-06): "+ link" typeahead +
+  // per-chip unlink. Owner graph repair for references extraction can't
+  // see (pronouns) — no prose rewrite needed.
+  const [linking, setLinking] = useState(false)
+  const [linkQ, setLinkQ] = useState('')
+  const [linkResults, setLinkResults] = useState<{ id: string; canonical_name: string; type: string }[]>([])
+
+  // Transient confirmation after a finalized edit preserved a revision.
+  const [revisionNotice, setRevisionNotice] = useState(false)
+
+  useEffect(() => {
+    if (!linking) return
+    const t = setTimeout(() => {
+      fetch(`/api/entity?q=${encodeURIComponent(linkQ)}&limit=8`)
+        .then((r) => r.json())
+        .then((d) => setLinkResults(d.items ?? []))
+        .catch(() => setLinkResults([]))
+    }, 200)
+    return () => clearTimeout(t)
+  }, [linkQ, linking])
 
   // Two-click confirm state for Accept and Decline. Each holds the
   // timestamp at which the user first clicked; a second click within
@@ -234,6 +255,10 @@ export default function MemoryCard({ m }: { m: MemoryRow }) {
             : prev.time_precision,
       }))
       setEditing(false)
+      if (updated.revision_saved) {
+        setRevisionNotice(true)
+        setTimeout(() => setRevisionNotice(false), 6000)
+      }
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
@@ -245,6 +270,52 @@ export default function MemoryCard({ m }: { m: MemoryRow }) {
   function handleCancelEdit() {
     setEditing(false)
     setError(null)
+  }
+
+  async function handleLinkEntity(ent: { id: string; canonical_name: string; type: string }) {
+    setBusy('link')
+    setError(null)
+    try {
+      const res = await fetch(`/api/memory/${memory.id}/entity/${ent.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      const d = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(d?.error ?? `HTTP ${res.status}`)
+      setMemory((prev) => ({
+        ...prev,
+        entities: [...(prev.entities ?? []), { id: ent.id, canonical_name: ent.canonical_name, type: ent.type }],
+      }))
+      setLinking(false)
+      setLinkQ('')
+      router.refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  async function handleUnlinkEntity(ent: { id: string; canonical_name: string }) {
+    setBusy('link')
+    setError(null)
+    try {
+      const res = await fetch(`/api/memory/${memory.id}/entity/${ent.id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        throw new Error(d?.error ?? `HTTP ${res.status}`)
+      }
+      setMemory((prev) => ({
+        ...prev,
+        entities: (prev.entities ?? []).filter((e) => e.id !== ent.id),
+      }))
+      router.refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(null)
+    }
   }
 
   const dimmed = memory.is_draft
@@ -275,6 +346,17 @@ export default function MemoryCard({ m }: { m: MemoryRow }) {
         <span className="ml-auto text-stone-400">
           {new Date(memory.created_at).toLocaleDateString()}
         </span>
+        {!isDraft && !editing && (
+          <button
+            type="button"
+            onClick={handleStartEdit}
+            disabled={busy !== null}
+            title="Edit this recollection — your original text is preserved as a revision"
+            className="rounded px-1.5 py-0.5 text-[10px] font-medium text-stone-400 hover:text-stone-900 disabled:opacity-50"
+          >
+            Edit
+          </button>
+        )}
         {!isDraft && !editing && (
           <button
             type="button"
@@ -402,6 +484,11 @@ export default function MemoryCard({ m }: { m: MemoryRow }) {
             >
               Cancel
             </button>
+            {!isDraft && (
+              <span className="text-[10px] text-stone-400 italic">
+                Saving preserves your original text as a revision.
+              </span>
+            )}
           </div>
         </div>
       ) : (
@@ -413,20 +500,89 @@ export default function MemoryCard({ m }: { m: MemoryRow }) {
       )}
 
       {/* Entity chips — link out to each mentioned entity's View (where its
-          context notes live). The path from a recollection to "add context". */}
-      {!editing && (memory.entities?.length ?? 0) > 0 && (
+          context notes live). Owner-editable (micro-slice 2026-07-06): × unlinks,
+          "+ link" adds an entity extraction couldn't see (pronoun references,
+          unnamed roles) — graph repair without rewriting the prose. */}
+      {!editing && (
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
-          {memory.entities!.map((e) => (
-            <a
+          {(memory.entities ?? []).map((e) => (
+            <span
               key={e.id}
-              href={`/entities/${e.id}`}
-              title={`Open ${e.canonical_name}`}
-              className="rounded-full border border-stone-200 bg-stone-50 px-2 py-0.5 text-[11px] text-stone-600 hover:border-stone-400 hover:text-stone-900"
+              className="group inline-flex items-center gap-1 rounded-full border border-stone-200 bg-stone-50 px-2 py-0.5 text-[11px] text-stone-600"
             >
-              {e.canonical_name}
-            </a>
+              <a
+                href={`/entities/${e.id}`}
+                title={`Open ${e.canonical_name}`}
+                className="hover:text-stone-900"
+              >
+                {e.canonical_name}
+              </a>
+              <button
+                type="button"
+                onClick={() => handleUnlinkEntity(e)}
+                disabled={busy !== null}
+                aria-label={`Unlink ${e.canonical_name} from this recollection`}
+                title="Unlink from this recollection (the entity itself is kept)"
+                className="text-stone-300 hover:text-rose-600 disabled:opacity-30"
+              >
+                ×
+              </button>
+            </span>
           ))}
+          {linking ? (
+            <span className="relative inline-flex items-center gap-1">
+              <input
+                value={linkQ}
+                onChange={(e) => setLinkQ(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Escape') { setLinking(false); setLinkQ('') } }}
+                placeholder="Search people, places…"
+                autoFocus
+                className="w-44 rounded-full border border-stone-300 px-2 py-0.5 text-[11px] focus:outline-none focus:border-stone-500"
+              />
+              <button
+                type="button"
+                onClick={() => { setLinking(false); setLinkQ('') }}
+                className="text-[11px] text-stone-400 hover:text-stone-700"
+              >
+                cancel
+              </button>
+              {linkResults.filter((r) => !(memory.entities ?? []).some((e) => e.id === r.id)).length > 0 && (
+                <div className="absolute left-0 top-full z-10 mt-1 max-h-40 w-64 overflow-y-auto rounded-lg border border-stone-200 bg-white shadow-lg">
+                  {linkResults
+                    .filter((r) => !(memory.entities ?? []).some((e) => e.id === r.id))
+                    .map((r) => (
+                      <button
+                        key={r.id}
+                        type="button"
+                        disabled={busy !== null}
+                        onClick={() => handleLinkEntity(r)}
+                        className="block w-full px-2 py-1 text-left text-xs text-stone-800 hover:bg-stone-100 disabled:opacity-50"
+                      >
+                        {r.canonical_name} <span className="text-stone-400">· {r.type}</span>
+                      </button>
+                    ))}
+                </div>
+              )}
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setLinking(true)}
+              disabled={busy !== null}
+              title="Link a person, place, or organization this recollection is about"
+              className="rounded-full border border-dashed border-stone-300 px-2 py-0.5 text-[11px] text-stone-400 hover:border-stone-400 hover:text-stone-700 disabled:opacity-50"
+            >
+              + link
+            </button>
+          )}
         </div>
+      )}
+
+      {/* Transient confirmation that a finalized edit preserved the original */}
+      {revisionNotice && (
+        <p className="mt-2 text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-2 py-1">
+          Saved — your previous text is preserved as a revision.
+        </p>
       )}
 
       {/* Error */}
