@@ -75,10 +75,19 @@ async function main() {
       'Source: https://example.org/testctx-ellsworth-history'
 
     console.log('Running orchestrator with a research paste (real run, ~30s)\\u2026')
+    // Reproduces the 2026-07-06 incident shape: the paste arrives MID
+    // conversation, right after a turn where the assistant already handled
+    // similar context — the condition under which the model once narrated
+    // an attachment without calling any tool. The history makes this proof
+    // meaningfully harder than a cold single-turn run.
     const res = await runOrchestrator({
       user_id: user.id,
       submission_text: submission,
       input_type: 'pasted',
+      conversation_history: [
+        { role: 'user', content: 'Here is some background about the base anniversary celebration I found online.' },
+        { role: 'assistant', content: "That's helpful background — I've proposed it as a context note on the base's page; accept the card when you're ready." },
+      ],
       supabase,
     })
 

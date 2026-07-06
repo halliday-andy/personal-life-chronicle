@@ -261,12 +261,33 @@ export default function CaptureAssistant() {
                 )
               }
               const grouped = groupProposalsByMemory(entry.proposals)
+              // Honesty backstop (2026-07-06 incident): the model once
+              // NARRATED saving a research paste while calling no tool at
+              // all — material evaporated behind a reassuring reply. When a
+              // substantial submission produces zero tool calls, say so
+              // plainly; words in the reply are not actions.
+              const priorUser = thread
+                .slice(0, i)
+                .reverse()
+                .find((t): t is Extract<ThreadEntry, { kind: 'user' }> => t.kind === 'user')
+              const silentTurn =
+                entry.submissionId !== 'opener' &&
+                entry.proposals.length === 0 &&
+                (priorUser?.content.length ?? 0) > 300
               return (
                 <div key={i} className="flex justify-start">
                   <div className="max-w-[92%] space-y-2.5 w-full">
                     <div className="rounded-2xl rounded-bl-sm bg-white border border-stone-200 text-stone-800 text-sm px-4 py-2.5 leading-relaxed whitespace-pre-wrap shadow-sm">
                       {entry.reply}
                     </div>
+
+                    {silentTurn && (
+                      <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-[11px] text-amber-800">
+                        ⚠ No action was taken this turn — whatever the reply says, nothing was
+                        saved or proposed. Your text is kept in the submission log; try
+                        resending, or tell me exactly what to do with it.
+                      </p>
+                    )}
 
                     {grouped.memoryCards.map((card) => (
                       <ProposalCard key={card.memory.memory_id} initial={card} />
