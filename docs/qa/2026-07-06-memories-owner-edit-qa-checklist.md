@@ -20,8 +20,14 @@ App: **http://localhost:3001/memories** (sign in first).
       exactly the repair discussed; no prose was rewritten.)
 
 ## 2. Entity-link editing generally
-- [ ] Hover any chip → an **×** shows; clicking it unlinks (chip disappears);
-      the entity itself still exists in /entities. **[taste]** × subtlety.
+*(On /memories cards only — the Entity View mention rows and globe pin chips
+are different surfaces without unlink.)*
+- [ ] Every entity chip on a /memories card carries a small **always-visible ×**
+      after the name (faint gray; reddens when the pointer is on it — it does
+      NOT appear on hover, it's already there). Clicking it unlinks (chip
+      disappears); the entity itself still exists in /entities.
+      **[taste]** the × was made faint to keep chips calm — if it was hard to
+      FIND (2026-07-06 it was), say so and it gets more visible.
 - [ ] Re-link the same entity via **+ link** → idempotent, no duplicate chip.
 - [ ] The typeahead excludes entities already linked to the card.
 - [ ] **Escape** or **cancel** closes the typeahead without changes.
