@@ -116,7 +116,15 @@ export interface LinkEntityResult {
 }
 
 export function defaultRoleForType(entityType: string): string {
-  return entityType === 'place' ? 'location' : 'participant'
+  // NEVER 'location' here. role='location' + capture_mode='globe_onboarding'
+  // is the discriminator every pin-overview lookup uses for "this pin's own
+  // memory" (update/delete/GET scoping, 2026-06-11 rule) — a mention-link
+  // carrying it lets one pin's recollection masquerade as another pin's
+  // overview text (live incident 2026-07-07: the Coronet Peak Ski School
+  // workplace displayed the 1975 primary's recollection). A place someone
+  // links by hand or via stub resolution is a MENTION, not where the memory
+  // happened.
+  return entityType === 'place' ? 'mentioned' : 'participant'
 }
 
 export async function linkEntityToMemory(

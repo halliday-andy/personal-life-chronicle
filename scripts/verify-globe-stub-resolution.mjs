@@ -101,9 +101,16 @@ async function main() {
       ok('memory_entities row exists with role participant')
     } else bad('missing participant link row')
 
-    // 2. Organization stub matched the place entity (institution blur)
+    // 2. Organization stub matched the place entity (institution blur) —
+    //    and the link must be role='mentioned', never 'location': a
+    //    location-role mention lets a globe memory hijack another pin's
+    //    overview text (incident 2026-07-07, Coronet Peak Ski School).
     if (r1.linked.some((l) => l.entity_id === orgAsPlace)) ok('organization stub linked to the place entity (#38 blur)')
     else bad('org→place exact match failed: ' + JSON.stringify(r1.linked))
+    const { data: orgLink } = await supabase.from('memory_entities')
+      .select('role').eq('memory_id', memId!).eq('entity_id', orgAsPlace).maybeSingle()
+    if (orgLink?.role === 'mentioned') ok("place-typed stub link carries role 'mentioned' (pin overview can't be hijacked)")
+    else bad('place link role wrong: ' + JSON.stringify(orgLink))
 
     // 3. Unknown name proposed, nothing created
     const heidi = r1.proposed.find((p) => p.name === 'TESTSTUBRES Heidi Brandt')

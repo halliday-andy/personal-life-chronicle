@@ -173,6 +173,24 @@ Supersedes the 2026-06-17 block below, which had gone nine days stale. The
   globe detail card "Read in journey →". Cold deep links work; globe
   stays out of AppNav. **Next: J5** a11y/keyboard proof — then the
   Journey arc is complete.
+- **Incident + repair (2026-07-07, Andy's QA): mention-links hijacked
+  pin overview text.** The stub sweep AND the /memories "+ link" both
+  defaulted place links to role='location' — but role='location' +
+  capture_mode='globe_onboarding' (oldest-first) IS the discriminator
+  for "the pin's own memory" (the 2026-06-11 scoping rule). One pin's
+  globe recollection linked to another pin's entity therefore
+  masqueraded as its overview: Coronet Peak Ski School showed the 1975
+  primary's text (Andy's sighting); Trans Hotel showed the Ramada's;
+  five more pins carried latent wrong-role links. **Class-of-bug:
+  role='location' is load-bearing — mention-links must NEVER use it.**
+  Fixes: `defaultRoleForType` place→'mentioned' (owner links, stub
+  sweep, resolve-stub all inherit); data repaired by
+  `scripts/repair-globe-location-roles.mjs` (26 links flipped; genuine
+  pairs identified by the create-transaction exact-timestamp match;
+  post-condition proven clean; re-runnable). Consumers unaffected:
+  linked-recollections, Entity View, /memories queries don't filter by
+  role; get_residence_pins has_memory stays location-only by design.
+  Proofs updated (owner-edit + stub-resolution assert 'mentioned').
 - **Incident + guards (2026-07-06 late): orchestrator narrated a save
   with ZERO tool calls.** Andy pasted Harry Leonard ski-show research
   mid-conversation; the reply claimed it was "added as context to

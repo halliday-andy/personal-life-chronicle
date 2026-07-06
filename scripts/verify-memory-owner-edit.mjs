@@ -122,9 +122,12 @@ async function main() {
     }
 
     // ── 6. Entity linking — default roles + idempotency ──
+    // place → 'mentioned', NEVER 'location': role='location' is the pin-
+    // overview discriminator; a mention-link carrying it lets one pin's
+    // recollection hijack another pin's text (incident 2026-07-07).
     const l1 = await linkEntityToMemory(supabase, user.id, finalMem, person)
     const l2 = await linkEntityToMemory(supabase, user.id, finalMem, place)
-    if (l1.role === 'participant' && l2.role === 'location') ok('default roles: person→participant, place→location')
+    if (l1.role === 'participant' && l2.role === 'mentioned') ok('default roles: person→participant, place→mentioned (never location)')
     else bad('roles wrong: ' + JSON.stringify({ l1: l1.role, l2: l2.role }))
 
     const l3 = await linkEntityToMemory(supabase, user.id, finalMem, person)
