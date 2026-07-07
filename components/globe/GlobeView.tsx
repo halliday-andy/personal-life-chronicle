@@ -651,6 +651,7 @@ export default function GlobeView() {
           lng: draft.lng, lat: draft.lat, label: data.name?.trim() || draft.label,
           whenText: data.whenText, body: data.body, position: data.position,
           typeCode: data.typeCode, anchorId: data.anchorId, description: data.description,
+          entityId: data.entityId,
         }),
       })
       if (!res.ok) {

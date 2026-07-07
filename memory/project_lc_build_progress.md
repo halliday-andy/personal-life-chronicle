@@ -102,12 +102,21 @@ Supersedes the 2026-06-17 block below, which had gone nine days stale. The
   capture-time prevention = orchestrator passes pronoun referents
   ("she" = Leola) to extract_entities (bundle with the orchestrator/5b
   work).
-- **Queued (not urgent, Andy 2026-07-06): alias editing on the Entity
-  View.** Aliases only ever grow (merge + extraction append; nothing
-  prunes) — the junk "Leo" alias on Leola Lapides (May-22 pre-#38
-  substring false-positive) is unremovable in the UI and could
-  false-match a real Leo. Fix = alias remove/add on /entities/[id] +
-  PATCH aliases support. Spawned as a background task chip 2026-07-06.
+- **Both queued background tasks BUILT 2026-07-07** (before session
+  close, Andy's request): (1) **Alias editing** — the Entity View
+  "also:" line is chips with × + a "+ alias" input (PATCH already
+  supported wholesale alias replace; this was the missing UI). Removing
+  the junk "Leo" on Leola Lapides is left to Andy's QA. (2) **Pin
+  adoption** (the duplicate-twin fix, migration `20260707120000`):
+  `create_residence_pin` gains optional `p_entity_id` — the pin ADOPTS
+  the user's existing unpinned place/organization entity (gains geom,
+  org→place per physical-location-wins, keeps description/links, folds
+  a differing modal name as alias; guards: ownership / already-pinned /
+  non-place-org). `GET /api/globe/entity-match?name=` (exact ci match,
+  unpinned only) feeds a PinModal offer strip ("pin it instead of
+  creating a duplicate?" / Create new, per-candidate dismissal). Proof
+  `verify-globe-pin-adopt-entity.mjs` 12/12. QA:
+  `docs/qa/2026-07-07-pin-adoption-and-aliases-qa-checklist.md`.
 - **Globe stub resolution BUILT + SWEPT 2026-07-06** (`102f825` + sweep),
   from Andy's QA finding: 19 pin recollections had ZERO person links —
   30+ names stranded in `metadata.globe_extraction` (the Slice-2

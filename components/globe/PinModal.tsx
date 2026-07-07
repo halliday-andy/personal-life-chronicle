@@ -10,7 +10,7 @@
  * the user can save just the pin.
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { PIN_TYPES, pinTypeMeta, SPINE_CODE } from '@/lib/globe/pin-types'
 
 const GHOST_TEXTS = [
@@ -28,6 +28,9 @@ export interface PinDraftData {
   position: number | null   // spine sequence slot; null = append / N/A for markers
   typeCode: string
   anchorId: string | null   // marker → a primary residence (null = standalone)
+  /** Adopt this existing entity as the pin's place instead of creating a
+   *  new one (2026-07-07 duplicate-twin fix); null = create fresh. */
+  entityId: string | null
 }
 
 export default function PinModal({
@@ -56,6 +59,30 @@ export default function PinModal({
   const [anchorId, setAnchorId] = useState<string>(primaries[0]?.relationship_id ?? '')
   const ghost = useMemo(() => GHOST_TEXTS[Math.floor(Math.random() * GHOST_TEXTS.length)], [])
 
+  // Duplicate-twin guard (2026-07-07): if the pin name exactly matches an
+  // existing unpinned place/organization entity, offer to ADOPT it — the
+  // pin then carries all its linked recollections and context instead of
+  // minting a lookalike (Phillips Exeter, Hanover/Dartmouth).
+  const [match, setMatch] = useState<{ id: string; canonical_name: string; type: string; mention_count: number } | null>(null)
+  const [useExisting, setUseExisting] = useState(false)
+  const [dismissedFor, setDismissedFor] = useState<string | null>(null)
+  useEffect(() => {
+    const trimmed = name.trim()
+    if (!trimmed) { setMatch(null); setUseExisting(false); return }
+    const t = setTimeout(() => {
+      fetch(`/api/globe/entity-match?name=${encodeURIComponent(trimmed)}`)
+        .then((r) => r.json())
+        .then((d) => {
+          const c = (d.candidates ?? [])[0] ?? null
+          setMatch(c)
+          // A different candidate resets both the choice and the dismissal.
+          setUseExisting((prev) => (c ? prev : false))
+        })
+        .catch(() => setMatch(null))
+    }, 350)
+    return () => clearTimeout(t)
+  }, [name])
+
   const isSpine = typeCode === SPINE_CODE
   // A Log anchors to ANY place; other markers anchor to a primary residence.
   const anchorOptions = typeCode === 'logged_at'
@@ -83,6 +110,49 @@ export default function PinModal({
           placeholder="Name this place"
           className="nocturne-display mt-1 w-full rounded-xl border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-2xl font-medium leading-tight text-[var(--ink)] placeholder-[var(--ink-dim)]/50 outline-none focus:border-[var(--ember-soft)]"
         />
+
+        {match && !useExisting && dismissedFor !== match.id && (
+          <div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl border border-[var(--ember-soft)]/40 bg-[var(--ember)]/10 px-3 py-2 text-xs text-[var(--ink)]">
+            <span className="min-w-0 flex-1">
+              This looks like your existing <strong>{match.canonical_name}</strong>
+              {match.mention_count > 0 && (
+                <span className="text-[var(--ink-dim)]"> · {match.mention_count} recollection{match.mention_count === 1 ? '' : 's'} mention it</span>
+              )}
+              {' '}— pin it instead of creating a duplicate?
+            </span>
+            <span className="flex shrink-0 gap-1.5">
+              <button
+                type="button"
+                onClick={() => setUseExisting(true)}
+                disabled={saving}
+                className="rounded-lg bg-[var(--ember)] px-2.5 py-1 font-medium text-[#241500] hover:bg-[var(--ember-soft)] disabled:opacity-50"
+              >
+                Pin the existing
+              </button>
+              <button
+                type="button"
+                onClick={() => setDismissedFor(match.id)}
+                disabled={saving}
+                className="rounded-lg border border-[var(--glass-border)] px-2.5 py-1 text-[var(--ink-dim)] hover:text-[var(--ink)] disabled:opacity-50"
+              >
+                Create new
+              </button>
+            </span>
+          </div>
+        )}
+        {match && useExisting && (
+          <p className="mt-2 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-3 py-1.5 text-xs text-emerald-200">
+            Pinning your existing <strong>{match.canonical_name}</strong> — its recollections and
+            context come with it.{' '}
+            <button
+              type="button"
+              onClick={() => setUseExisting(false)}
+              className="underline hover:text-emerald-100"
+            >
+              undo
+            </button>
+          </p>
+        )}
 
         <label className="mt-5 block text-sm text-[var(--ink-dim)]">What kind of place?</label>
         <select
@@ -191,6 +261,7 @@ export default function PinModal({
               position: isSpine && primaries.length ? position : null,
               typeCode,
               anchorId: isSpine ? null : (anchorId || null),
+              entityId: useExisting && match ? match.id : null,
             })}
             disabled={saving}
             className="rounded-lg bg-[var(--ember)] px-5 py-2 text-sm font-medium text-[#241500] shadow-[0_0_20px_rgba(244,177,74,0.45)] hover:bg-[var(--ember-soft)] disabled:opacity-60"

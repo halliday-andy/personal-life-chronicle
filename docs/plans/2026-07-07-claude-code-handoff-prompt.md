@@ -30,7 +30,7 @@ coding.
   1. `role='location'` + `capture_mode='globe_onboarding'` is the pin-overview discriminator — mention-links must use `'mentioned'` (`defaultRoleForType`), never location.
   2. "Words are not actions": the orchestrator once narrated a save with zero tool calls; prompt directive + a capture-panel "no action was taken" notice guard it — keep both intact.
   3. `merge_entities` preserves entity substance (geom etc.) in either direction — don't regress it when touching the function.
-- **Two background-task chips may not survive the app restart** (recorded in memory §queued): pin-creation entity resolution ("this looks like your existing X — pin it?") and Entity-View alias editing (junk "Leo" alias on Leola Lapides). Recreate/spawn if Andy wants them.
+- **Both former background tasks are BUILT** (2026-07-07, end of session): pin adoption at placement time ("this looks like your existing X — pin it?", migration `20260707120000`, proof 12/12) and Entity-View alias editing. Andy's QA for both: `docs/qa/2026-07-07-pin-adoption-and-aliases-qa-checklist.md` (removing the junk "Leo" alias is deliberately his rep).
 - Verify scripts run against the LIVE shared DB: relative-only assertions on own fixtures, self-cleaning finally blocks (see any recent `scripts/verify-*.mjs`). Migrations apply via `node scripts/db-apply.mjs <filename>`; the safety gate stops for anything altering existing data.
 - Dev stack: `./scripts/dev-up.sh` (Next 3001 + Inngest 8288, detached); never `npm run build` while dev is live.
 

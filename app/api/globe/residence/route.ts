@@ -60,6 +60,10 @@ interface PostBody {
   typeCode?: string   // one of PIN_TYPE_CODES; defaults to 'lived_at'
   anchorId?: string | null  // marker → its primary residence relationship
   description?: string  // placard — a short one-line description of the place
+  /** Adopt an existing (unpinned place/organization) entity instead of
+   *  minting a new one — offered by the modal when the name matches
+   *  (2026-07-07; the Phillips Exeter duplicate-twin fix). */
+  entityId?: string | null
 }
 
 export async function POST(request: NextRequest) {
@@ -74,7 +78,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const { lng, lat, label, whenText, body, position, typeCode, anchorId, description } = payload
+  const { lng, lat, label, whenText, body, position, typeCode, anchorId, description, entityId } = payload
   if (
     typeof lng !== 'number' || typeof lat !== 'number' ||
     Number.isNaN(lng) || Number.isNaN(lat) ||
@@ -133,6 +137,7 @@ export async function POST(request: NextRequest) {
     p_position: pos,
     p_type_code: type,
     p_anchor_residence_id: anchor,
+    p_entity_id: typeof entityId === 'string' ? entityId : null,
   })
   if (error) {
     return NextResponse.json({ error: 'Failed to place pin', detail: error.message }, { status: 500 })
@@ -141,8 +146,13 @@ export async function POST(request: NextRequest) {
   const row = Array.isArray(data) ? data[0] : data
 
   // Placard — a short one-line description on the place entity (item 1).
+  // On an ADOPTED entity an empty modal placard must not wipe an existing
+  // description; only a typed placard writes.
   if (description !== undefined && row?.place_entity_id) {
-    await admin.from('entities').update({ description: description.trim() || null }).eq('id', row.place_entity_id)
+    const trimmedPlacard = description.trim()
+    if (!entityId || trimmedPlacard) {
+      await admin.from('entities').update({ description: trimmedPlacard || null }).eq('id', row.place_entity_id)
+    }
   }
 
   // Async extraction of the narrative into structured fields (Slice 2).
