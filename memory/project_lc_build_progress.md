@@ -222,10 +222,43 @@ Supersedes the 2026-06-17 block below, which had gone nine days stale. The
   mid-conversation (the incident shape) — PASS. The lost material was
   recovered from capture_submissions into a review_queue
   attach-as-context card.
-- **NEXT:** Andy's QA (Journey J1 + 57 stub proposals on /review +
-  Exeter merge + Slice 6 walkthrough + Hopper 5a + outstanding globe
-  re-tests); build continues J2–J5; then Slice 7 (Person page + Life's
-  Cast + Hopper 5b), riding on Slice 6.
+- **SLICE 7 BUILT 2026-07-07 (all four phases, Andy's go on the proposal):**
+  7.1 (`77ada81`, `1da0374`) — /memories row-anchor deep link
+  (`#<memory_id>` scroll+highlight, the Slice-6 deferral pulled forward
+  with Andy's OK); Entity-View mention rows link OUT (pin-anchored →
+  `/journey?pin=` via `lib/entity/mention-pins.ts`, resolution rides
+  role='location' as designed; else the /memories anchor); PinHopper
+  gains a `light` theme + `showTitle` and the person page hosts it.
+  7.2 (`49f5d68`) — Life's Cast: `metadata.in_lifes_cast` (M3, no DDL)
+  via pure `applyLifesCast` MERGE (is_self etc. provably survive);
+  deliberate ☆/★ toggle on person pages (persons only, API-enforced);
+  /entities ★ badge + Cast-first person tab + "with content only"
+  filter (`entityHasContent`; default OFF — the list doubles as the
+  orphan-cleanup surface). 7.3 (`dbc5701`) — person-anchored
+  recollections: "Add recollection" on person pages →
+  `createPersonAnchoredRecollection` (verbatim body + when-phrase,
+  saves FINAL, role='participant' link, failed link deletes the orphan).
+  Listed in CAPTURE order — event chronology stays the Temporal Agent's.
+  7.4 (`6f8cd4d`) — Hopper 5b: orchestrator tools list_memory_stubs /
+  add_memory_stub (only on explicit user yes; never mints entities) /
+  consume_memory_stub (requires a REAL memory_id — words-are-not-actions
+  backing); prompt section "The Hopper" (SYSTEM_PROMPT_VERSION
+  2026-07-07.0); migration `20260707130000` adds
+  `memory_stubs.consumed_by_memory_id` lineage (additive, applied).
+  Proofs: mention-links 4/4, lifes-cast 9/9, person-recollection 9/9,
+  hopper-tools 8/8, and a REAL orchestrator run 6/6 (list → create →
+  classify/extract → consume in one run, reply matched tools). QA:
+  `docs/qa/2026-07-07-slice7-person-page-qa-checklist.md`.
+- **Andy's QA delta (checked live 2026-07-07):** stub proposals 52/57
+  confirmed (5 pending); owner-edit checklist COMPLETE (17/17, in
+  `783ca91`); Exeter twins still unmerged; Leola still carries the junk
+  "Leo" alias (alias QA pending); Journey J1 / Slice 6 / Hopper 5a /
+  stub-resolution walkthroughs still open.
+- **NEXT:** Andy's QA (Slice 7 checklist above + the open walkthroughs +
+  Exeter merge + 5 remaining stub proposals); then per roadmap §5 the
+  slice list is exhausted — remaining parked items: Vertical Moments,
+  pin-visual redesign, /memories full-text search (deferred from
+  Slice 6).
 
 ## Session handoff — 2026-06-17 (QA remediation pass, superseded)
 
