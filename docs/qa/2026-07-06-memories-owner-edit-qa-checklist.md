@@ -22,38 +22,38 @@ App: **http://localhost:3001/memories** (sign in first).
 ## 2. Entity-link editing generally
 *(On /memories cards only — the Entity View mention rows and globe pin chips
 are different surfaces without unlink.)*
-- [ ] Every entity chip on a /memories card carries a small **always-visible ×**
+- [x] Every entity chip on a /memories card carries a small **always-visible ×**
       after the name (faint gray; reddens when the pointer is on it — it does
       NOT appear on hover, it's already there). Clicking it unlinks (chip
       disappears); the entity itself still exists in /entities.
       **[taste]** the × was made faint to keep chips calm — if it was hard to
       FIND (2026-07-06 it was), say so and it gets more visible.
-- [ ] Re-link the same entity via **+ link** → idempotent, no duplicate chip.
-- [ ] The typeahead excludes entities already linked to the card.
-- [ ] **Escape** or **cancel** closes the typeahead without changes.
+- [x] Re-link the same entity via **+ link** → idempotent, no duplicate chip.
+- [x] The typeahead excludes entities already linked to the card.
+- [x] **Escape** or **cancel** closes the typeahead without changes.
 
 ## 3. Editing a FINAL recollection
-- [ ] A **Final** memory's header now shows **Edit** (next to Delete).
-- [ ] Open Edit → the editor notes *"Saving preserves your original text as
+- [x] A **Final** memory's header now shows **Edit** (next to Delete).
+- [x] Open Edit → the editor notes *"Saving preserves your original text as
       a revision."* Make a small text change → **Save**.
-- [ ] A green notice confirms *"your previous text is preserved as a
+- [x] A green notice confirms *"your previous text is preserved as a
       revision."* The card shows the new text.
-- [ ] Edit again and change ONLY the "When"/precision fields → Save → no
+- [x] Edit again and change ONLY the "When"/precision fields → Save → no
       revision notice (temporal metadata isn't the verbatim narrative).
-- [ ] Draft memories behave as before (Accept / Decline / Edit row).
+- [x] Draft memories behave as before (Accept / Decline / Edit row).
 
 ## 4. Entity View mention rows (follow-on fix, same session)
-- [ ] On an Entity View (e.g. Leola Lapides), each "recollection that
+- [x] On an Entity View (e.g. Leola Lapides), each "recollection that
       mentions" is now a **distinct bordered row** — separation visible at
       rest, no hover needed. **[taste]** row density.
-- [ ] Each row shows a metadata line: the memory's own **time phrase**
+- [x] Each row shows a metadata line: the memory's own **time phrase**
       (when present) + capture date + an at-rest **"open in Recollections →"**
       affordance that brightens on hover.
 
 ## 5. Not broken elsewhere
-- [ ] The globe pin edit panel still edits its own recollection as before
+- [x] The globe pin edit panel still edits its own recollection as before
       (its separate revision path is untouched).
-- [ ] ProposalCard draft editing in the capture panel is unaffected.
+- [x] ProposalCard draft editing in the capture panel is unaffected.
 
 ## Known scope (not bugs)
 - **Elaborations via edit do not auto-re-extract** — after adding new names
