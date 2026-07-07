@@ -210,6 +210,55 @@ export const ORCHESTRATOR_TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: 'list_memory_stubs',
+    description:
+      "List the user's open hopper stubs — memories they jotted down to write up later. Pass entity_name to scope to one person/place (resolved against their existing entities); omit it to list open stubs across all hosts. Read-only. Use when the user wants to work on their jotted memories ('let's write up one of my jots about X') or asks what's waiting in the hopper.",
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        entity_name: {
+          type: 'string',
+          description: "Optional host entity to scope to — use the exact name from Layer B when it's an existing entity.",
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'add_memory_stub',
+    description:
+      "Jot a new stub into the hopper of a person or place — a memory to be written up later, anchored to the entity it's about. Use ONLY after the user has explicitly agreed in this conversation to jot it (offer first: 'shall I add that to your hopper for X?'). Never jot silently. Not for research/background (propose_context_note) and not for general loose ends (add_to_backlog) — a stub is a specific unwritten MEMORY with a clear host entity.",
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        entity_name: {
+          type: 'string',
+          description: 'The person or place the memory is about — the stub lives in their hopper.',
+        },
+        body: {
+          type: 'string',
+          description: "The jot, short and evocative, in the user's terms ('the ice-cream truck summer').",
+        },
+        rationale: { type: 'string', description: 'One sentence: why this is a stub for later, and that the user agreed.' },
+      },
+      required: ['entity_name', 'body', 'rationale'],
+    },
+  },
+  {
+    name: 'consume_memory_stub',
+    description:
+      'Mark a hopper stub as written, linking it to the recollection it became. Call this ONLY after create_memory has returned a real memory_id for the fleshed-out recollection — in the same later turn as classify_dimensions/extract_entities. The stub must belong to the user and still be open.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        stub_id: { type: 'string', description: 'UUID of the stub (from list_memory_stubs).' },
+        memory_id: { type: 'string', description: 'UUID of the memory just created from it (from create_memory).' },
+        rationale: { type: 'string', description: 'One sentence tying the stub to the recollection.' },
+      },
+      required: ['stub_id', 'memory_id', 'rationale'],
+    },
+  },
+  {
     name: 'add_to_backlog',
     description:
       "Queue a Things-to-come-back-to item — a thought the user wants to develop later. Use when the submission is intentionally incomplete (a stub) or when an interesting tangent comes up that the user hasn't asked you to develop now. NOT for research or background material about an entity — that goes through propose_context_note. Persists as a review_queue row with item_type='memory_elaboration_needed' linked to the current capture_submissions row.",
@@ -253,6 +302,12 @@ export async function executeTool(
         return await handleFlagPrivateNotes(input, context)
       case 'propose_context_note':
         return await handleProposeContextNote(input, context)
+      case 'list_memory_stubs':
+        return await handleListMemoryStubs(input, context)
+      case 'add_memory_stub':
+        return await handleAddMemoryStub(input, context)
+      case 'consume_memory_stub':
+        return await handleConsumeMemoryStub(input, context)
       case 'add_to_backlog':
         return await handleAddBacklog(input, context)
       default:
@@ -643,6 +698,234 @@ async function handleProposeContextNote(
       used_full_submission,
     },
     confidence: resolved ? (exact ? 0.95 : 0.7) : 0.4,
+  }
+}
+
+// ─── Hopper 5b (Slice 7.4) ─────────────────────────────────────────
+
+/**
+ * Resolve a name against the user's entity graph — the same semantics as
+ * propose_context_note's inline resolution (exact ci canonical/alias match
+ * wins; a single substring candidate resolves; otherwise candidates ship
+ * back for the model to disambiguate with the user).
+ */
+async function resolveEntityByName(ctx: ToolContext, name: string) {
+  const { data: rows } = await ctx.supabase
+    .from('entities')
+    .select('id, type, canonical_name, aliases')
+    .eq('user_id', ctx.user_id)
+    .or(`canonical_name.ilike.%${name}%,aliases.cs.{${name}}`)
+    .limit(6)
+  const lower = name.toLowerCase()
+  const candidates = (rows ?? []) as Array<{
+    id: string; type: string; canonical_name: string; aliases: string[] | null
+  }>
+  const exact = candidates.find(
+    (e) =>
+      e.canonical_name.toLowerCase() === lower ||
+      (e.aliases ?? []).some((a) => a.toLowerCase() === lower),
+  )
+  return { resolved: exact ?? (candidates.length === 1 ? candidates[0] : null), candidates }
+}
+
+async function handleListMemoryStubs(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResultPayload> {
+  const entity_name = input.entity_name ? String(input.entity_name).trim() : null
+
+  let hostId: string | null = null
+  let hostName: string | null = null
+  if (entity_name) {
+    const { resolved, candidates } = await resolveEntityByName(ctx, entity_name)
+    if (!resolved) {
+      return {
+        tool: 'list_memory_stubs',
+        persisted: false,
+        rationale: `Could not resolve "${entity_name}" to a single entity`,
+        data: {
+          error: 'entity not resolved',
+          candidates: candidates.map((e) => ({ id: e.id, type: e.type, canonical_name: e.canonical_name })),
+        },
+      }
+    }
+    hostId = resolved.id
+    hostName = resolved.canonical_name
+  }
+
+  let query = ctx.supabase
+    .from('memory_stubs')
+    .select('id, body, created_at, host_entity_id, entities!memory_stubs_host_entity_id_fkey(canonical_name)')
+    .eq('user_id', ctx.user_id)
+    .eq('status', 'open')
+    .order('created_at', { ascending: false })
+    .limit(20)
+  if (hostId) query = query.eq('host_entity_id', hostId)
+  const { data: stubRows, error } = await query
+  if (error) {
+    return {
+      tool: 'list_memory_stubs',
+      persisted: false,
+      rationale: 'Stub lookup failed',
+      data: { error: error.message },
+    }
+  }
+
+  type StubRow = {
+    id: string; body: string; created_at: string; host_entity_id: string
+    entities: { canonical_name: string } | { canonical_name: string }[] | null
+  }
+  const stubs = ((stubRows ?? []) as StubRow[]).map((s) => {
+    const host = Array.isArray(s.entities) ? s.entities[0] : s.entities
+    return {
+      stub_id: s.id,
+      body: s.body,
+      created_at: s.created_at,
+      host_entity_id: s.host_entity_id,
+      host_name: host?.canonical_name ?? null,
+    }
+  })
+
+  return {
+    tool: 'list_memory_stubs',
+    persisted: false,
+    rationale: hostName
+      ? `${stubs.length} open jot(s) in ${hostName}'s hopper`
+      : `${stubs.length} open jot(s) across the hopper`,
+    data: { stubs, host: hostName ? { id: hostId, canonical_name: hostName } : null },
+  }
+}
+
+async function handleAddMemoryStub(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResultPayload> {
+  const entity_name = String(input.entity_name ?? '').trim()
+  const body = String(input.body ?? '').trim()
+  const rationale = String(input.rationale ?? '')
+
+  if (!entity_name || !body) {
+    return {
+      tool: 'add_memory_stub',
+      persisted: false,
+      rationale,
+      data: { error: 'entity_name and body are both required' },
+    }
+  }
+
+  // Resolution only — a stub must never mint an entity. An unresolved
+  // name returns candidates so the model can ask the user, not guess.
+  const { resolved, candidates } = await resolveEntityByName(ctx, entity_name)
+  if (!resolved) {
+    return {
+      tool: 'add_memory_stub',
+      persisted: false,
+      rationale,
+      data: {
+        error: `"${entity_name}" did not resolve to a single existing entity — ask the user which one they mean`,
+        candidates: candidates.map((e) => ({ id: e.id, type: e.type, canonical_name: e.canonical_name })),
+      },
+    }
+  }
+
+  const { data: stub, error } = await ctx.supabase
+    .from('memory_stubs')
+    .insert({ user_id: ctx.user_id, host_entity_id: resolved.id, body, created_by: 'assistant' })
+    .select('id, body, status, created_at')
+    .single()
+  if (error || !stub) {
+    return {
+      tool: 'add_memory_stub',
+      persisted: false,
+      rationale,
+      data: { error: error?.message ?? 'insert returned no row' },
+    }
+  }
+
+  return {
+    tool: 'add_memory_stub',
+    persisted: true,
+    rationale,
+    data: {
+      stub_id: stub.id,
+      body: stub.body,
+      host: { id: resolved.id, canonical_name: resolved.canonical_name, type: resolved.type },
+    },
+  }
+}
+
+async function handleConsumeMemoryStub(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResultPayload> {
+  const stub_id = String(input.stub_id ?? '').trim()
+  const memory_id = String(input.memory_id ?? '').trim()
+  const rationale = String(input.rationale ?? '')
+
+  if (!stub_id || !memory_id) {
+    return {
+      tool: 'consume_memory_stub',
+      persisted: false,
+      rationale,
+      data: { error: 'stub_id and memory_id are both required' },
+    }
+  }
+
+  // Words-are-not-actions backing: consumption requires a REAL recollection.
+  // The memory must exist and belong to this user before the stub flips.
+  const { data: memory } = await ctx.supabase
+    .from('memories')
+    .select('id, user_id')
+    .eq('id', memory_id)
+    .maybeSingle()
+  if (!memory || memory.user_id !== ctx.user_id) {
+    return {
+      tool: 'consume_memory_stub',
+      persisted: false,
+      rationale,
+      data: { error: 'memory_id does not exist for this user — create the recollection first' },
+    }
+  }
+
+  const { data: stub, error } = await ctx.supabase
+    .from('memory_stubs')
+    .update({
+      status: 'consumed',
+      consumed_at: new Date().toISOString(),
+      consumed_by_memory_id: memory_id,
+    })
+    .eq('id', stub_id)
+    .eq('user_id', ctx.user_id)
+    .eq('status', 'open')
+    .select('id, body, status, consumed_at, consumed_by_memory_id')
+    .maybeSingle()
+  if (error) {
+    return {
+      tool: 'consume_memory_stub',
+      persisted: false,
+      rationale,
+      data: { error: error.message },
+    }
+  }
+  if (!stub) {
+    return {
+      tool: 'consume_memory_stub',
+      persisted: false,
+      rationale,
+      data: { error: 'stub not found, not yours, or already consumed' },
+    }
+  }
+
+  return {
+    tool: 'consume_memory_stub',
+    persisted: true,
+    rationale,
+    data: {
+      stub_id: stub.id,
+      body: stub.body,
+      status: stub.status,
+      consumed_by_memory_id: stub.consumed_by_memory_id,
+    },
   }
 }
 
