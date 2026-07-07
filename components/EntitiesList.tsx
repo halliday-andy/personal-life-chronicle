@@ -36,6 +36,10 @@ export interface EntityRow {
   aliases: string[]
   mention_count: number
   created_at: string
+  /** Life's Cast membership (persons; metadata flag — Slice 7.2). */
+  in_lifes_cast: boolean
+  /** Anything beyond a bare name: mention, context note, open stub, description. */
+  has_content: boolean
 }
 
 // All seven entity_type enum values. concept + vehicle were missing here
@@ -77,13 +81,17 @@ export default function EntitiesList({ initialItems }: { initialItems: EntityRow
     return ordered[0] ?? 'person'
   })
   const [query, setQuery] = useState('')
+  // Content-only filter (Slice 7.2): hide blank entity pages — nothing but
+  // a name. Off by default; this page is also the orphan-cleanup surface,
+  // and blank rows ARE the cleanup targets.
+  const [contentOnly, setContentOnly] = useState(false)
   const [banner, setBanner] = useState<{ kind: 'error' | 'info'; text: string } | null>(null)
 
   // Counts per type for the tab labels.
   const typeCounts: Record<string, number> = {}
   for (const e of items) typeCounts[e.type] = (typeCounts[e.type] ?? 0) + 1
 
-  const filtered = items.filter((e) => {
+  const typeMatched = items.filter((e) => {
     if (e.type !== activeType) return false
     if (!query.trim()) return true
     const q = query.trim().toLowerCase()
@@ -91,6 +99,14 @@ export default function EntitiesList({ initialItems }: { initialItems: EntityRow
     if (e.aliases.some((a) => a.toLowerCase().includes(q))) return true
     return false
   })
+  const blankCount = typeMatched.filter((e) => !e.has_content).length
+  const filtered = contentOnly ? typeMatched.filter((e) => e.has_content) : typeMatched
+
+  // Life's Cast members lead the person tab — promotion is deliberate, so
+  // surfacing them first is the payoff, not auto-curation.
+  const sorted = activeType === 'person'
+    ? [...filtered].sort((a, b) => Number(b.in_lifes_cast) - Number(a.in_lifes_cast))
+    : filtered
 
   function onMutated(updater: (prev: EntityRow[]) => EntityRow[], info?: string) {
     setItems(updater)
@@ -143,15 +159,27 @@ export default function EntitiesList({ initialItems }: { initialItems: EntityRow
         })}
       </div>
 
-      {/* Search */}
-      <div className="mb-3">
+      {/* Search + content-only filter */}
+      <div className="mb-3 flex items-center gap-3">
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={`Search ${TYPE_LABELS[activeType]?.toLowerCase() ?? activeType}…`}
-          className="w-full text-sm border border-stone-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:border-stone-500"
+          className="flex-1 text-sm border border-stone-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:border-stone-500"
         />
+        <label className="flex shrink-0 items-center gap-1.5 text-xs text-stone-500" title="Hide entities with nothing on their page yet — no mentions, context, jots, or description">
+          <input
+            type="checkbox"
+            checked={contentOnly}
+            onChange={(e) => setContentOnly(e.target.checked)}
+            className="accent-stone-700"
+          />
+          with content only
+          {contentOnly && blankCount > 0 && (
+            <span className="text-stone-400">({blankCount} hidden)</span>
+          )}
+        </label>
       </div>
 
       {/* Banner */}
@@ -175,15 +203,17 @@ export default function EntitiesList({ initialItems }: { initialItems: EntityRow
       )}
 
       {/* Entity rows */}
-      {filtered.length === 0 ? (
+      {sorted.length === 0 ? (
         <p className="text-stone-500 text-sm py-12 text-center">
           {query
             ? `No ${TYPE_LABELS[activeType]?.toLowerCase()} match “${query}”.`
-            : `No ${TYPE_LABELS[activeType]?.toLowerCase()} yet.`}
+            : contentOnly && blankCount > 0
+              ? `All ${TYPE_LABELS[activeType]?.toLowerCase()} here are blank pages (${blankCount} hidden by the content filter).`
+              : `No ${TYPE_LABELS[activeType]?.toLowerCase()} yet.`}
         </p>
       ) : (
         <div className="space-y-2">
-          {filtered.map((entity) => (
+          {sorted.map((entity) => (
             <EntityCard
               key={entity.id}
               entity={entity}
@@ -482,6 +512,14 @@ function EntityCard({
           <span className={`rounded-full font-medium uppercase tracking-wide px-1.5 py-0.5 text-[10px] border ${TYPE_BADGE_CLASSES[entity.type] ?? 'bg-stone-50 text-stone-700 border-stone-200'}`}>
             {entity.type.replace('_', ' ')}
           </span>
+          {entity.in_lifes_cast && (
+            <span
+              className="rounded-full border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700"
+              title="In Life's Cast — promoted on their person page"
+            >
+              ★ Life&apos;s Cast
+            </span>
+          )}
           <span className="text-sm font-semibold text-stone-900">{entity.canonical_name}</span>
           {entity.aliases.length > 0 && (
             <span className="text-xs text-stone-500">

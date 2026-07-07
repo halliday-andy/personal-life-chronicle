@@ -50,6 +50,8 @@ interface Entity {
   canonical_name: string
   aliases: string[]
   description: string | null
+  /** Life's Cast membership (metadata flag, persons only — Slice 7.2). */
+  in_lifes_cast?: boolean
 }
 
 const TYPE_LABEL: Record<string, string> = {
@@ -181,6 +183,31 @@ export default function EntityView({ entity, notes: initialNotes, recollections 
   const [error, setError] = useState<string | null>(null)
   // Open-stub count for the person page's hopper heading (Slice 7.1).
   const [hopperCount, setHopperCount] = useState<number | null>(null)
+  // Life's Cast membership (Slice 7.2) — deliberate promote/demote.
+  const [inCast, setInCast] = useState(entity.in_lifes_cast === true)
+  const [castBusy, setCastBusy] = useState(false)
+  const [castError, setCastError] = useState<string | null>(null)
+
+  async function toggleCast() {
+    if (castBusy) return
+    setCastBusy(true)
+    setCastError(null)
+    const next = !inCast
+    try {
+      const res = await fetch(`/api/entity/${entity.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ in_lifes_cast: next }),
+      })
+      const d = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(d.detail || d.error || `HTTP ${res.status}`)
+      setInCast(d.in_lifes_cast === true)
+    } catch (e) {
+      setCastError(e instanceof Error ? e.message : "Could not update Life's Cast.")
+    } finally {
+      setCastBusy(false)
+    }
+  }
 
   const shareable = notes.filter((n) => n.visibility === 'shareable')
   const priv = notes.filter((n) => n.visibility === 'private')
@@ -232,7 +259,26 @@ export default function EntityView({ entity, notes: initialNotes, recollections 
         <div className="mt-3 flex items-baseline gap-3">
           <h1 className="text-2xl font-semibold text-stone-900">{entity.canonical_name}</h1>
           <span className="rounded-full bg-stone-200 px-2 py-0.5 text-xs text-stone-600">{TYPE_LABEL[entity.type] ?? entity.type}</span>
+          {/* Life's Cast (Slice 7.2): a deliberate act — the Cast never
+              auto-populates. Persons only; the flag lives in metadata. */}
+          {entity.type === 'person' && (
+            <button
+              onClick={toggleCast}
+              disabled={castBusy}
+              title={inCast
+                ? "Remove from Life's Cast"
+                : "Life's Cast — the key people of your chronicle. Adding someone is always your call."}
+              className={`ml-auto shrink-0 rounded-full border px-2.5 py-0.5 text-xs transition-colors disabled:opacity-50 ${
+                inCast
+                  ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                  : 'border-stone-300 text-stone-500 hover:border-amber-300 hover:text-amber-700'
+              }`}
+            >
+              {inCast ? "★ In Life's Cast" : "☆ Add to Life's Cast"}
+            </button>
+          )}
         </div>
+        {castError && <p className="mt-1 text-xs text-rose-600">{castError}</p>}
         <AliasEditor entityId={entity.id} initial={entity.aliases} />
         {entity.description && <p className="mt-1 text-sm text-stone-600">{entity.description}</p>}
 

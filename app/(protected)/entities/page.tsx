@@ -23,6 +23,8 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import EntitiesList, { type EntityRow } from '@/components/EntitiesList'
+import { entityHasContent } from '@/lib/entity/content'
+import { isInLifesCast } from '@/lib/entity/lifes-cast'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,6 +33,8 @@ type RawEntity = {
   type: string
   canonical_name: string
   aliases: string[] | null
+  description: string | null
+  metadata: Record<string, unknown> | null
   created_at: string
   updated_at: string | null
 }
@@ -46,7 +50,7 @@ export default async function EntitiesPage() {
   // predictability; the client re-sorts within type tabs as needed.
   const { data: entitiesRaw, error: entErr } = await admin
     .from('entities')
-    .select('id, type, canonical_name, aliases, created_at, updated_at')
+    .select('id, type, canonical_name, aliases, description, metadata, created_at, updated_at')
     .eq('user_id', user.id)
     .order('type', { ascending: true })
     .order('canonical_name', { ascending: true })
@@ -65,6 +69,27 @@ export default async function EntitiesPage() {
     mentionCounts.set(l.entity_id, (mentionCounts.get(l.entity_id) ?? 0) + 1)
   }
 
+  // Content signals for the content-only filter (Slice 7.2): context notes
+  // and open hopper stubs join mentions + description in deciding whether
+  // an entity page is blank. Two cheap per-user scans at MVP scale.
+  const { data: noteRows } = await admin
+    .from('entity_context_notes')
+    .select('entity_id')
+    .eq('user_id', user.id)
+  const noteCounts = new Map<string, number>()
+  for (const n of (noteRows ?? []) as { entity_id: string }[]) {
+    noteCounts.set(n.entity_id, (noteCounts.get(n.entity_id) ?? 0) + 1)
+  }
+  const { data: stubRows } = await admin
+    .from('memory_stubs')
+    .select('host_entity_id')
+    .eq('user_id', user.id)
+    .eq('status', 'open')
+  const stubCounts = new Map<string, number>()
+  for (const s of (stubRows ?? []) as { host_entity_id: string }[]) {
+    stubCounts.set(s.host_entity_id, (stubCounts.get(s.host_entity_id) ?? 0) + 1)
+  }
+
   const items: EntityRow[] = ((entitiesRaw ?? []) as RawEntity[]).map((e) => ({
     id: e.id,
     type: e.type,
@@ -72,6 +97,13 @@ export default async function EntitiesPage() {
     aliases: e.aliases ?? [],
     mention_count: mentionCounts.get(e.id) ?? 0,
     created_at: e.created_at,
+    in_lifes_cast: isInLifesCast(e.metadata),
+    has_content: entityHasContent({
+      mention_count: mentionCounts.get(e.id) ?? 0,
+      note_count: noteCounts.get(e.id) ?? 0,
+      stub_count: stubCounts.get(e.id) ?? 0,
+      description: e.description,
+    }),
   }))
 
   return (

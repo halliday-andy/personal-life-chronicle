@@ -16,6 +16,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import EntityView, { type ContextNote, type MentionRecollection } from '@/components/EntityView'
 import { mapMentionsToPins, PIN_TYPE_CODES, type LocationLinkRow } from '@/lib/entity/mention-pins'
+import { isInLifesCast } from '@/lib/entity/lifes-cast'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,7 +32,7 @@ export default async function EntityViewPage({ params }: { params: { id: string 
 
   const { data: entity } = await admin
     .from('entities')
-    .select('id, type, canonical_name, aliases, description, user_id')
+    .select('id, type, canonical_name, aliases, description, user_id, metadata')
     .eq('id', params.id)
     .maybeSingle()
   if (!entity || entity.user_id !== user.id) notFound()
@@ -100,7 +101,14 @@ export default async function EntityViewPage({ params }: { params: { id: string 
 
   return (
     <EntityView
-      entity={{ id: entity.id, type: entity.type, canonical_name: entity.canonical_name, aliases: entity.aliases ?? [], description: entity.description ?? null }}
+      entity={{
+        id: entity.id,
+        type: entity.type,
+        canonical_name: entity.canonical_name,
+        aliases: entity.aliases ?? [],
+        description: entity.description ?? null,
+        in_lifes_cast: isInLifesCast(entity.metadata as Record<string, unknown> | null),
+      }}
       notes={notes}
       recollections={recollections}
     />

@@ -2,8 +2,16 @@
  * Entity resource endpoints.
  *
  *   PATCH /api/entity/[id]
- *     Rename an entity, manage aliases, and/or change its type.
- *     Body: { canonical_name?: string, aliases?: string[], type?: string }
+ *     Rename an entity, manage aliases, change its type, and/or set its
+ *     Life's Cast membership.
+ *     Body: { canonical_name?: string, aliases?: string[], type?: string,
+ *             in_lifes_cast?: boolean }
+ *
+ *     in_lifes_cast (Slice 7.2, roadmap M3) is a metadata flag, not a
+ *     column. It MERGES into entities.metadata — other keys there are
+ *     load-bearing (is_self, prior_anchor_residence_id, globe_extraction
+ *     bookkeeping) and must survive. Promotion is a deliberate owner act;
+ *     nothing auto-populates the Cast. Person entities only.
  *
  *     When canonical_name changes, the previous canonical_name is appended
  *     to aliases (deduplicated, case-insensitive). This preserves backward
@@ -26,6 +34,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createUserClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { applyLifesCast, isInLifesCast } from '@/lib/entity/lifes-cast'
 
 // All seven entity_type enum values (schema_v1). concept + vehicle were
 // missing here too when the /entities UI gained them (2026-07-06) — keep
@@ -50,7 +59,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   const admin = createAdminClient()
   const { data: entity, error: loadErr } = await admin
     .from('entities')
-    .select('id, user_id, type, canonical_name, aliases')
+    .select('id, user_id, type, canonical_name, aliases, metadata')
     .eq('id', params.id)
     .single()
   if (loadErr || !entity) {
@@ -64,8 +73,21 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     canonical_name?: string
     aliases?: string[]
     type?: string
+    in_lifes_cast?: boolean
   }
   const updates: Record<string, unknown> = {}
+
+  if (typeof body.in_lifes_cast === 'boolean') {
+    if (entity.type !== 'person') {
+      return NextResponse.json(
+        { error: "Life's Cast is for people — this entity is not a person" },
+        { status: 400 },
+      )
+    }
+    // MERGE into metadata: other keys (is_self, globe bookkeeping) are
+    // load-bearing and must survive. Demotion removes the key entirely.
+    updates.metadata = applyLifesCast(entity.metadata as Record<string, unknown> | null, body.in_lifes_cast)
+  }
 
   if (typeof body.type === 'string') {
     if (!ALLOWED_TYPES.includes(body.type as EntityType)) {
@@ -126,12 +148,18 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     .from('entities')
     .update(updates)
     .eq('id', params.id)
-    .select('id, type, canonical_name, aliases')
+    .select('id, type, canonical_name, aliases, metadata')
     .single()
   if (error || !data) {
     return NextResponse.json({ error: 'Failed to update', detail: error?.message }, { status: 500 })
   }
-  return NextResponse.json(data)
+  return NextResponse.json({
+    id: data.id,
+    type: data.type,
+    canonical_name: data.canonical_name,
+    aliases: data.aliases,
+    in_lifes_cast: isInLifesCast(data.metadata as Record<string, unknown> | null),
+  })
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
