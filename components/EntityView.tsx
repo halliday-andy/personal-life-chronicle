@@ -11,6 +11,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import Markdown from './Markdown'
 import PinHopper from './globe/PinHopper'
 
@@ -187,6 +188,37 @@ export default function EntityView({ entity, notes: initialNotes, recollections 
   const [inCast, setInCast] = useState(entity.in_lifes_cast === true)
   const [castBusy, setCastBusy] = useState(false)
   const [castError, setCastError] = useState<string | null>(null)
+  // Person-anchored recollection capture (Slice 7.3) — no pin required.
+  const router = useRouter()
+  const [addingRec, setAddingRec] = useState(false)
+  const [recBody, setRecBody] = useState('')
+  const [recWhen, setRecWhen] = useState('')
+  const [recBusy, setRecBusy] = useState(false)
+  const [recError, setRecError] = useState<string | null>(null)
+  const [recSaved, setRecSaved] = useState(false)
+
+  async function addRecollection() {
+    if (!recBody.trim() || recBusy) return
+    setRecBusy(true)
+    setRecError(null)
+    try {
+      const res = await fetch(`/api/entity/${entity.id}/recollection`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body: recBody, when: recWhen }),
+      })
+      const d = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(d.detail || d.error || `HTTP ${res.status}`)
+      setRecBody(''); setRecWhen(''); setAddingRec(false)
+      setRecSaved(true)
+      setTimeout(() => setRecSaved(false), 4000)
+      router.refresh() // mentions list is server-fetched — pull the new row in
+    } catch (e) {
+      setRecError(e instanceof Error ? e.message : 'Could not save the recollection.')
+    } finally {
+      setRecBusy(false)
+    }
+  }
 
   async function toggleCast() {
     if (castBusy) return
@@ -336,9 +368,67 @@ export default function EntityView({ entity, notes: initialNotes, recollections 
 
         {/* Recollections ───────────────────────────────────────── */}
         <section className="mt-8">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">
-            Recollections that mention {entity.canonical_name}{recollections.length > 0 ? ` · ${recollections.length}` : ''}
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">
+              Recollections that mention {entity.canonical_name}{recollections.length > 0 ? ` · ${recollections.length}` : ''}
+            </h2>
+            {/* Person-anchored capture (Slice 7.3): a memory about a person
+                needs no place pin. Saves FINAL; when-phrase kept verbatim. */}
+            {entity.type === 'person' && !addingRec && (
+              <button
+                onClick={() => setAddingRec(true)}
+                className="rounded-lg bg-stone-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-stone-700"
+              >
+                Add recollection
+              </button>
+            )}
+          </div>
+
+          {recSaved && (
+            <p className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+              Saved to your chronicle — it now appears below and in Recollections.
+            </p>
+          )}
+
+          {addingRec && (
+            <div className="mt-3 rounded-xl border border-stone-200 bg-white p-4">
+              <p className="mb-1.5 text-xs text-stone-500">
+                A memory about {entity.canonical_name} — first person, your words. No place needed.
+              </p>
+              <textarea
+                value={recBody}
+                onChange={(e) => setRecBody(e.target.value)}
+                placeholder="What happened, as you remember it…"
+                rows={5}
+                autoFocus
+                className="w-full resize-y rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 outline-none focus:border-stone-500"
+              />
+              <input
+                value={recWhen}
+                onChange={(e) => setRecWhen(e.target.value)}
+                placeholder="When was this? Your words — “summer of 1982”, “around when we graduated” (optional)"
+                className="mt-2 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-500"
+              />
+              {recError && <p className="mt-2 text-sm text-rose-600">{recError}</p>}
+              <div className="mt-3 flex items-center gap-2">
+                <button
+                  onClick={addRecollection}
+                  disabled={recBusy || !recBody.trim()}
+                  className="rounded-lg bg-stone-800 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+                >
+                  {recBusy ? 'Saving…' : 'Save recollection'}
+                </button>
+                <button
+                  onClick={() => { setAddingRec(false); setRecError(null) }}
+                  disabled={recBusy}
+                  className="text-sm text-stone-500 hover:text-stone-800"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
           {recollections.length === 0 ? (
             <p className="mt-2 text-sm text-stone-400">None yet.</p>
           ) : (
