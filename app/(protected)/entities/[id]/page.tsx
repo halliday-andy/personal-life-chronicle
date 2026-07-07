@@ -15,6 +15,7 @@ import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import EntityView, { type ContextNote, type MentionRecollection } from '@/components/EntityView'
+import { mapMentionsToPins, PIN_TYPE_CODES, type LocationLinkRow } from '@/lib/entity/mention-pins'
 
 export const dynamic = 'force-dynamic'
 
@@ -67,6 +68,35 @@ export default async function EntityViewPage({ params }: { params: { id: string 
     })
   }
   recollections.sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
+
+  // Which mentions live on a globe pin? (Slice 7.1 — mention out-links.)
+  // role='location' is the pin-memory discriminator; a located place that
+  // has a globe-pin relationship gives the mention a ?pin= destination.
+  if (recollections.length > 0) {
+    const { data: locLinks } = await admin
+      .from('memory_entities')
+      .select('memory_id, entity_id')
+      .in('memory_id', recollections.map((r) => r.id))
+      .eq('role', 'location')
+    const locationLinks = (locLinks ?? []) as LocationLinkRow[]
+    const placeIds = Array.from(new Set(locationLinks.map((l) => l.entity_id)))
+    if (placeIds.length > 0) {
+      const { data: relRows } = await admin
+        .from('relationships')
+        .select('id, object_id, relationship_types!inner(code)')
+        .eq('user_id', user.id)
+        .in('object_id', placeIds)
+      type RelRow = { id: string; object_id: string; relationship_types: { code: string } | { code: string }[] | null }
+      const pins = ((relRows ?? []) as RelRow[])
+        .filter((r) => {
+          const rt = Array.isArray(r.relationship_types) ? r.relationship_types[0] : r.relationship_types
+          return rt && PIN_TYPE_CODES.has(rt.code)
+        })
+        .map((r) => ({ relationship_id: r.id, place_entity_id: r.object_id }))
+      const pinByMemory = mapMentionsToPins(locationLinks, pins)
+      for (const r of recollections) r.pinRelationshipId = pinByMemory.get(r.id) ?? null
+    }
+  }
 
   return (
     <EntityView

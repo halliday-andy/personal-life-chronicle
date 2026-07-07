@@ -17,11 +17,51 @@
  *   - 'panel' — full: add, check-off, a collapsible written/consumed list
  *               with reopen, and delete. Lives on the pin edit panel.
  *
- * Styling uses the globe's nocturne CSS vars (this component currently only
- * renders on globe surfaces).
+ * Two themes, same markup (Slice 7.1): 'nocturne' (globe CSS vars — the
+ * original) and 'light' (stone palette matching the Entity View, which hosts
+ * the hopper on person pages).
  */
 
 import { useEffect, useRef, useState } from 'react'
+
+const THEMES = {
+  nocturne: {
+    input: 'border-[var(--glass-border)] bg-black/20 text-[var(--ink)] placeholder-[var(--ink-dim)] focus:border-[var(--ember-soft)]',
+    addBtn: 'border-[var(--glass-border)] text-[var(--ink-dim)] hover:text-[var(--ink)]',
+    dim: 'text-[var(--ink-dim)]',
+    row: 'text-[var(--ink)]/85 hover:bg-white/5',
+    rowDone: 'text-[var(--ink-dim)] hover:bg-white/5',
+    check: 'accent-[var(--ember)]',
+    tick: 'text-[var(--ember-soft)]',
+    strike: 'decoration-[var(--ink-dim)]/50',
+    removeHover: 'text-[var(--ink-dim)] hover:text-rose-300',
+    reopenHover: 'hover:text-[var(--ink)]',
+    toggle: 'text-[var(--ink-dim)] hover:text-[var(--ink)]',
+    error: 'text-rose-300',
+    panel: 'border-[var(--glass-border)] bg-black/10',
+    panelTitle: 'text-[var(--ink-dim)]',
+    panelHint: 'text-[var(--ink-dim)]/60',
+  },
+  light: {
+    input: 'border-stone-300 bg-white text-stone-900 placeholder-stone-400 focus:border-amber-500',
+    addBtn: 'border-stone-300 text-stone-500 hover:text-stone-800',
+    dim: 'text-stone-400',
+    row: 'text-stone-700 hover:bg-stone-100',
+    rowDone: 'text-stone-400 hover:bg-stone-100',
+    check: 'accent-amber-600',
+    tick: 'text-amber-600',
+    strike: 'decoration-stone-300',
+    removeHover: 'text-stone-400 hover:text-rose-600',
+    reopenHover: 'hover:text-stone-800',
+    toggle: 'text-stone-400 hover:text-stone-700',
+    error: 'text-rose-600',
+    panel: 'border-stone-200 bg-white',
+    panelTitle: 'text-stone-500',
+    panelHint: 'text-stone-400',
+  },
+} as const
+
+export type HopperTheme = keyof typeof THEMES
 
 export interface HopperStub {
   id: string
@@ -35,16 +75,23 @@ export interface HopperStub {
 export default function PinHopper({
   entityId,
   variant,
+  theme = 'nocturne',
+  showTitle = true,
   open = true,
   onCountChange,
 }: {
   entityId: string
   variant: 'card' | 'panel'
+  /** 'nocturne' on globe surfaces (default); 'light' on the Entity View. */
+  theme?: HopperTheme
+  /** panel variant: hide the internal title when the host supplies its own heading. */
+  showTitle?: boolean
   /** card variant: data loads regardless; UI renders only while open. */
   open?: boolean
   /** Reports the OPEN stub count whenever it changes (chip label). */
   onCountChange?: (n: number) => void
 }) {
+  const t = THEMES[theme]
   const [stubs, setStubs] = useState<HopperStub[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -154,12 +201,12 @@ export default function PinHopper({
         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add() } }}
         placeholder="Jot a memory to come back to…"
         disabled={busy === 'add'}
-        className="min-w-0 flex-1 rounded-lg border border-[var(--glass-border)] bg-black/20 px-2.5 py-1.5 text-xs text-[var(--ink)] placeholder-[var(--ink-dim)] outline-none focus:border-[var(--ember-soft)] disabled:opacity-50"
+        className={`min-w-0 flex-1 rounded-lg border px-2.5 py-1.5 text-xs outline-none disabled:opacity-50 ${t.input}`}
       />
       <button
         onClick={add}
         disabled={!input.trim() || busy !== null}
-        className="shrink-0 rounded-lg border border-[var(--glass-border)] px-2.5 py-1.5 text-xs text-[var(--ink-dim)] hover:text-[var(--ink)] disabled:opacity-40"
+        className={`shrink-0 rounded-lg border px-2.5 py-1.5 text-xs disabled:opacity-40 ${t.addBtn}`}
         title="Add to the hopper (Enter)"
       >
         Jot
@@ -170,21 +217,21 @@ export default function PinHopper({
   const openList = openStubs.length > 0 && (
     <ul className={`space-y-1 overflow-y-auto ${variant === 'card' ? 'max-h-32' : 'max-h-48'}`}>
       {openStubs.map((s) => (
-        <li key={s.id} className="group flex items-start gap-2 rounded-lg px-1 py-0.5 text-xs leading-relaxed text-[var(--ink)]/85 hover:bg-white/5">
+        <li key={s.id} className={`group flex items-start gap-2 rounded-lg px-1 py-0.5 text-xs leading-relaxed ${t.row}`}>
           <input
             type="checkbox"
             checked={false}
             onChange={() => setStatus(s, 'consumed')}
             disabled={busy !== null}
             title="Mark written — this memory has become a recollection"
-            className="mt-0.5 shrink-0 accent-[var(--ember)]"
+            className={`mt-0.5 shrink-0 ${t.check}`}
           />
           <span className="min-w-0 flex-1 break-words">{s.body}</span>
           <button
             onClick={() => remove(s)}
             disabled={busy !== null}
             aria-label="Remove this jot"
-            className="shrink-0 text-[var(--ink-dim)] opacity-0 transition group-hover:opacity-100 hover:text-rose-300 disabled:opacity-30"
+            className={`shrink-0 opacity-0 transition group-hover:opacity-100 disabled:opacity-30 ${t.removeHover}`}
           >
             ✕
           </button>
@@ -196,9 +243,9 @@ export default function PinHopper({
   const body = (
     <div className="space-y-2">
       {addRow}
-      {loading && <p className="text-xs text-[var(--ink-dim)]">Fetching your jotted memories…</p>}
+      {loading && <p className={`text-xs ${t.dim}`}>Fetching your jotted memories…</p>}
       {!loading && openStubs.length === 0 && (
-        <p className="text-xs italic text-[var(--ink-dim)]">
+        <p className={`text-xs italic ${t.dim}`}>
           Nothing waiting — jot the memories this place brings to mind, and write them up when there&apos;s time.
         </p>
       )}
@@ -208,21 +255,21 @@ export default function PinHopper({
           <button
             onClick={() => setShowConsumed((v) => !v)}
             aria-expanded={showConsumed}
-            className="text-xs text-[var(--ink-dim)] hover:text-[var(--ink)]"
+            className={`text-xs ${t.toggle}`}
           >
             {showConsumed ? '▾' : '▸'} {consumedStubs.length} written
           </button>
           {showConsumed && (
             <ul className="mt-1 max-h-32 space-y-1 overflow-y-auto">
               {consumedStubs.map((s) => (
-                <li key={s.id} className="group flex items-start gap-2 rounded-lg px-1 py-0.5 text-xs leading-relaxed text-[var(--ink-dim)] hover:bg-white/5">
-                  <span className="mt-0.5 shrink-0 text-[var(--ember-soft)]">✓</span>
-                  <span className="min-w-0 flex-1 break-words line-through decoration-[var(--ink-dim)]/50">{s.body}</span>
+                <li key={s.id} className={`group flex items-start gap-2 rounded-lg px-1 py-0.5 text-xs leading-relaxed ${t.rowDone}`}>
+                  <span className={`mt-0.5 shrink-0 ${t.tick}`}>✓</span>
+                  <span className={`min-w-0 flex-1 break-words line-through ${t.strike}`}>{s.body}</span>
                   <button
                     onClick={() => setStatus(s, 'open')}
                     disabled={busy !== null}
                     title="Reopen — still to write"
-                    className="shrink-0 opacity-0 transition group-hover:opacity-100 hover:text-[var(--ink)] disabled:opacity-30"
+                    className={`shrink-0 opacity-0 transition group-hover:opacity-100 disabled:opacity-30 ${t.reopenHover}`}
                   >
                     ↩
                   </button>
@@ -230,7 +277,7 @@ export default function PinHopper({
                     onClick={() => remove(s)}
                     disabled={busy !== null}
                     aria-label="Remove this jot"
-                    className="shrink-0 opacity-0 transition group-hover:opacity-100 hover:text-rose-300 disabled:opacity-30"
+                    className={`shrink-0 opacity-0 transition group-hover:opacity-100 disabled:opacity-30 ${t.removeHover}`}
                   >
                     ✕
                   </button>
@@ -240,18 +287,20 @@ export default function PinHopper({
           )}
         </div>
       )}
-      {error && <p className="text-xs text-rose-300">{error}</p>}
+      {error && <p className={`text-xs ${t.error}`}>{error}</p>}
     </div>
   )
 
   if (variant === 'card') return <div className="mt-2">{body}</div>
 
   return (
-    <div className="mt-4 rounded-lg border border-[var(--glass-border)] bg-black/10 p-3">
-      <p className="mb-2 text-xs text-[var(--ink-dim)]">
-        Memories to write
-        <span className="text-[var(--ink-dim)]/60"> — jot now, recollect later</span>
-      </p>
+    <div className={`mt-4 rounded-lg border p-3 ${t.panel}`}>
+      {showTitle && (
+        <p className={`mb-2 text-xs ${t.panelTitle}`}>
+          Memories to write
+          <span className={t.panelHint}> — jot now, recollect later</span>
+        </p>
+      )}
       {body}
     </div>
   )

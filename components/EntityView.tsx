@@ -12,6 +12,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Markdown from './Markdown'
+import PinHopper from './globe/PinHopper'
 
 export interface ContextNote {
   id: string
@@ -35,6 +36,12 @@ export interface MentionRecollection {
   excerpt: string
   occurred_at_fuzzy: string | null
   created_at: string
+  /**
+   * The globe pin this recollection lives on (relationships.id), when it
+   * carries a role='location' link to a pinned place — the mention row
+   * out-links to the Journey stop. Null → /memories row anchor instead.
+   */
+  pinRelationshipId?: string | null
 }
 
 interface Entity {
@@ -172,6 +179,8 @@ export default function EntityView({ entity, notes: initialNotes, recollections 
   const [visibility, setVisibility] = useState<'private' | 'shareable'>('private')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Open-stub count for the person page's hopper heading (Slice 7.1).
+  const [hopperCount, setHopperCount] = useState<number | null>(null)
 
   const shareable = notes.filter((n) => n.visibility === 'shareable')
   const priv = notes.filter((n) => n.visibility === 'private')
@@ -291,12 +300,17 @@ export default function EntityView({ entity, notes: initialNotes, recollections 
             // link affordance must read at rest, not only on hover
             // (Andy's QA, 2026-07-06). Metadata = the memory's own fuzzy
             // time phrase + capture date.
+            // Out-links (Slice 7.1): a mention that lives on a globe pin
+            // opens at its Journey stop (?pin= handoff); the rest land on
+            // the exact card via the /memories row anchor.
             <ul className="mt-2 space-y-2">
               {recollections.map((r) => (
                 <li key={r.id}>
                   <Link
-                    href={`/memories?entity=${entity.id}`}
-                    title="Open in Recollections"
+                    href={r.pinRelationshipId
+                      ? `/journey?pin=${r.pinRelationshipId}`
+                      : `/memories?entity=${entity.id}#${r.id}`}
+                    title={r.pinRelationshipId ? 'Read at its place in the journey' : 'Open in Recollections'}
                     className="group block rounded-lg border border-stone-200 bg-white px-3 py-2 transition-colors hover:border-stone-400 hover:bg-stone-50"
                   >
                     <span className="block text-sm leading-relaxed text-stone-700 group-hover:text-stone-900">
@@ -306,7 +320,7 @@ export default function EntityView({ entity, notes: initialNotes, recollections 
                       {r.occurred_at_fuzzy && <span className="text-stone-500">{r.occurred_at_fuzzy}</span>}
                       <span>captured {new Date(r.created_at).toLocaleDateString()}</span>
                       <span className="ml-auto text-stone-300 transition-colors group-hover:text-stone-500">
-                        open in Recollections →
+                        {r.pinRelationshipId ? 'read in journey →' : 'open in Recollections →'}
                       </span>
                     </span>
                   </Link>
@@ -315,6 +329,28 @@ export default function EntityView({ entity, notes: initialNotes, recollections 
             </ul>
           )}
         </section>
+
+        {/* The Hopper — person host (Slice 7.1) ─────────────────── */}
+        {/* Same component as the pin edit panel's notepad; a person page
+            collects to-be-recollected memories about this person. The
+            capture-assistant consume loop arrives with Hopper 5b. */}
+        {entity.type === 'person' && (
+          <section className="mt-8">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">
+              Memories to write{hopperCount ? ` · ${hopperCount}` : ''}
+            </h2>
+            <p className="mt-1 text-xs text-stone-400">
+              Jot the memories {entity.canonical_name} brings to mind — write them up when there&apos;s time.
+            </p>
+            <PinHopper
+              entityId={entity.id}
+              variant="panel"
+              theme="light"
+              showTitle={false}
+              onCountChange={setHopperCount}
+            />
+          </section>
+        )}
       </div>
     </div>
   )
