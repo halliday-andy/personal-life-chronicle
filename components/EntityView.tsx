@@ -51,6 +51,114 @@ const TYPE_LABEL: Record<string, string> = {
   event_series: 'Event', // singular badge; "Events" tab label in EntitiesList
 }
 
+/**
+ * AliasEditor — owner alias management (2026-07-07 task).
+ *
+ * Aliases previously only ever GREW (merges + extraction append; nothing
+ * pruned), so junk like the leftover "Leo" on Leola Lapides was
+ * unremovable and risked false matches in entity resolution (aliases are
+ * exact-match inputs to the matcher). Chips with × remove; a small input
+ * adds. PATCH /api/entity/[id] already replaces aliases wholesale with
+ * case-insensitive dedupe — this is the UI it was waiting for.
+ */
+function AliasEditor({ entityId, initial }: { entityId: string; initial: string[] }) {
+  const [aliases, setAliases] = useState<string[]>(initial)
+  const [adding, setAdding] = useState(false)
+  const [draft, setDraft] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function save(next: string[]) {
+    setBusy(true)
+    setError(null)
+    const prev = aliases
+    setAliases(next) // optimistic
+    try {
+      const res = await fetch(`/api/entity/${entityId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ aliases: next }),
+      })
+      const d = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(d.detail || d.error || `HTTP ${res.status}`)
+    } catch (e) {
+      setAliases(prev)
+      setError(e instanceof Error ? e.message : 'Could not update aliases')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function addDraft() {
+    const trimmed = draft.trim()
+    if (!trimmed) return
+    if (aliases.some((a) => a.toLowerCase() === trimmed.toLowerCase())) {
+      setDraft('')
+      setAdding(false)
+      return
+    }
+    save([...aliases, trimmed])
+    setDraft('')
+    setAdding(false)
+  }
+
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-stone-500">
+      {aliases.length > 0 && <span>also:</span>}
+      {aliases.map((a) => (
+        <span
+          key={a}
+          className="group inline-flex items-center gap-1 rounded-full border border-stone-200 bg-white px-2 py-0.5 text-xs text-stone-600"
+        >
+          {a}
+          <button
+            type="button"
+            onClick={() => save(aliases.filter((x) => x !== a))}
+            disabled={busy}
+            aria-label={`Remove alias ${a}`}
+            title="Remove this alias — it will no longer match during entity resolution"
+            className="text-stone-300 hover:text-rose-600 disabled:opacity-30"
+          >
+            ×
+          </button>
+        </span>
+      ))}
+      {adding ? (
+        <span className="inline-flex items-center gap-1">
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') { e.preventDefault(); addDraft() }
+              if (e.key === 'Escape') { setAdding(false); setDraft('') }
+            }}
+            placeholder="Another name…"
+            autoFocus
+            className="w-36 rounded-full border border-stone-300 px-2 py-0.5 text-xs focus:border-stone-500 focus:outline-none"
+          />
+          <button type="button" onClick={addDraft} disabled={busy || !draft.trim()} className="text-xs text-stone-500 hover:text-stone-800 disabled:opacity-40">
+            add
+          </button>
+          <button type="button" onClick={() => { setAdding(false); setDraft('') }} className="text-xs text-stone-400 hover:text-stone-700">
+            cancel
+          </button>
+        </span>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          disabled={busy}
+          title="Add another name this entity goes by — future mentions of it will resolve here"
+          className="rounded-full border border-dashed border-stone-300 px-2 py-0.5 text-xs text-stone-400 hover:border-stone-400 hover:text-stone-700 disabled:opacity-50"
+        >
+          + alias
+        </button>
+      )}
+      {error && <span className="text-xs text-rose-600">{error}</span>}
+    </div>
+  )
+}
+
 export default function EntityView({ entity, notes: initialNotes, recollections }: {
   entity: Entity
   notes: ContextNote[]
@@ -116,9 +224,7 @@ export default function EntityView({ entity, notes: initialNotes, recollections 
           <h1 className="text-2xl font-semibold text-stone-900">{entity.canonical_name}</h1>
           <span className="rounded-full bg-stone-200 px-2 py-0.5 text-xs text-stone-600">{TYPE_LABEL[entity.type] ?? entity.type}</span>
         </div>
-        {entity.aliases.length > 0 && (
-          <p className="mt-1 text-sm text-stone-500">also: {entity.aliases.join(', ')}</p>
-        )}
+        <AliasEditor entityId={entity.id} initial={entity.aliases} />
         {entity.description && <p className="mt-1 text-sm text-stone-600">{entity.description}</p>}
 
         {/* Context ─────────────────────────────────────────────── */}
