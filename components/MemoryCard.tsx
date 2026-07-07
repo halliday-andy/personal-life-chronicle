@@ -29,7 +29,7 @@
  * the Raw Vault invariant.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import PrivateNotesPanel from './PrivateNotesPanel'
 import Markdown from './Markdown'
@@ -118,6 +118,27 @@ export default function MemoryCard({ m }: { m: MemoryRow }) {
   // ── Hidden after a successful Decline (the row will fully unmount
   //    on router.refresh(), but we hide it optimistically). ───────
   const [removed, setRemoved] = useState(false)
+
+  // ── Row-anchor deep link (Slice 7.1): /memories#<memory_id> lands on
+  //    this card — scroll it into view and flash a highlight ring so the
+  //    eye finds it in a long list. Mount-only: anchor navigations arrive
+  //    from other pages, so the card mounts fresh with the hash set. ──
+  const articleRef = useRef<HTMLElement>(null)
+  const [anchored, setAnchored] = useState(false)
+  useEffect(() => {
+    if (window.location.hash.slice(1) !== m.id) return
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    // Let the list paint before measuring scroll position.
+    requestAnimationFrame(() => {
+      articleRef.current?.scrollIntoView({
+        behavior: reduceMotion ? 'auto' : 'smooth',
+        block: 'center',
+      })
+    })
+    setAnchored(true)
+    const t = setTimeout(() => setAnchored(false), 2600)
+    return () => clearTimeout(t)
+  }, [m.id])
   if (removed) return null
 
   // ── Action handlers ──────────────────────────────────────────────
@@ -323,9 +344,11 @@ export default function MemoryCard({ m }: { m: MemoryRow }) {
 
   return (
     <article
-      className={`rounded-xl border p-4 ${
+      id={memory.id}
+      ref={articleRef}
+      className={`scroll-mt-20 rounded-xl border p-4 transition-shadow duration-700 ${
         dimmed ? 'bg-stone-50 border-stone-200' : 'bg-white border-stone-200'
-      }`}
+      } ${anchored ? 'ring-2 ring-amber-400 shadow-lg shadow-amber-100' : ''}`}
     >
       {/* Header strip — badge + date + capture date */}
       <div className="flex items-start gap-2 mb-2 text-xs">
