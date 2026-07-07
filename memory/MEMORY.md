@@ -41,7 +41,7 @@ Consolidated 2026-05-10. Updated 2026-05-17 (capture assistant + residential glo
 
 - [Reference: LC migration apply](reference_lc_migration_apply.md) — Claude applies Supabase DDL directly via `scripts/db-apply.mjs` (no dashboard paste / no CLI); needs `SUPABASE_DB_URL` + raw `SUPABASE_DB_PASSWORD` in `.env.local`
 - [Reference: LC schema file locations](reference_lc_schema_files.md) — Where every design doc and early-planning file lives; what's read, what's pending
-- [Reference: LC designer skills](reference_lc_designer_skills.md) — 48 UX/UI skills vendored into `.claude/skills/` (Owl-Listener subset) for Claude Code; source audit PDF in `documentation/research/`; TypeUI preset recommendation (Andy's brand call)
+- [Reference: LC designer skills](reference_lc_designer_skills.md) — 48 UX/UI skills (Owl-Listener subset), **global since 2026-07-07** in `~/.claude-os/skills/` (project copy removed, commit 35a4097); source audit PDF in `documentation/research/`; TypeUI preset recommendation (Andy's brand call)
 - [Project: LC document sources](project_lc_document_sources.md) — Google Drive vs. local folder; what's unique to each, what's redundant
 - [Feedback: LC memory dual-write protocol](feedback_lc_memory_dual_write.md) — Every memory write must hit both auto-memory and the workspace mirror
 - [Feedback: Use lowercase for folder and file names](feedback_folder_naming.md) — create-next-app and Unix tooling reject capitals
