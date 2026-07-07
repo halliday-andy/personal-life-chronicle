@@ -22,6 +22,8 @@ import JourneyList from '@/components/journey/JourneyList'
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = { title: 'Journey — Life Chronicle' }
+
 export default async function JourneyPage({
   searchParams,
 }: {
@@ -56,7 +58,7 @@ export default async function JourneyPage({
         )}
       </div>
       <p className="mt-1 text-sm text-stone-500">
-        Your life journey, read in order — the same stops as the globe. Tap a stop to open it.
+        Your life journey, read in order — the same stops as the globe. Open a stop to read it.
       </p>
 
       {tree.stops.length === 0 && tree.unanchored.length === 0 ? (

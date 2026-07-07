@@ -171,8 +171,17 @@ Supersedes the 2026-06-17 block below, which had gone nine days stale. The
   mirrors selection via history.replaceState. Links: journey stop
   footer "Show on globe →", child NAMES link to their marker's pin,
   globe detail card "Read in journey →". Cold deep links work; globe
-  stays out of AppNav. **Next: J5** a11y/keyboard proof — then the
-  Journey arc is complete.
+  stays out of AppNav. **J5 BUILT 2026-07-07 — the Journey arc (J1–J5)
+  is COMPLETE.** A11y pass: place names are real h2s wrapping the
+  disclosure buttons (rotor-walkable spine; detail sections h3),
+  aria-controls + role=region panels, visible amber focus-visible
+  rings, loading skeleton is a role=status region with sr-only text
+  (shimmer bars aria-hidden), decorative rail/chevrons/arrows
+  aria-hidden while transition PHRASES stay readable, page metadata
+  title. Design doc marked BUILT. Journey is now the claimed
+  screen-reader-accessible representation of the globe (design §4).
+  **Next per roadmap: Slice 7** (Person page + Life's Cast + Hopper
+  5b), riding on Slice 6 — plus Andy's accumulated QA queue.
 - **Incident + repair (2026-07-07, Andy's QA): mention-links hijacked
   pin overview text.** The stub sweep AND the /memories "+ link" both
   defaulted place links to role='location' — but role='location' +

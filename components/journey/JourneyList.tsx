@@ -201,39 +201,54 @@ function StopCard({
 
       <div className={'min-w-0 flex-1 ' + (isCurrent ? '' : 'pb-2')}>
         <div className="rounded-xl border border-stone-200 bg-white">
-          {/* Header row = the expand control (J3). */}
-          <button
-            type="button"
-            onClick={onToggle}
-            aria-expanded={expanded}
-            className="block w-full rounded-xl px-4 py-4 text-left transition-colors hover:bg-stone-50"
-          >
-            <span className="flex items-baseline gap-2">
-              <span className="min-w-0 flex-1 truncate text-lg font-semibold text-stone-900">
-                {node.name}
+          {/* Accordion header (J3/J5): the place name is a real heading so
+              screen readers can walk the journey by headings; the button
+              inside carries the disclosure semantics. */}
+          <h2 className="m-0">
+            <button
+              type="button"
+              id={`journey-stop-btn-${node.relationship_id}`}
+              onClick={onToggle}
+              aria-expanded={expanded}
+              aria-controls={`journey-stop-panel-${node.relationship_id}`}
+              className="block w-full rounded-xl px-4 py-4 text-left transition-colors hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+            >
+              <span className="flex items-baseline gap-2">
+                <span className="min-w-0 flex-1 truncate text-lg font-semibold text-stone-900">
+                  {node.name}
+                </span>
+                {isCurrent && (
+                  <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-700">
+                    now
+                  </span>
+                )}
+                <span aria-hidden className="shrink-0 text-xs text-stone-400">
+                  {expanded ? '▾' : '▸'}
+                </span>
               </span>
-              {isCurrent && (
-                <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-700">
-                  now
+              <span className="mt-1 flex flex-wrap items-center gap-2 text-xs font-normal">
+                {isOrigin && <span className="text-amber-600">The beginning</span>}
+                {node.when_text && (
+                  <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-amber-800">
+                    {node.when_text}
+                  </span>
+                )}
+              </span>
+              {node.description && (
+                <span className="mt-1.5 block text-sm font-normal italic text-stone-500">
+                  {node.description}
                 </span>
               )}
-              <span className="shrink-0 text-xs text-stone-400">{expanded ? '▾' : '▸'}</span>
-            </span>
-            <span className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-              {isOrigin && <span className="text-amber-600">The beginning</span>}
-              {node.when_text && (
-                <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-amber-800">
-                  {node.when_text}
-                </span>
-              )}
-            </span>
-            {node.description && (
-              <span className="mt-1.5 block text-sm italic text-stone-500">{node.description}</span>
-            )}
-          </button>
+            </button>
+          </h2>
 
           {expanded && (
-            <div className="border-t border-stone-100 px-4 py-3">
+            <div
+              id={`journey-stop-panel-${node.relationship_id}`}
+              role="region"
+              aria-labelledby={`journey-stop-btn-${node.relationship_id}`}
+              className="border-t border-stone-100 px-4 py-3"
+            >
               <StopDetailBody node={node} detail={detail} />
             </div>
           )}
@@ -256,7 +271,12 @@ function StopCard({
           )}
         </div>
 
-        {phrase && <p className="mb-1 mt-2 text-[11px] italic text-amber-700/70">↓ {phrase}</p>}
+        {phrase && (
+          <p className="mb-1 mt-2 text-[11px] italic text-amber-700/70">
+            <span aria-hidden>↓ </span>
+            {phrase}
+          </p>
+        )}
         {!isCurrent && !phrase && <div className="h-4" />}
       </div>
     </li>
@@ -274,10 +294,11 @@ function StopDetailBody({
 }) {
   if (!detail || detail === 'loading') {
     return (
-      <div className="space-y-2" aria-label="Loading">
-        <div className="h-3 w-3/4 rounded bg-stone-100" />
-        <div className="h-3 w-2/3 rounded bg-stone-100" />
-        <div className="h-3 w-1/2 rounded bg-stone-100" />
+      <div className="space-y-2" role="status">
+        <span className="sr-only">Loading this stop&apos;s detail…</span>
+        <div aria-hidden className="h-3 w-3/4 rounded bg-stone-100" />
+        <div aria-hidden className="h-3 w-2/3 rounded bg-stone-100" />
+        <div aria-hidden className="h-3 w-1/2 rounded bg-stone-100" />
       </div>
     )
   }
@@ -338,9 +359,9 @@ function StopDetailBody({
 
       {detail.linked.length > 0 && (
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-wide text-stone-400">
+          <h3 className="text-[11px] font-medium uppercase tracking-wide text-stone-400">
             Recollections from this time
-          </p>
+          </h3>
           <ul className="mt-1 space-y-1">
             {detail.linked.map((r) => (
               <li key={r.id} className="text-xs leading-relaxed text-stone-600">
@@ -358,7 +379,7 @@ function StopDetailBody({
 
       {detail.context.length > 0 && (
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-wide text-stone-400">Context</p>
+          <h3 className="text-[11px] font-medium uppercase tracking-wide text-stone-400">Context</h3>
           <ul className="mt-1 space-y-1">
             {detail.context.map((c) => (
               <li key={c.id} className="text-xs">

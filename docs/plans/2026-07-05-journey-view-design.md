@@ -1,7 +1,10 @@
 # Journey — slice design & phased plan
 
 **Date:** 2026-07-05
-**Status:** Agreed with Andy 2026-07-05.
+**Status:** Agreed with Andy 2026-07-05. **BUILT — all phases J1–J5 shipped
+2026-07-06/07** (J1 skeleton `1fc4863`…, J2 ember thread + transitions, J3
+expand-to-detail, J4 `?pin=` handoff, J5 a11y pass). QA:
+`docs/qa/2026-07-06-journey-j1-qa-checklist.md`.
 **Supersedes:** item 4 ("Resume View") of the [2026-06-22 brief](2026-06-22-globe-and-entity-ux-enhancements-design.md) and the "Resume View (item 4)" section of the [revised roadmap](2026-06-22-globe-and-entity-ux-revised-roadmap.md). Those remain the product-intent record; this doc is canonical for the build.
 **Owner:** Andy Halliday (product); design review by Claude Code (Fable 5).
 

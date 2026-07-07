@@ -1,4 +1,4 @@
-# QA Walkthrough — Journey J1 + J2 + J3 + J4
+# QA Walkthrough — Journey J1–J5 (complete arc)
 
 App: **http://localhost:3001/journey** (sign in first).
 
@@ -89,9 +89,32 @@ App: **http://localhost:3001/journey** (sign in first).
       deep link lands oriented (sign-in first if needed).
 - [ ] The globe still opts out of AppNav (full-screen nocturne unchanged).
 
-## Known scope (J5, not bugs)
-- Full keyboard/screen-reader pass is **J5** (headers are real buttons with
-  aria-expanded already).
+## 7. J5 — keyboard + screen-reader pass (the accessible globe)
+> Journey is deliberately the screen-reader-accessible representation of the
+> globe (design §4) — worth a real check, not a checkbox.
+- [ ] **Keyboard only** (put the mouse down): Tab reaches each stop header in
+      order → a visible **amber focus ring** wraps the focused header →
+      Enter/Space expands and collapses it; Tab continues into the expanded
+      panel's links (Show on globe / place page / recollections), then to the
+      child-name links.
+- [ ] **VoiceOver** (⌘F5, then VO-U → Headings): the rotor lists *Journey*
+      (level 1) and every **stop name as a level-2 heading** — the whole
+      spine is walkable by headings; expanded stops expose *Recollections
+      from this time* / *Context* as level-3.
+- [ ] A collapsed header announces "collapsed", expanded "expanded"
+      (aria-expanded); the opened panel is announced as a region named by
+      its stop.
+- [ ] While a detail loads, VO announces "Loading this stop's detail…" (the
+      skeleton is a status region; the shimmer bars themselves are hidden).
+- [ ] Decorations stay silent: the rail (star/dots/thread), the ▸/▾ chevron,
+      and the ↓ arrow before transition phrases are all aria-hidden — but the
+      transition *phrases* themselves ARE read (they're content).
+- [ ] Browser tab title reads **"Journey — Life Chronicle"**.
+- [ ] With **Reduce Motion** on (System Settings → Accessibility → Display),
+      deep-link arrival jumps instantly instead of smooth-scrolling; nothing
+      on the page animates regardless.
+
+## Known scope (not bugs)
 - Child rows still show excerpt-only in Journey; their full detail lives on
   their globe pin (one tap away via their name link).
 - The Hopper deliberately does not appear here (design decision 9).
