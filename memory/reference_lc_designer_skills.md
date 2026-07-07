@@ -7,6 +7,8 @@ metadata:
 
 **Moved to global 2026-07-07:** the 48 skills now live in `~/.claude-os/skills/` (source of truth, symlinked into `~/.claude/skills/`), so every project — including CODEX Life Chronicle — inherits them. The PLC project copy at `.claude/skills/` was removed the same day (commit 35a4097) to avoid duplicate definitions. Attribution moved with them: `~/.claude-os/skills/LICENSE.designer-skills` + `README.designer-skills.md`. Manifest: `~/.claude-os/INVENTORY.md`.
 
+**Also exposed to Codex (same day):** each of the 48 is symlinked `~/.codex/skills/<name>` → `~/.claude-os/skills/<name>`, so the Codex app/CLI (which uses the same SKILL.md format) discovers them too — verified via a live `codex exec` probe. One source of truth serves both harnesses; the 18 dev skills were deliberately not exposed to Codex.
+
 Original vendoring context: to give Claude Code UX/UI design context for the globe/entity refinement work ([[project_lc_globe_entity_ux_brief]]), 48 skills were vendored 2026-06-22 into `.claude/skills/`. They are a curated subset of the MIT-licensed **Owl-Listener `designer-skills`** marketplace (https://github.com/Owl-Listener/designer-skills, © MC Dean):
 
 - `ui-design` (14), `interaction-design` (16), `design-systems` (11), `visual-critique` (7) — flattened, no name collisions. Chosen for *UI-element finalization* (design-systems) + *transactional design* (interaction-design) per Andy's emphasis; Tier-1 visual + Tier-2 transactional core.
