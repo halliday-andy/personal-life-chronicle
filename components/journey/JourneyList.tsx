@@ -369,14 +369,19 @@ function StopDetailBody({
 
       {detail.linked.length > 0 && (
         <div>
+          {/* Honest label (Andy's QA 2026-07-09): this list is ENTITY
+              LINKAGE — every recollection that mentions this place, from
+              any era (a later Mount Snow memory that name-drops Dartmouth
+              belongs here). "From this time" promised era-scoping, which
+              is the Temporal Agent's future job, not this query's. */}
           <h3 className="text-[11px] font-medium uppercase tracking-wide text-stone-400">
-            Recollections from this time
+            Recollections that mention this place
           </h3>
           <ul className="mt-1 space-y-1">
             {detail.linked.map((r) => (
               <li key={r.id} className="text-xs leading-relaxed text-stone-600">
                 <Link
-                  href={`/memories?entity=${node.place_entity_id}`}
+                  href={`/memories?entity=${node.place_entity_id}#${r.id}`}
                   className="hover:text-stone-900 hover:underline"
                 >
                   {r.excerpt}…
