@@ -28,6 +28,7 @@ export interface ChronicleDigest {
     residential_pins: number
     open_review_items: number
     recent_session_count: number
+    open_stubs: number
   }
 }
 
@@ -97,6 +98,18 @@ export async function buildUserDigest(
       .eq('dimensions.dimension_types.code', 'topic_domain'),
   ])
 
+  // Open hopper jots, grouped per host entity (R2, 2026-07-09) — ambient
+  // awareness so the orchestrator can NOMINATE a write-up at openings and
+  // lulls without a tool call. Staleness up to the digest cache TTL
+  // (~5 min) is fine for nomination purposes.
+  const { data: stubRows } = await supabase
+    .from('memory_stubs')
+    .select('body, created_at, entities!memory_stubs_host_entity_id_fkey(canonical_name, type)')
+    .eq('user_id', user_id)
+    .eq('status', 'open')
+    .order('created_at', { ascending: true })
+    .limit(60)
+
   const entities = entityRows ?? []
   const byType: Record<string, number> = {}
   for (const e of entities) {
@@ -164,6 +177,32 @@ export async function buildUserDigest(
     lines.push('')
   }
 
+  // Open jots per host — alphabetical hosts, oldest-first jots, both for
+  // cache-key stability. Up to three jot texts per host keep nominations
+  // specific ("the ice-cream truck summer") without bloating Layer B.
+  type StubRow = {
+    body: string
+    entities: { canonical_name: string; type: string } | { canonical_name: string; type: string }[] | null
+  }
+  const stubsByHost = new Map<string, { type: string; bodies: string[] }>()
+  for (const s of (stubRows ?? []) as StubRow[]) {
+    const host = Array.isArray(s.entities) ? s.entities[0] : s.entities
+    if (!host) continue
+    const cur = stubsByHost.get(host.canonical_name) ?? { type: host.type, bodies: [] }
+    cur.bodies.push(s.body)
+    stubsByHost.set(host.canonical_name, cur)
+  }
+  const openStubCount = (stubRows ?? []).length
+  if (stubsByHost.size > 0) {
+    lines.push('## Open jots in the hopper (memories waiting to be written up)')
+    for (const [name, h] of Array.from(stubsByHost.entries()).sort(([a], [b]) => a.localeCompare(b))) {
+      const examples = h.bodies.slice(0, 3).map((b) => `"${trim(b, 60)}"`).join(', ')
+      const more = h.bodies.length > 3 ? `, +${h.bodies.length - 3} more` : ''
+      lines.push(`- ${name} (${h.type}): ${h.bodies.length} jot(s) — ${examples}${more}`)
+    }
+    lines.push('')
+  }
+
   // Topic-domain coverage (which life dimensions have any tagging at all).
   const topicNames = new Set<string>()
   for (const md of (dimSummary as unknown as Array<{ dimensions: { name: string } }>) ?? []) {
@@ -195,6 +234,7 @@ export async function buildUserDigest(
       residential_pins: residentialCount ?? 0,
       open_review_items: reviewCount ?? 0,
       recent_session_count: sessionCount ?? 0,
+      open_stubs: openStubCount,
     },
   }
 }
