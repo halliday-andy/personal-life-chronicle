@@ -119,6 +119,17 @@ async function main() {
       ok('consume flips the stub and records the recollection it became')
     else bad('consume wrong: ' + JSON.stringify({ payload: consume.data, row: consumed }))
 
+    // ── 6b. Host-link guarantee (2026-07-09 incident) ──
+    // The recollection must be linked to the jot's HOST so it can never go
+    // invisible from the host's surfaces, regardless of what extraction did.
+    const { data: hostLinks } = await supabase.from('memory_entities')
+      .select('role').eq('memory_id', mem!.id).eq('entity_id', person.id)
+    if ((hostLinks ?? []).length === 1 && hostLinks![0].role === 'participant')
+      ok("consume linked the recollection to its host (role='participant', never 'location')")
+    else bad('host link missing/wrong: ' + JSON.stringify(hostLinks))
+    if ((consume.data as any).host_link?.linked === true) ok('consume payload reports the host link')
+    else bad('payload missing host_link: ' + JSON.stringify(consume.data))
+
     // ── 7. double-consume ──
     const again = await executeTool('consume_memory_stub', {
       stub_id: stubA!.id, memory_id: mem!.id, rationale: 'r',

@@ -58,6 +58,10 @@ expect('Nancy', 'Nancy Halliday', 'proposal')                                   
 expect('Madrid', 'Lockbourne AFB Columbus Ohio', 'none')                              // unrelated
 expect('RAF Mildenhall', 'Royal Air Force Mildenhall', 'auto-link')                   // RAF expansion
 expect('Base', 'Lockbourne AFB Columbus Ohio', 'none')                                // lone common token
+expect('Commaruga', 'Playa Coma Ruga', 'proposal')     // space-collapse disguise — live failure 2026-07-09
+expect('Comaruga', 'Playa Coma Ruga', 'proposal')      // same, without the doubled m
+expect('Leo', 'Playa Coma Ruga', 'none')               // collapse rule respects the micro-name guard
+expect('Marta', 'Playa Coma Ruga', 'none')             // short unrelated name can't window-match
 
 async function main() {
 console.log('\\nDB fixture resolution (no Claude):')

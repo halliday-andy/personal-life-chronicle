@@ -24,6 +24,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { inngest } from '@/lib/inngest/client'
 import { runTagger, type TaggerResult } from '@/lib/agents/tagger/core'
 import { runEntity, type EntityResult } from '@/lib/agents/entity/core'
+import { linkEntityToMemory } from '@/lib/memory/owner-edit'
 
 export interface ToolContext {
   user_id: string
@@ -897,7 +898,7 @@ async function handleConsumeMemoryStub(
     .eq('id', stub_id)
     .eq('user_id', ctx.user_id)
     .eq('status', 'open')
-    .select('id, body, status, consumed_at, consumed_by_memory_id')
+    .select('id, body, status, consumed_at, consumed_by_memory_id, host_entity_id')
     .maybeSingle()
   if (error) {
     return {
@@ -916,6 +917,28 @@ async function handleConsumeMemoryStub(
     }
   }
 
+  // Host-link guarantee (2026-07-09 incident): a consumed jot's recollection
+  // MUST be linked to the jot's host entity, or it goes invisible from the
+  // host's surfaces. Extraction once minted a near-duplicate ("Commaruga")
+  // and the write-up vanished from the "Playa Coma Ruga" pin despite a
+  // correct consume. Deterministic and idempotent here — this handler is
+  // the one gate all three consume paths (seeded, conversational, backstop)
+  // pass through. Role via defaultRoleForType: place→'mentioned' (NEVER the
+  // load-bearing 'location'), person→'participant'. A link failure must not
+  // unwind the consume — it's reported, not thrown.
+  let host_link: Record<string, unknown> = { linked: false }
+  try {
+    const link = await linkEntityToMemory(ctx.supabase, ctx.user_id, memory_id, stub.host_entity_id)
+    host_link = {
+      linked: true,
+      already_linked: link.already_linked,
+      role: link.role,
+      entity: link.entity.canonical_name,
+    }
+  } catch (e) {
+    host_link = { linked: false, error: e instanceof Error ? e.message : String(e) }
+  }
+
   return {
     tool: 'consume_memory_stub',
     persisted: true,
@@ -925,6 +948,7 @@ async function handleConsumeMemoryStub(
       body: stub.body,
       status: stub.status,
       consumed_by_memory_id: stub.consumed_by_memory_id,
+      host_link,
     },
   }
 }

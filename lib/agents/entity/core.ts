@@ -260,6 +260,35 @@ export function scoreNameMatch(a: string, b: string): number {
     score = Math.max(score, 0.7 + ((jw - 0.92) / 0.08) * 0.2)
   }
 
+  // Space-collapse disguise (live failure 2026-07-09: "Commaruga" silently
+  // duplicated "Playa Coma Ruga" — the space in "Coma Ruga" defeats the
+  // word-boundary containment rule, and the "Playa" prefix defeats
+  // whole-string JW). Compare the shorter name, spaces stripped, against
+  // every same-length window of the longer name's stripped form; a
+  // near-identical window means the short name is a glued-together form
+  // of words in the long one. Guards: the short side must be a SINGLE
+  // token (multi-token fragments like "Air Force" belong to the
+  // token-subset rule and must not window-match generic phrases out of
+  // longer names — live near-miss during this rule's own verification),
+  // ≥6 collapsed chars (micro-names like "Leo" stay out), and the long
+  // side must be multi-token. Caps in the merge-proposal band — never
+  // auto-link on a fragment.
+  const [shortN, longN] = na.length <= nb.length ? [na, nb] : [nb, na]
+  const shortC = shortN.replace(/ /g, '')
+  const longC = longN.replace(/ /g, '')
+  if (!shortN.includes(' ') && shortC.length >= 6 && longN.includes(' ') && longC.length > shortC.length) {
+    let best = 0
+    for (const w of [shortC.length - 1, shortC.length, shortC.length + 1]) {
+      if (w < 1 || w > longC.length) continue
+      for (let i = 0; i + w <= longC.length; i++) {
+        best = Math.max(best, jaroWinkler(shortC, longC.slice(i, i + w)))
+      }
+    }
+    if (best >= 0.92) {
+      score = Math.max(score, Math.min(0.9, 0.75 + ((best - 0.92) / 0.08) * 0.15))
+    }
+  }
+
   return score
 }
 
