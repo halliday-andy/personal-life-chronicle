@@ -38,6 +38,7 @@ if (!self) { bad('no self entity'); process.exit(1) }
 
 const rel = (row) => (Array.isArray(row) ? row[0] : row)
 const created = []
+const createdMems = []
 const BODY = 'ROLLUP a memorable afternoon at the lookout'
 
 try {
@@ -72,9 +73,32 @@ try {
   const excerpt = (mems ?? [])[0]?.content_raw ?? ''
   if (excerpt.startsWith('ROLLUP')) ok('Log L’s globe recollection excerpt is fetchable for the roll-up')
   else bad('roll-up excerpt missing/wrong: ' + JSON.stringify(excerpt.slice(0, 40)))
+
+  // Route step 3 (2026-07-09): the "+N more recollections" count — extra
+  // memories linked to the child place, EXCLUDING its shown overview.
+  const { data: mem2 } = await admin.from('memories')
+    .insert({ user_id: user.id, content_raw: 'ROLLUP another afternoon, linked later', source: 'text_entry', is_draft: false })
+    .select('id').single()
+  createdMems.push(mem2.id)
+  await admin.from('memory_entities').insert({ memory_id: mem2.id, entity_id: Lplace, role: 'mentioned' })
+  const { data: overviewMem } = await admin.from('memories')
+    .select('id, memory_entities!inner(entity_id, role)')
+    .eq('memory_entities.entity_id', Lplace).eq('memory_entities.role', 'location')
+    .eq('capture_mode', 'globe_onboarding').eq('user_id', user.id).limit(1).maybeSingle()
+  const { data: childLinks } = await admin.from('memory_entities')
+    .select('entity_id, memory_id, memories!inner(user_id)')
+    .eq('entity_id', Lplace).eq('memories.user_id', user.id)
+  const distinct = new Set((childLinks ?? []).map((l) => l.memory_id))
+  const count = distinct.size - (overviewMem && distinct.has(overviewMem.id) ? 1 : 0)
+  if (count === 1) ok('linked_count is 1 — the extra recollection counts, the overview does not')
+  else bad('linked_count wrong: ' + count + ' (distinct=' + distinct.size + ')')
 } catch (e) {
   bad(e.message)
 } finally {
+  for (const id of createdMems) {
+    await admin.from('memory_entities').delete().eq('memory_id', id)
+    await admin.from('memories').delete().eq('id', id)
+  }
   for (const id of created.reverse()) {
     try { await admin.rpc('delete_residence_pin', { p_relationship_id: id, p_user_id: user.id }) } catch { /* best effort */ }
   }

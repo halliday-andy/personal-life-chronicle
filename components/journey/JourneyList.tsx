@@ -42,7 +42,14 @@ interface StopDetail {
     rough_temporal_range: string | null
   } | null
   linked: { id: string; excerpt: string }[]
-  anchored: { relationship_id: string; name: string; excerpt: string }[]
+  anchored: {
+    relationship_id: string
+    name: string
+    excerpt: string
+    place_entity_id?: string
+    /** Recollections on this child beyond its shown overview excerpt. */
+    linked_count?: number
+  }[]
   context: { id: string; title: string; visibility: string }[]
 }
 
@@ -255,18 +262,21 @@ function StopCard({
 
           {node.children.length > 0 && (
             <ul className="space-y-1.5 border-l border-stone-200 mx-4 mb-4 pl-4">
-              {node.children.map((c) => (
-                <ChildRow
-                  key={c.relationship_id}
-                  node={c}
-                  depth={1}
-                  excerpt={
-                    expanded && typeof detail === 'object'
-                      ? detail.anchored.find((a) => a.relationship_id === c.relationship_id)?.excerpt
-                      : undefined
-                  }
-                />
-              ))}
+              {node.children.map((c) => {
+                const roll = expanded && typeof detail === 'object'
+                  ? detail.anchored.find((a) => a.relationship_id === c.relationship_id)
+                  : undefined
+                return (
+                  <ChildRow
+                    key={c.relationship_id}
+                    node={c}
+                    depth={1}
+                    excerpt={roll?.excerpt}
+                    moreCount={roll?.linked_count}
+                    placeEntityId={roll?.place_entity_id}
+                  />
+                )
+              })}
             </ul>
           )}
         </div>
@@ -426,10 +436,15 @@ function ChildRow({
   node,
   depth,
   excerpt,
+  moreCount,
+  placeEntityId,
 }: {
   node: JourneyNode
   depth: number
   excerpt?: string
+  /** Recollections on this child beyond the shown overview (2026-07-09). */
+  moreCount?: number
+  placeEntityId?: string
 }) {
   const meta = pinTypeMeta(node.type_code)
   return (
@@ -453,6 +468,20 @@ function ChildRow({
       </div>
       {node.description && <p className="pl-4 text-xs italic text-stone-400">{node.description}</p>}
       {excerpt && <p className="pl-4 text-xs leading-relaxed text-stone-500">{excerpt}…</p>}
+      {/* A place accumulating recollections must not look inert from the
+          Journey (Andy's QA 2026-07-09): surface the count with a direct
+          reading path — the filtered /memories list for this place. */}
+      {(moreCount ?? 0) > 0 && placeEntityId && (
+        <p className="pl-4 text-[11px]">
+          <Link
+            href={`/memories?entity=${placeEntityId}`}
+            className="text-amber-700/80 hover:text-amber-800 hover:underline"
+            title={`Read the recollections at ${node.name}`}
+          >
+            +{moreCount} more {moreCount === 1 ? 'recollection' : 'recollections'} →
+          </Link>
+        </p>
+      )}
       {node.children.length > 0 && (
         <ul className={depth < 2 ? 'mt-1 space-y-1 border-l border-stone-100 pl-4' : 'mt-1 space-y-1'}>
           {node.children.map((c) => (

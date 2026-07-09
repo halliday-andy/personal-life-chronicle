@@ -42,6 +42,8 @@ export interface AnchoredPin {
   name: string
   type_code: string | null
   excerpt: string
+  /** Recollections on this child beyond its overview excerpt (2026-07-09). */
+  linked_count?: number
 }
 
 export interface ContextEntry {
@@ -467,6 +469,9 @@ export default function PinDetailCard({
                       <span className="mr-1.5 inline-block h-2 w-2 rounded-full align-middle" style={{ backgroundColor: pinTypeMeta(a.type_code).color }} />
                       <span className="font-medium text-[var(--ink)]">{a.name}</span>
                       {a.excerpt ? <span className="text-[var(--ink-dim)]"> — {a.excerpt}</span> : null}
+                      {(a.linked_count ?? 0) > 0 && (
+                        <span className="text-[var(--ember-soft)]"> · +{a.linked_count} more</span>
+                      )}
                     </button>
                   </li>
                 ))}

@@ -85,35 +85,64 @@ export async function GET(_req: NextRequest, { params }: { params: { relationshi
     .select('id, object_id, type_id')
     .eq('anchor_residence_id', params.relationshipId)
     .eq('user_id', user.id)
-  let anchored: { relationship_id: string; name: string; type_code: string | null; excerpt: string }[] = []
+  let anchored: {
+    relationship_id: string; name: string; type_code: string | null; excerpt: string
+    place_entity_id: string; linked_count: number
+  }[] = []
   if (anchoredRels && anchoredRels.length > 0) {
     const objIds = anchoredRels.map((r) => r.object_id)
     const typeIds = Array.from(new Set(anchoredRels.map((r) => r.type_id)))
-    const [{ data: ents }, { data: tcodes }, { data: rollMems }] = await Promise.all([
+    const [{ data: ents }, { data: tcodes }, { data: rollMems }, { data: childLinks }] = await Promise.all([
       admin.from('entities').select('id, canonical_name').in('id', objIds),
       admin.from('relationship_types').select('id, code').in('id', typeIds),
       admin.from('memories')
-        .select('content_raw, memory_entities!inner(entity_id, role)')
+        .select('id, content_raw, memory_entities!inner(entity_id, role)')
         .in('memory_entities.entity_id', objIds)
         .eq('memory_entities.role', 'location')
         .eq('capture_mode', 'globe_onboarding')
         .eq('user_id', user.id),
+      // Every recollection linked to each child place (any role) — feeds
+      // the "+N recollections" count so a place accumulating memories
+      // doesn't look inert from the Journey (Andy's QA, 2026-07-09).
+      admin.from('memory_entities')
+        .select('entity_id, memory_id, memories!inner(user_id)')
+        .in('entity_id', objIds)
+        .eq('memories.user_id', user.id),
     ])
     const nameById = new Map((ents ?? []).map((e) => [e.id, e.canonical_name as string]))
     const codeById = new Map((tcodes ?? []).map((t) => [t.id, t.code as string]))
     const excerptByEntity = new Map<string, string>()
+    const overviewIdByEntity = new Map<string, string>()
     for (const m of rollMems ?? []) {
       const meRows = Array.isArray(m.memory_entities) ? m.memory_entities : [m.memory_entities]
       for (const me of meRows as { entity_id: string; role: string }[]) {
-        if (!excerptByEntity.has(me.entity_id)) excerptByEntity.set(me.entity_id, (m.content_raw ?? '').slice(0, 160))
+        if (!excerptByEntity.has(me.entity_id)) {
+          excerptByEntity.set(me.entity_id, (m.content_raw ?? '').slice(0, 160))
+          overviewIdByEntity.set(me.entity_id, m.id as string)
+        }
       }
     }
-    anchored = anchoredRels.map((r) => ({
-      relationship_id: r.id,
-      name: nameById.get(r.object_id) ?? 'Untitled place',
-      type_code: codeById.get(r.type_id) ?? null,
-      excerpt: excerptByEntity.get(r.object_id) ?? '',
-    }))
+    // Distinct memories per child entity (a memory can link with several
+    // roles); the shown overview excerpt doesn't count toward "+N more".
+    const memsByEntity = new Map<string, Set<string>>()
+    for (const l of (childLinks ?? []) as { entity_id: string; memory_id: string }[]) {
+      const set = memsByEntity.get(l.entity_id) ?? new Set<string>()
+      set.add(l.memory_id)
+      memsByEntity.set(l.entity_id, set)
+    }
+    anchored = anchoredRels.map((r) => {
+      const set = memsByEntity.get(r.object_id) ?? new Set<string>()
+      const overviewId = overviewIdByEntity.get(r.object_id)
+      const linked_count = set.size - (overviewId && set.has(overviewId) ? 1 : 0)
+      return {
+        relationship_id: r.id,
+        name: nameById.get(r.object_id) ?? 'Untitled place',
+        type_code: codeById.get(r.type_id) ?? null,
+        excerpt: excerptByEntity.get(r.object_id) ?? '',
+        place_entity_id: r.object_id,
+        linked_count,
+      }
+    })
   }
 
   // Context notes on this place entity (Slice 6.5). Titles are derived
