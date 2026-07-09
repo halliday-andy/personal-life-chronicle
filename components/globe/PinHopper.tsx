@@ -151,6 +151,46 @@ export default function PinHopper({
     }
   }
 
+  // One line per memory (Andy, 2026-07-09): a multi-line paste would be
+  // silently joined into one compound jot by the single-line input — the
+  // browser strips the newlines. Intercept it and jot each line separately,
+  // so a pasted list honors the atomicity the consume loop depends on
+  // (one stub → one recollection → one check-off).
+  async function pasteLines(e: React.ClipboardEvent<HTMLInputElement>) {
+    const text = e.clipboardData.getData('text/plain')
+    if (!text.includes('\n')) return // single-line paste: default behavior
+    e.preventDefault()
+    if (busy) return
+    const lines = text.split('\n').map((l) => l.trim()).filter(Boolean)
+    if (lines.length === 0) return
+    setBusy('add')
+    setError(null)
+    const added: HopperStub[] = []
+    try {
+      for (const body of lines) {
+        const res = await fetch(`/api/entity/${entityId}/stubs`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ body }),
+        })
+        const d = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(d.detail || d.error || `HTTP ${res.status}`)
+        added.push(d.stub as HopperStub)
+      }
+      setInput('')
+    } catch (err) {
+      setError(
+        (err instanceof Error ? err.message : 'Could not save every line.') +
+        (added.length ? ` (${added.length} of ${lines.length} jotted)` : ''),
+      )
+    } finally {
+      // Newest first, matching the API's ordering on reload.
+      if (added.length) report([...added.reverse(), ...stubs])
+      setBusy(null)
+      inputRef.current?.focus()
+    }
+  }
+
   async function setStatus(stub: HopperStub, status: 'open' | 'consumed') {
     if (busy) return
     setBusy(stub.id)
@@ -193,24 +233,33 @@ export default function PinHopper({
   const consumedStubs = stubs.filter((s) => s.status === 'consumed')
 
   const addRow = (
-    <div className="flex gap-1.5">
-      <input
-        ref={inputRef}
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add() } }}
-        placeholder="Jot a memory to come back to…"
-        disabled={busy === 'add'}
-        className={`min-w-0 flex-1 rounded-lg border px-2.5 py-1.5 text-xs outline-none disabled:opacity-50 ${t.input}`}
-      />
-      <button
-        onClick={add}
-        disabled={!input.trim() || busy !== null}
-        className={`shrink-0 rounded-lg border px-2.5 py-1.5 text-xs disabled:opacity-40 ${t.addBtn}`}
-        title="Add to the hopper (Enter)"
-      >
-        Jot
-      </button>
+    <div>
+      <div className="flex gap-1.5">
+        <input
+          ref={inputRef}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add() } }}
+          onPaste={pasteLines}
+          placeholder="Jot a memory to come back to…"
+          disabled={busy === 'add'}
+          className={`min-w-0 flex-1 rounded-lg border px-2.5 py-1.5 text-xs outline-none disabled:opacity-50 ${t.input}`}
+        />
+        <button
+          onClick={add}
+          disabled={!input.trim() || busy !== null}
+          className={`shrink-0 rounded-lg border px-2.5 py-1.5 text-xs disabled:opacity-40 ${t.addBtn}`}
+          title="Add to the hopper (Enter)"
+        >
+          Jot
+        </button>
+      </div>
+      {/* Atomicity tip (Andy, 2026-07-09): a jot is ONE memory — the
+          consume loop checks stubs off one-for-one against recollections.
+          Elaboration belongs in the write-up, not here. */}
+      <p className={`mt-1 text-[10px] ${t.dim}`}>
+        One line per memory — jot each one separately.
+      </p>
     </div>
   )
 
