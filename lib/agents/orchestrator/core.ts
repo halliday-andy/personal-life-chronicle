@@ -17,6 +17,7 @@ import { ORCHESTRATOR_SYSTEM_PROMPT, SYSTEM_PROMPT_VERSION } from './system'
 import type { ChronicleDigest } from './digest'
 import { getChronicleDigest } from './digest-cache'
 import { ORCHESTRATOR_TOOLS, executeTool, type ToolResultPayload } from './tools'
+import { renderIntentPreamble, findBackstopConsume, type CaptureIntent } from './intent'
 
 const MAX_TOOL_ITERATIONS = 5
 const MAX_OUTPUT_TOKENS = 2048
@@ -42,6 +43,12 @@ export interface OrchestratorInput {
   input_type?: 'typed' | 'dictated' | 'pasted' | 'file_upload' | 'voice'
   /** Optional prior conversation in this session. */
   conversation_history?: ConversationTurn[]
+  /**
+   * Structured purpose attached by the UI (e.g. "write up this jot") —
+   * authoritative context the model must not have to re-derive from prose.
+   * Rides every turn of the conversation until fulfilled. See intent.ts.
+   */
+  intent?: CaptureIntent
   /** Injected clients for testing / shared connections. */
   supabase?: SupabaseClient
   anthropic?: Anthropic
@@ -88,6 +95,8 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Orchest
       metadata: {
         active_context: input.active_context ?? null,
         history_length: input.conversation_history?.length ?? 0,
+        // Provenance for intent-carrying runs (write-up bridge, 2026-07-09).
+        intent: input.intent ?? null,
       },
     })
     .select('id')
@@ -135,6 +144,11 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Orchest
   }
 
   const submissionParts: string[] = []
+  if (input.intent) {
+    // Structured UI intent leads the block — it's standing state for the
+    // whole write-up conversation, not part of the user's prose.
+    submissionParts.push(renderIntentPreamble(input.intent))
+  }
   if (input.user_guidance && input.user_guidance.trim()) {
     submissionParts.push(`The user added this context: "${input.user_guidance.trim()}"`)
   }
@@ -223,6 +237,27 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Orchest
     // give it one more chance to wrap up — but if the previous stop_reason
     // was 'end_turn', we're truly done.
     if (response.stop_reason === 'end_turn' && toolUses.length === 0) break
+  }
+
+  // ─── Write-up intent backstop (2026-07-09) ────────────────────────
+  // House pattern: prompt rule + mechanical guard. If this run carried a
+  // consume_stub intent AND produced a recollection but the model forgot
+  // consume_memory_stub, consume it here deterministically — the jot
+  // check-off must never depend on model diligence. Mid-interview turns
+  // (no create_memory yet) owe nothing; the intent rides to the next turn.
+  const owed = findBackstopConsume(input.intent, proposals)
+  if (owed) {
+    const backstopPayload = await executeTool(
+      'consume_memory_stub',
+      {
+        stub_id: owed.stub_id,
+        memory_id: owed.memory_id,
+        rationale:
+          'Backstop: the write-up intent produced a recollection this turn; checking the jot off mechanically.',
+      },
+      { user_id: input.user_id, supabase, source_submission_id: submissionId },
+    )
+    proposals.push({ ...backstopPayload, iteration })
   }
 
   // ─── Audit log ────────────────────────────────────────────────────

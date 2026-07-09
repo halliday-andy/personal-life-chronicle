@@ -459,7 +459,7 @@ export default function PinEditPanel({
 
       {/* The hopper (Hopper 5a) — jotted memories still to be written up as
           recollections. Full variant: add, check off, reopen, delete. */}
-      <PinHopper entityId={pin.place_entity_id} variant="panel" />
+      <PinHopper entityId={pin.place_entity_id} hostName={pin.name} variant="panel" />
 
       {/* Other memories that mention this place — edited in the
           Recollections surface, not here (this panel owns only the

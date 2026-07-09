@@ -23,6 +23,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
+import { useUiChrome } from '../UiChromeContext'
 
 const THEMES = {
   nocturne: {
@@ -35,6 +36,7 @@ const THEMES = {
     tick: 'text-[var(--ember-soft)]',
     strike: 'decoration-[var(--ink-dim)]/50',
     removeHover: 'text-[var(--ink-dim)] hover:text-rose-300',
+    writeUp: 'text-[var(--ink-dim)]/70 hover:text-[var(--ember-soft)] text-[10px] whitespace-nowrap',
     reopenHover: 'hover:text-[var(--ink)]',
     toggle: 'text-[var(--ink-dim)] hover:text-[var(--ink)]',
     error: 'text-rose-300',
@@ -52,6 +54,7 @@ const THEMES = {
     tick: 'text-amber-600',
     strike: 'decoration-stone-300',
     removeHover: 'text-stone-400 hover:text-rose-600',
+    writeUp: 'text-stone-400 hover:text-amber-700 text-[10px] whitespace-nowrap',
     reopenHover: 'hover:text-stone-800',
     toggle: 'text-stone-400 hover:text-stone-700',
     error: 'text-rose-600',
@@ -74,6 +77,7 @@ export interface HopperStub {
 
 export default function PinHopper({
   entityId,
+  hostName,
   variant,
   theme = 'nocturne',
   showTitle = true,
@@ -81,6 +85,12 @@ export default function PinHopper({
   onCountChange,
 }: {
   entityId: string
+  /**
+   * The host entity's display name. Enables the per-jot "write up" hand-off
+   * to the capture assistant (the seed needs a name for its chip and the
+   * orchestrator preamble) — without it the action is simply not offered.
+   */
+  hostName?: string
   variant: 'card' | 'panel'
   /** 'nocturne' on globe surfaces (default); 'light' on the Entity View. */
   theme?: HopperTheme
@@ -92,6 +102,7 @@ export default function PinHopper({
   onCountChange?: (n: number) => void
 }) {
   const t = THEMES[theme]
+  const { openAssistantWithSeed } = useUiChrome()
   const [stubs, setStubs] = useState<HopperStub[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -276,6 +287,25 @@ export default function PinHopper({
             className={`mt-0.5 shrink-0 ${t.check}`}
           />
           <span className="min-w-0 flex-1 break-words">{s.body}</span>
+          {/* The write-up bridge (2026-07-09): hand THIS jot to the capture
+              assistant with its exact stub_id — no prose interpretation.
+              Always visible: it's the jot's primary action, not housekeeping. */}
+          {hostName && (
+            <button
+              onClick={() => openAssistantWithSeed({
+                kind: 'consume_stub',
+                stub_id: s.id,
+                stub_body: s.body,
+                entity_id: entityId,
+                entity_name: hostName,
+              })}
+              disabled={busy !== null}
+              title="Write this up with the capture assistant — it will interview you and check the jot off"
+              className={`shrink-0 disabled:opacity-30 ${t.writeUp}`}
+            >
+              ✍ write
+            </button>
+          )}
           <button
             onClick={() => remove(s)}
             disabled={busy !== null}

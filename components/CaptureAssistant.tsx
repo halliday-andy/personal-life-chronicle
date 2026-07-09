@@ -54,7 +54,7 @@ const OPENING: ThreadEntry = {
 }
 
 export default function CaptureAssistant() {
-  const { assistantSuppressed } = useUiChrome()
+  const { assistantSuppressed, assistantSeed, clearAssistantSeed, viewingEntity } = useUiChrome()
   const [open, setOpen] = useState(false)
   const [thread, setThread] = useState<ThreadEntry[]>([OPENING])
   const [input, setInput] = useState('')
@@ -83,6 +83,16 @@ export default function CaptureAssistant() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open, assistantSuppressed])
+
+  // ── Write-up seed (2026-07-09): a jot handed over by its ✍ button ──
+  // Opening is our job; the seed chip renders above the composer and the
+  // intent rides every submission until the stub is consumed (the response
+  // watcher below clears it on a persisted consume for OUR stub).
+  useEffect(() => {
+    if (!assistantSeed) return
+    setOpen(true)
+    setTimeout(() => textareaRef.current?.focus(), 30)
+  }, [assistantSeed])
 
   // ── Auto-resize textarea and scroll thread on new content ─────────
   useEffect(() => {
@@ -125,6 +135,12 @@ export default function CaptureAssistant() {
           submission_text: content,
           user_guidance: userGuidance || undefined,
           conversation_history: history,
+          // Write-up seed rides EVERY turn until its stub is consumed.
+          intent: assistantSeed ?? undefined,
+          // Ambient surface context: which entity the user is looking at.
+          active_context: viewingEntity
+            ? `The user is currently viewing ${viewingEntity.entity_name} (${viewingEntity.entity_type ?? 'entity'}, id ${viewingEntity.entity_id}) — "this place"/"this person"/"jot this" likely refer to it.`
+            : undefined,
         }),
       })
 
@@ -152,6 +168,19 @@ export default function CaptureAssistant() {
         // Clear guidance after a submission — it's per-message, not sticky
         setGuidance('')
         setShowGuidance(false)
+        // Seed fulfilled? A persisted consume for OUR stub (model-driven or
+        // the core backstop) retires the chip — the write-up is complete.
+        if (
+          assistantSeed &&
+          data.proposals.some(
+            (p) =>
+              p.tool === 'consume_memory_stub' &&
+              p.persisted &&
+              (p.data as { stub_id?: string }).stub_id === assistantSeed.stub_id,
+          )
+        ) {
+          clearAssistantSeed()
+        }
       }
     } catch (err) {
       setThread((prev) => [
@@ -166,7 +195,7 @@ export default function CaptureAssistant() {
       setLoading(false)
       textareaRef.current?.focus()
     }
-  }, [input, guidance, loading, thread])
+  }, [input, guidance, loading, thread, assistantSeed, viewingEntity, clearAssistantSeed])
 
   function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
@@ -327,6 +356,26 @@ export default function CaptureAssistant() {
 
         {/* Input area */}
         <div className="flex-none border-t border-stone-200 px-4 sm:px-5 py-3 space-y-2">
+          {/* Write-up seed chip — the jot this conversation is fleshing out.
+              Visible so the user sees exactly what intent the assistant is
+              carrying; × abandons the write-up (the jot stays open). */}
+          {assistantSeed && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs text-amber-800">
+              <span className="flex-none pt-px">✍</span>
+              <span className="min-w-0 flex-1 leading-snug">
+                Writing up: <span className="font-medium">&ldquo;{assistantSeed.stub_body}&rdquo;</span>
+                <span className="text-amber-600"> — {assistantSeed.entity_name}</span>
+              </span>
+              <button
+                onClick={clearAssistantSeed}
+                aria-label="Stop writing up this jot (it stays on the list)"
+                title="Stop writing up this jot — it stays on the list"
+                className="flex-none text-amber-500 hover:text-amber-800"
+              >
+                ×
+              </button>
+            </div>
+          )}
           {showGuidance ? (
             <textarea
               value={guidance}
@@ -350,7 +399,9 @@ export default function CaptureAssistant() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={onKeyDown}
-              placeholder="Share a memory, a thought, or a chunk of notes. (⌘↵ to send)"
+              placeholder={assistantSeed
+                ? 'Tell the story — or just say "interview me" and I’ll ask. (⌘↵ to send)'
+                : 'Share a memory, a thought, or a chunk of notes. (⌘↵ to send)'}
               rows={1}
               disabled={loading}
               className="flex-1 resize-none rounded-xl border border-stone-300 px-3 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent disabled:opacity-50 max-h-[200px] overflow-y-auto leading-relaxed"
@@ -518,6 +569,20 @@ function ProposalLine({ p }: { p: ProposalSummary }) {
       }
       case 'add_to_backlog':
         return `Queued for later: "${String((p.data as { text?: string }).text ?? '').slice(0, 60)}"`
+      case 'list_memory_stubs': {
+        const d = p.data as { stubs?: unknown[]; host?: { canonical_name?: string } | null }
+        return `Read the hopper${d.host?.canonical_name ? ` for ${d.host.canonical_name}` : ''}: ${d.stubs?.length ?? 0} open jot(s)`
+      }
+      case 'add_memory_stub': {
+        const d = p.data as { body?: string; host?: { canonical_name?: string } }
+        return `Jotted for ${d.host?.canonical_name ?? '?'}: "${String(d.body ?? '').slice(0, 60)}"`
+      }
+      case 'consume_memory_stub': {
+        const d = p.data as { body?: string; error?: string }
+        return d.error
+          ? `Jot check-off failed — ${d.error}`
+          : `Jot written ✓ — "${String(d.body ?? '').slice(0, 60)}" is now a recollection`
+      }
       case 'search_chronicle':
         return `Searched chronicle`
       default:

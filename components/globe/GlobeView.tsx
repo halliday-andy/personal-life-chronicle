@@ -232,7 +232,7 @@ export default function GlobeView() {
   const [typeFilters, setTypeFilters] = useState<Set<string>>(new Set())
   const [linesInView, setLinesInView] = useState(false)
   const [viewVersion, setViewVersion] = useState(0)
-  const { setAssistantSuppressed } = useUiChrome()
+  const { setAssistantSuppressed, assistantSeed, setViewingEntity } = useUiChrome()
 
   // Proximity hints are advisory — auto-dismiss after a few seconds.
   useEffect(() => {
@@ -261,6 +261,23 @@ export default function GlobeView() {
     setAssistantSuppressed(selectedId !== null && editMode)
     return () => setAssistantSuppressed(false)
   }, [selectedId, editMode, setAssistantSuppressed])
+
+  // Write-up hand-off (2026-07-09): clicking ✍ on a jot in the EDIT panel
+  // needs the assistant, but the edit panel is exactly what suppresses it.
+  // A seed arriving while editing means the user is switching tasks —
+  // leave edit mode so the panel yields to the interview.
+  useEffect(() => {
+    if (assistantSeed && editMode) setEditMode(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assistantSeed])
+
+  // Ambient context for the assistant (2026-07-09): the selected pin is
+  // what "this place" means in a capture conversation.
+  useEffect(() => {
+    const p = pins.find((x) => x.relationship_id === selectedId)
+    setViewingEntity(p ? { entity_id: p.place_entity_id, entity_name: p.name, entity_type: 'place' } : null)
+    return () => setViewingEntity(null)
+  }, [selectedId, pins, setViewingEntity])
 
   const loadPins = useCallback(async () => {
     try {

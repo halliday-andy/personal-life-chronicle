@@ -9,11 +9,12 @@
  * never leave the owner's view; published/synthesis paths read only shareable.
  */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Markdown from './Markdown'
 import PinHopper from './globe/PinHopper'
+import { useUiChrome } from './UiChromeContext'
 
 export interface ContextNote {
   id: string
@@ -190,6 +191,13 @@ export default function EntityView({ entity, notes: initialNotes, recollections 
   const [castError, setCastError] = useState<string | null>(null)
   // Person-anchored recollection capture (Slice 7.3) — no pin required.
   const router = useRouter()
+  // Ambient context for the assistant (2026-07-09): this page's entity is
+  // what "this person"/"this place" means in a capture conversation.
+  const { setViewingEntity } = useUiChrome()
+  useEffect(() => {
+    setViewingEntity({ entity_id: entity.id, entity_name: entity.canonical_name, entity_type: entity.type })
+    return () => setViewingEntity(null)
+  }, [entity.id, entity.canonical_name, entity.type, setViewingEntity])
   const [addingRec, setAddingRec] = useState(false)
   const [recBody, setRecBody] = useState('')
   const [recWhen, setRecWhen] = useState('')
@@ -480,6 +488,7 @@ export default function EntityView({ entity, notes: initialNotes, recollections 
             </p>
             <PinHopper
               entityId={entity.id}
+              hostName={entity.canonical_name}
               variant="panel"
               theme="light"
               showTitle={false}

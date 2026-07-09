@@ -16,6 +16,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createUserClient } from '@/lib/supabase/server'
 import { runOrchestrator } from '@/lib/agents/orchestrator/core'
 import type { ConversationTurn } from '@/lib/agents/orchestrator/core'
+import { parseCaptureIntent } from '@/lib/agents/orchestrator/intent'
 
 const isDev = process.env.NODE_ENV !== 'production'
 
@@ -38,6 +39,8 @@ interface SubmitBody {
   active_context?: string
   input_type?: 'typed' | 'dictated' | 'pasted' | 'file_upload' | 'voice'
   conversation_history?: ConversationTurn[]
+  /** Structured UI intent (e.g. write-up-this-jot); validated server-side. */
+  intent?: unknown
 }
 
 export async function POST(request: NextRequest) {
@@ -59,6 +62,9 @@ export async function POST(request: NextRequest) {
     }
 
     stage = 'run-orchestrator'
+    // Malformed intents drop to undefined rather than 400 — the submission
+    // itself is still valid user material and must not bounce.
+    const intent = parseCaptureIntent(body.intent) ?? undefined
     const response = await runOrchestrator({
       user_id: user.id,
       submission_text,
@@ -66,6 +72,7 @@ export async function POST(request: NextRequest) {
       active_context: body.active_context,
       input_type: body.input_type ?? 'typed',
       conversation_history: body.conversation_history,
+      intent,
     })
 
     return NextResponse.json(response)

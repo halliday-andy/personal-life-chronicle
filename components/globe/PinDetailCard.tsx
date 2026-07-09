@@ -448,6 +448,7 @@ export default function PinDetailCard({
               live on the chip; it renders its UI only while its chip is open. */}
           <PinHopper
             entityId={pin.place_entity_id}
+            hostName={pin.name}
             variant="card"
             open={openChip === 'hopper'}
             onCountChange={setStubCount}
