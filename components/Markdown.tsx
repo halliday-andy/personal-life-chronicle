@@ -24,7 +24,10 @@ export default function Markdown({
   className?: string
 }) {
   return (
-    <div className={`lc-markdown ${className}`}>
+    // break-words: pasted research carries long bare URLs (GFM autolinks
+    // them into unbreakable anchor text) and query-string tokens — the
+    // container must wrap them rather than overflow (2026-07-09 QA).
+    <div className={`lc-markdown break-words ${className}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
@@ -44,7 +47,9 @@ export default function Markdown({
             <code className="rounded bg-current/10 px-1 py-0.5 font-mono text-[0.85em]" {...props} />
           ),
           a: ({ node, ...props }) => (
-            <a className="underline underline-offset-2 hover:opacity-80" target="_blank" rel="noreferrer" {...props} />
+            // break-all: an autolinked bare URL is its own anchor text —
+            // one unbreakable "word" hundreds of chars long without this.
+            <a className="break-all underline underline-offset-2 hover:opacity-80" target="_blank" rel="noreferrer" {...props} />
           ),
           hr: ({ node, ...props }) => <hr className="my-3 border-current/20" {...props} />,
         }}

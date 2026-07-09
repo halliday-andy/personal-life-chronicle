@@ -392,7 +392,10 @@ function StopDetailBody({
           <h3 className="text-[11px] font-medium uppercase tracking-wide text-stone-400">Context</h3>
           <ul className="mt-1 space-y-1">
             {detail.context.map((c) => (
-              <li key={c.id} className="text-xs">
+              // break-words: titles are derived clean now, but pasted
+              // research is exactly where monster tokens come from —
+              // the row must never be able to overflow the card.
+              <li key={c.id} className="min-w-0 break-words text-xs">
                 <Link
                   href={`/entities/${node.place_entity_id}`}
                   className="text-stone-600 hover:text-stone-900 hover:underline"
