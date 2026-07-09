@@ -254,11 +254,55 @@ Supersedes the 2026-06-17 block below, which had gone nine days stale. The
   `783ca91`); Exeter twins still unmerged; Leola still carries the junk
   "Leo" alias (alias QA pending); Journey J1 / Slice 6 / Hopper 5a /
   stub-resolution walkthroughs still open.
-- **NEXT:** Andy's QA (Slice 7 checklist above + the open walkthroughs +
-  Exeter merge + 5 remaining stub proposals); then per roadmap §5 the
-  slice list is exhausted — remaining parked items: Vertical Moments,
-  pin-visual redesign, /memories full-text search (deferred from
-  Slice 6).
+- **Hopper QA session 2026-07-09 (Andy live-QA'd 5a; four builds came
+  out of it, all pushed):**
+  (1) **One jot per memory** (`53eb13a`) — tip text under the jot input,
+  multi-line paste splits into N jots, prompt granularity rule ("split
+  semantically, not on punctuation" — proof: a run-on with an internal
+  comma produced exactly 3 atomic stubs, `verify-orchestrator-jot-split`
+  6/6).
+  (2) **The write-up bridge R1** (`06973e3`) — ✍ write on every open jot
+  opens the CaptureAssistant seeded with a structured consume_stub
+  intent (exact stub_id; amber chip; rides every turn); core backstop
+  consumes mechanically if the model forgets (`findBackstopConsume`,
+  pure + proven); viewingEntity ambient context (selected pin / open
+  entity page → "this place" needs no name); a seed exits globe edit
+  mode so the suppressed assistant can surface. `verify-capture-intent`
+  9/9 + real seeded run 6/6 (model consumed the exact stub itself, no
+  list call needed).
+  (3) **R2 hopper nomination** (`8a4e875`) — Layer B digest gains "Open
+  jots" per host (cache-stable ordering); prompt may nominate ONE jot at
+  openings/lulls, never nagging. `verify-digest-hopper` 8/8.
+  (4) **INCIDENT + fixes (`a6cfbb4`): the invisible write-up.** Andy's
+  seeded write-up (Playa Coma Ruga, the surf-launch memory) consumed
+  correctly but VANISHED from the pin: extraction minted near-duplicate
+  place "Commaruga" (the user's own spelling) and linked the memory
+  there. **Space-collapse disguise** — "Commaruga" vs "Playa Coma Ruga"
+  slips ALL matcher rules (space defeats boundary-containment; one token
+  defeats token-subset; "Playa" prefix defeats whole-string JW). Nothing
+  was lost (Raw Vault + consume lineage intact — lineage made the trace
+  trivial). Fixes: (a) **consume_memory_stub now GUARANTEES the host
+  link** (idempotent linkEntityToMemory at the one gate all consume
+  paths share; mentioned/participant, never 'location'; failure reported,
+  never unwinds the consume) — extraction is now additive, not
+  load-bearing, for write-up visibility; (b) **scoreNameMatch
+  space-collapse rule** — single-token name windowed (JW) against the
+  space-stripped long name, merge-proposal band capped 0.9; guards:
+  single-token short side ONLY (a two-token "Air Force" fragment
+  window-matched a base at 0.9 during the rule's own verification —
+  caught pre-commit), ≥6 chars, multi-token long side.
+  `verify-entity-matching` 17/17; `verify-hopper-consume-tools` 10/10.
+  Data healed by Andy: /entities merge Commaruga INTO the pin entity
+  (alias folded; both recollections verified on the pin; overview
+  discriminator verified untouched). **Class-of-bug: any UI flow whose
+  outcome must be visible on a host surface needs a deterministic link
+  at the flow's own gate — never rely on extraction resolution alone.**
+- **NEXT:** Andy's QA (Journey J1 walkthrough in progress 2026-07-09;
+  then Slice 7 checklist + Slice 6 + stub-resolution + pin-adoption
+  walkthroughs + Exeter merge + 5 remaining stub proposals); then per
+  roadmap §5 the slice list is exhausted — remaining parked items:
+  Vertical Moments, pin-visual redesign, /memories full-text search
+  (deferred from Slice 6).
 
 ## Session handoff — 2026-06-17 (QA remediation pass, superseded)
 
