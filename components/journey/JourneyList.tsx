@@ -15,7 +15,7 @@
  * handoff links are J4.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Markdown from '../Markdown'
@@ -90,16 +90,37 @@ export default function JourneyList({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- arrival-only
   }, [])
 
+  // Accordion layout-shift guard (Andy's QA 2026-07-09): single-open means
+  // clicking stop B while stop A ABOVE it is expanded collapses A in the
+  // same render — everything below A leaps up by A's detail height and the
+  // clicked title vanishes off the top of the viewport. Remember where the
+  // clicked header sat on screen, and after the re-render scroll by exactly
+  // the drift so it stays pinned under the pointer. Instant compensation,
+  // not animation — reduced-motion safe.
+  const pendingAnchorRef = useRef<{ id: string; top: number } | null>(null)
+
   // Keep ?pin= in the URL matching the open stop, so surface switches and
   // shared links land oriented here (J4). replace, never push — expanding
   // shouldn't pollute browser history.
   function toggle(stopId: string) {
+    const header = document.getElementById(`journey-stop-btn-${stopId}`)
+    if (header) pendingAnchorRef.current = { id: stopId, top: header.getBoundingClientRect().top }
     setExpandedId((cur) => {
       const next = cur === stopId ? null : stopId
       router.replace(next ? `/journey?pin=${next}` : '/journey', { scroll: false })
       return next
     })
   }
+
+  useLayoutEffect(() => {
+    const anchor = pendingAnchorRef.current
+    if (!anchor) return
+    pendingAnchorRef.current = null
+    const header = document.getElementById(`journey-stop-btn-${anchor.id}`)
+    if (!header) return
+    const drift = header.getBoundingClientRect().top - anchor.top
+    if (drift !== 0) window.scrollBy({ top: drift, behavior: 'auto' })
+  }, [expandedId])
 
   useEffect(() => {
     if (!expandedId) return
