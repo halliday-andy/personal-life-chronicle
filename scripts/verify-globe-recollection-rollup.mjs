@@ -52,7 +52,7 @@ try {
   const { data: ld, error: el } = await admin.rpc('create_residence_pin', {
     p_user_id: user.id, p_self_entity_id: self.id, p_lng: 2, p_lat: 41,
     p_name: 'TESTPIN roll L', p_place_subtype: 'city', p_country_code: 'XX',
-    p_when_text: null, p_body_text: BODY, p_position: null, p_type_code: 'logged_at', p_anchor_residence_id: P,
+    p_when_text: 'ROLLUP winter of 76', p_body_text: BODY, p_position: null, p_type_code: 'logged_at', p_anchor_residence_id: P,
   })
   if (el) throw new Error('Log create: ' + el.message)
   const L = rel(ld).relationship_id; created.push(L)
@@ -67,10 +67,11 @@ try {
 
   // Route step 2: its globe recollection excerpt.
   const { data: mems } = await admin
-    .from('memories').select('content_raw, memory_entities!inner(entity_id, role)')
+    .from('memories').select('id, content_raw, memory_entities!inner(entity_id, role)')
     .eq('memory_entities.entity_id', Lplace).eq('memory_entities.role', 'location')
     .eq('capture_mode', 'globe_onboarding').eq('user_id', user.id)
   const excerpt = (mems ?? [])[0]?.content_raw ?? ''
+  const Lmemory = (mems ?? [])[0]?.id
   if (excerpt.startsWith('ROLLUP')) ok('Log L’s globe recollection excerpt is fetchable for the roll-up')
   else bad('roll-up excerpt missing/wrong: ' + JSON.stringify(excerpt.slice(0, 40)))
 
@@ -92,6 +93,28 @@ try {
   const count = distinct.size - (overviewMem && distinct.has(overviewMem.id) ? 1 : 0)
   if (count === 1) ok('linked_count is 1 — the extra recollection counts, the overview does not')
   else bad('linked_count wrong: ' + count + ' (distinct=' + distinct.size + ')')
+
+  // Route step 4 (2026-07-09): each linked recollection's HOME pin — its
+  // role='location' pin, with name + verbatim when_text — grounds
+  // retrospective mentions; a memory native to the stop suppresses home.
+  const Pplace = rel(pd).place_entity_id
+  await admin.from('memory_entities').insert({ memory_id: Lmemory, entity_id: Pplace, role: 'mentioned' })
+  // From stop P's perspective: L's memory is a linked mention whose home is pin L.
+  const { data: locLinks } = await admin.from('memory_entities')
+    .select('memory_id, entity_id').eq('memory_id', Lmemory).eq('role', 'location')
+  const homePlace = (locLinks ?? [])[0]?.entity_id
+  const { data: homeRels } = await admin.from('relationships')
+    .select('id, object_id, metadata, relationship_types!inner(code)')
+    .eq('user_id', user.id).eq('object_id', homePlace)
+  const homeRel = (homeRels ?? [])[0]
+  const { data: homeEnt } = await admin.from('entities').select('canonical_name').eq('id', homePlace).single()
+  if (homeRel?.id === L && homeEnt?.canonical_name === 'TESTPIN roll L'
+      && homeRel?.metadata?.when_text === 'ROLLUP winter of 76')
+    ok('home resolves to the recollection’s own pin with its verbatim when-phrase')
+  else bad('home resolution wrong: ' + JSON.stringify({ rel: homeRel?.id === L, name: homeEnt?.canonical_name, when: homeRel?.metadata?.when_text }))
+  // Self-suppression: from stop L's perspective the same memory is native.
+  if (homeRel?.id === L) ok('native memory would suppress its home label (home pin === the stop itself)')
+  else bad('self-suppression precondition failed')
 } catch (e) {
   bad(e.message)
 } finally {

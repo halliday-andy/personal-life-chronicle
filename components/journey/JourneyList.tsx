@@ -41,7 +41,14 @@ interface StopDetail {
     household_composition: string | null
     rough_temporal_range: string | null
   } | null
-  linked: { id: string; excerpt: string }[]
+  linked: {
+    id: string
+    excerpt: string
+    occurred_at_fuzzy?: string | null
+    /** Where this recollection lives (its location pin) — null when native
+     *  to this stop. Grounds retrospective mentions (2026-07-09). */
+    home?: { relationship_id: string; name: string; when_text: string | null } | null
+  }[]
   anchored: {
     relationship_id: string
     name: string
@@ -377,12 +384,29 @@ function StopDetailBody({
           <h3 className="text-[11px] font-medium uppercase tracking-wide text-stone-400">
             Recollections that mention this place
           </h3>
-          <ul className="mt-1 space-y-1">
+          {/* Each row: a small provenance header (the recollection's HOME
+              pin + its period — so a Mount Snow memory name-dropping
+              Dartmouth reads as retrospective at a glance; native
+              recollections show their own verbatim when-phrase instead),
+              then the excerpt indented beneath it (Andy's QA 2026-07-09). */}
+          <ul className="mt-1.5 space-y-2.5">
             {detail.linked.map((r) => (
-              <li key={r.id} className="text-xs leading-relaxed text-stone-600">
+              <li key={r.id} className="text-xs leading-relaxed">
+                {r.home ? (
+                  <Link
+                    href={`/journey?pin=${r.home.relationship_id}`}
+                    title={`Go to ${r.home.name} in the journey`}
+                    className="font-medium text-amber-700/90 hover:text-amber-800 hover:underline"
+                  >
+                    {r.home.name}
+                    {r.home.when_text && <span className="font-normal text-stone-400"> · {r.home.when_text}</span>}
+                  </Link>
+                ) : r.occurred_at_fuzzy ? (
+                  <span className="font-medium text-stone-500">{r.occurred_at_fuzzy}</span>
+                ) : null}
                 <Link
                   href={`/memories?entity=${node.place_entity_id}#${r.id}`}
-                  className="hover:text-stone-900 hover:underline"
+                  className="block border-l-2 border-stone-100 pl-3 text-stone-600 hover:border-stone-300 hover:text-stone-900"
                 >
                   {r.excerpt}…
                 </Link>

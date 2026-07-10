@@ -62,19 +62,70 @@ export async function GET(_req: NextRequest, { params }: { params: { relationshi
   // pin's own overview memory is excluded.
   let linkedQuery = admin
     .from('memories')
-    .select('id, content_raw, created_at, capture_mode, memory_entities!inner(entity_id)')
+    .select('id, content_raw, occurred_at_fuzzy, created_at, capture_mode, memory_entities!inner(entity_id)')
     .eq('memory_entities.entity_id', rel.object_id)
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(20)
   if (memoryId) linkedQuery = linkedQuery.neq('id', memoryId)
   const { data: linkedRows } = await linkedQuery
+
+  // Home pin per linked recollection (Andy's Journey QA, 2026-07-09): a
+  // mention list mixes eras — the Mount Snow share-house memory name-drops
+  // Dartmouth — so each row carries WHERE the recollection lives (its
+  // role='location' pin) and that pin's verbatim when-phrase. That grounds
+  // retrospective/pluperfect references without parsing any dates. A
+  // recollection whose home IS this stop gets home:null (native, no label).
+  const linkedIds = (linkedRows ?? []).map((r) => r.id)
+  const homeByMemory = new Map<string, { relationship_id: string; name: string; when_text: string | null }>()
+  if (linkedIds.length > 0) {
+    const { data: locLinks } = await admin
+      .from('memory_entities')
+      .select('memory_id, entity_id')
+      .in('memory_id', linkedIds)
+      .eq('role', 'location')
+    const placeIds = Array.from(new Set((locLinks ?? []).map((l) => l.entity_id)))
+    if (placeIds.length > 0) {
+      const [{ data: relRows }, { data: placeEntotal }] = await Promise.all([
+        admin
+          .from('relationships')
+          .select('id, object_id, metadata, relationship_types!inner(code)')
+          .eq('user_id', user.id)
+          .in('object_id', placeIds),
+        admin.from('entities').select('id, canonical_name').in('id', placeIds),
+      ])
+      const nameByPlace = new Map((placeEntotal ?? []).map((e) => [e.id, e.canonical_name as string]))
+      type HomeRel = {
+        id: string; object_id: string; metadata: Record<string, unknown> | null
+        relationship_types: { code: string } | { code: string }[] | null
+      }
+      const pinByPlace = new Map<string, { relationship_id: string; name: string; when_text: string | null }>()
+      for (const r of (relRows ?? []) as HomeRel[]) {
+        const rt = Array.isArray(r.relationship_types) ? r.relationship_types[0] : r.relationship_types
+        if (!rt || !(PIN_TYPE_CODES as readonly string[]).includes(rt.code) || pinByPlace.has(r.object_id)) continue
+        pinByPlace.set(r.object_id, {
+          relationship_id: r.id,
+          name: nameByPlace.get(r.object_id) ?? 'Untitled place',
+          when_text: (r.metadata?.when_text as string | undefined) ?? null,
+        })
+      }
+      for (const l of (locLinks ?? []) as { memory_id: string; entity_id: string }[]) {
+        if (homeByMemory.has(l.memory_id)) continue
+        const pin = pinByPlace.get(l.entity_id)
+        // Native to this stop → no label (retrospective mentions stand out).
+        if (pin && pin.relationship_id !== params.relationshipId) homeByMemory.set(l.memory_id, pin)
+      }
+    }
+  }
+
   const linked = (linkedRows ?? []).map((r) => ({
     id: r.id,
     excerpt: (r.content_raw ?? '').slice(0, 240),
     // Full text so the card can expand in place (≤20 rows, cheap).
     text: r.content_raw ?? '',
     created_at: r.created_at,
+    occurred_at_fuzzy: r.occurred_at_fuzzy ?? null,
+    home: homeByMemory.get(r.id) ?? null,
   }))
 
   // Recollection roll-up (Slice 3.6): pins anchored to THIS pin (Logs,
