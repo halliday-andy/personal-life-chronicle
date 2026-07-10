@@ -9,20 +9,25 @@ App: **http://localhost:3001/journey** (sign in first).
 > `verify-journey-tree.mjs` (6/6, incl. nothing-ever-disappears guards).
 
 ## 1. The column
-- [ ] **AppNav** now has **Journey** (between Globe and Memories); the page
+- [x] **AppNav** now has **Journey** (between Globe and Memories); the page
       loads with your stop count.
-- [ ] Your 11 primary stops render **in spine order** (Lockbourne first …
+- [x] Your 11 primary stops render **in spine order** (Lockbourne first …
       Year 2 at Mt. Snow last) — same order as the globe, top to bottom.
-- [ ] Each stop card shows the **name**, its **`when` phrase** chip (verbatim
+- [x] Each stop card shows the **name**, its **`when` phrase** chip (verbatim
       — no parsed years), and the **placard** in italics where you've set one.
-- [ ] The **first stop** carries the ★ and "The beginning"; the **last** a
+- [x] The **first stop** carries the ★ and "The beginning"; the **last** a
       small "now" badge. **[taste]** both treatments (J2 upgrades them).
 
 ## 2. Nesting
-- [ ] Anchored markers sit **indented under their home** with a type-colored
+- [x] Anchored markers sit **indented under their home** with a type-colored
       dot + label (workplace, vacation, Log…) and their own when phrase.
-- [ ] A **Log anchored to a vacation** nests under the *vacation* (e.g. your
-      Queenstown Logs), one level deeper — indent caps at two levels.
+- [ ] A **marker anchored to another marker** nests one level deeper —
+      indent caps at two levels. *(Corrected 2026-07-09: your Queenstown
+      Logs are all anchored directly to the primary, so live data has no
+      grandchild to show — the flat display there is correct. To exercise
+      this visually: globe → Ramada Queenstown → Edit → re-anchor to
+      Coronet Peak Ski School → check the Journey → revert. Tree logic
+      itself is proven by `verify-journey-tree.mjs` nested fixtures.)*
 - [ ] Standalone/unanchored markers appear at the bottom under
       **"Elsewhere · not yet anchored"** with the hint about anchoring via
       the globe Edit panel. Nothing you placed is missing. **[taste]** the
