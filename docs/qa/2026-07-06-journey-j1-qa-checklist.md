@@ -28,57 +28,57 @@ App: **http://localhost:3001/journey** (sign in first).
       this visually: globe → Ramada Queenstown → Edit → re-anchor to
       Coronet Peak Ski School → check the Journey → revert. Tree logic
       itself is proven by `verify-journey-tree.mjs` nested fixtures.)*
-- [ ] Standalone/unanchored markers appear at the bottom under
+- [x] Standalone/unanchored markers appear at the bottom under
       **"Elsewhere · not yet anchored"** with the hint about anchoring via
       the globe Edit panel. Nothing you placed is missing. **[taste]** the
       section name.
 
 ## 3. Mobile-first
-- [ ] Narrow the window to phone width (~375px) → single readable column,
+- [x] Narrow the window to phone width (~375px) → single readable column,
       no horizontal scroll, chips wrap cleanly.
-- [ ] Desktop → the column stays a comfortable reading measure (max-w-2xl),
+- [x] Desktop → the column stays a comfortable reading measure (max-w-2xl),
       not full-bleed.
 
 ## 4. J2 — the ember thread (built same session)
-- [ ] A **continuous warm thread** runs down the left of the column,
+- [x] A **continuous warm thread** runs down the left of the column,
       connecting every stop — segments meet cleanly whatever the card
       heights; it **ends at "now"** (nothing dangles past the last stop).
       **[taste]** thread weight/colour.
-- [ ] The thread is **topped by a glowing ★** at Lockbourne (the globe's
+- [x] The thread is **topped by a glowing ★** at Lockbourne (the globe's
       origin star, rotated into the column). **[taste]** star size/glow.
-- [ ] The "now" stop's marker is slightly larger with a pale ring.
-- [ ] **Transition phrases** appear on the thread between stops — quiet
+- [x] The "now" stop's marker is slightly larger with a pale ring.
+- [x] **Transition phrases** appear on the thread between stops — quiet
       italic amber: five "↓ a new posting" through the childhood bases,
       "↓ moved for work" into Tokyo and the ski years. **[taste]** the
       phrase vocabulary (career_relocation → "moved for work",
       military_posting → "a new posting", education → "off to study" …).
-- [ ] Where extraction found no reason (into Dartmouth, into NZ year 2),
+- [x] Where extraction found no reason (into Dartmouth, into NZ year 2),
       **nothing** is written — no fabricated connective tissue. (Dartmouth's
       pin has no recollection yet; write one and the extraction + phrase
       will appear after the next save.)
-- [ ] Nothing on the page animates (reduced-motion safe by construction).
+- [x] Nothing on the page animates (reduced-motion safe by construction).
 
 ## 5. J3 — tap a stop to open it (built after Andy's "flat listing" QA note)
-- [ ] Stop headers are now buttons (hover tint, ▸/▾). **Tap Mount Snow** →
+- [x] Stop headers are now buttons (hover tint, ▸/▾). **Tap Mount Snow** →
       the card expands in place with its **recollection rendered as
       markdown**, the **photo** (when one exists), and **fact chips**
       (residence type, move reason, household).
-- [ ] While it loads (~instant) a skeleton shimmer shows, never a blank.
+- [x] While it loads (~instant) a skeleton shimmer shows, never a blank.
 - [ ] **Recollections from this time** lists linked recollection excerpts →
       clicking goes to /memories filtered to the place. **Context** lists
       note titles (🔒 on private) → the place's Entity View. Footer links:
       **Open place page ↗** and **All recollections →**.
 - [ ] With the stop open, its **children gain their excerpts** (the Logs/
       vacations show a line of their own recollection under their name).
-- [ ] Opening a second stop **closes the first** (single-open — the column
+- [x] Opening a second stop **closes the first** (single-open — the column
       stays a column). Reopening a stop is instant (cached, no refetch).
-- [ ] Initial page load still makes **zero** detail requests (open DevTools
+- [x] Initial page load still makes **zero** detail requests (open DevTools
       Network: /api/globe/residence/<id> fires only on tap).
-- [ ] A stop with no recollection (Dartmouth) says so and points at the
+- [x] A stop with no recollection (Dartmouth) says so and points at the
       globe — no empty void.
 
 ## 6. J4 — the globe↔journey handoff
-- [ ] Open a stop in Journey → its expanded footer has **Show on globe →**;
+- [x] Open a stop in Journey → its expanded footer has **Show on globe →**;
       clicking it lands on /globe with that pin **selected (card open) and
       flown to**.
 - [ ] On the globe, a pin's detail card now has **Read in journey →** (next

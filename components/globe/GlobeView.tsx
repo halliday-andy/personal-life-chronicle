@@ -21,6 +21,7 @@ import PinModal, { PinDraftData } from './PinModal'
 import PinEditPanel from './PinEditPanel'
 import PinDetailCard from './PinDetailCard'
 import { useUiChrome } from '../UiChromeContext'
+import { clusterFrame } from '@/lib/globe/cluster-frame'
 import type { ProximityHint } from '@/lib/globe/proximity'
 import { pinTypeMeta, PIN_TYPES } from '@/lib/globe/pin-types'
 import { moveToIndex } from '@/lib/globe/reorder'
@@ -370,18 +371,38 @@ export default function GlobeView() {
     // briefly rather than racing it.
     let tries = 0
     const fly = () => {
-      if (mapRef.current) {
-        mapRef.current.flyTo({
-          center: [target.lng, target.lat],
-          // Regional-to-local framing: with the card now compact, the pin
-          // is the subject — land close enough that it reads as the focus
-          // (Andy's J4 QA, 2026-07-10; was 5).
-          zoom: Math.max(mapRef.current.getZoom(), 8),
-          speed: 0.9,
-          essential: true,
-          // Land the pin above the bottom-anchored card, not behind it.
-          offset: [0, -Math.round(window.innerHeight * 0.18)],
-        })
+      const map = mapRef.current
+      if (map) {
+        // Cluster-aware framing (2026-07-10): a target with close
+        // neighbors (Queenstown: four pins in a few km) fits the whole
+        // local cluster, zoomed toward label separation. A lone target
+        // gets the plain regional fly.
+        const frame = clusterFrame(target, pins)
+        if (frame) {
+          map.fitBounds(frame.bounds, {
+            padding: {
+              top: 110,
+              left: 110,
+              right: 110,
+              // Keep the cluster above the bottom-anchored card.
+              bottom: 110 + Math.round(window.innerHeight * 0.2),
+            },
+            maxZoom: frame.maxZoom,
+            speed: 0.9,
+            essential: true,
+          })
+        } else {
+          map.flyTo({
+            center: [target.lng, target.lat],
+            // Regional-to-local framing: with the card now compact, the
+            // pin is the subject (Andy's J4 QA, 2026-07-10; was 5).
+            zoom: Math.max(map.getZoom(), 8),
+            speed: 0.9,
+            essential: true,
+            // Land the pin above the bottom-anchored card, not behind it.
+            offset: [0, -Math.round(window.innerHeight * 0.18)],
+          })
+        }
         return
       }
       if (++tries < 15) setTimeout(fly, 200)
