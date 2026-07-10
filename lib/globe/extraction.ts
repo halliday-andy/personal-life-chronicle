@@ -137,14 +137,24 @@ export async function runGlobeExtraction(
 
   // The model occasionally returns a phrase field as a stringified JSON
   // array ('["Lorraine Barber"]', seen 2026-07-09) — the fact chips would
-  // render the brackets. Coerce to a human phrase.
+  // render the brackets. Coerce to a human phrase: comma-separated with a
+  // final "and", stripping any leading "and " the model tucked into items
+  // (the 2026-07-10 Mt. Snow re-run produced "… and and roommates …").
   const asPhrase = (v: string | null | undefined): string | null => {
     const s = (v ?? '').trim()
     if (!s) return null
     if (s.startsWith('[') && s.endsWith(']')) {
       try {
         const arr = JSON.parse(s)
-        if (Array.isArray(arr)) return arr.filter((x) => typeof x === 'string' && x.trim()).join(' and ') || null
+        if (Array.isArray(arr)) {
+          const items = arr
+            .filter((x): x is string => typeof x === 'string')
+            .map((x) => x.trim().replace(/^and\s+/i, ''))
+            .filter(Boolean)
+          if (items.length === 0) return null
+          if (items.length === 1) return items[0]
+          return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`
+        }
       } catch { /* fall through to the raw string */ }
     }
     return s
