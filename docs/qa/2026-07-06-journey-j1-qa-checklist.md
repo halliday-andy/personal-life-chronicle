@@ -21,7 +21,7 @@ App: **http://localhost:3001/journey** (sign in first).
 ## 2. Nesting
 - [x] Anchored markers sit **indented under their home** with a type-colored
       dot + label (workplace, vacation, Log…) and their own when phrase.
-- [ ] A **marker anchored to another marker** nests one level deeper —
+- [x] A **marker anchored to another marker** nests one level deeper —
       indent caps at two levels. *(Corrected 2026-07-09: your Queenstown
       Logs are all anchored directly to the primary, so live data has no
       grandchild to show — the flat display there is correct. To exercise
