@@ -43,6 +43,7 @@ export function transitionPhrase(moveReason: string | null): string | null {
     career_relocation: 'moved for work',
     military_posting: 'a new posting',
     marriage: 'marriage',
+    relationship: 'for love',
     divorce_separation: 'a parting of ways',
     education: 'off to study',
     family_care: 'to care for family',
@@ -51,6 +52,7 @@ export function transitionPhrase(moveReason: string | null): string | null {
     health: 'for health',
     displacement: 'displaced',
     adventure: 'chasing adventure',
+    seasonal_work: "for a season's work",
   }
   return phrases[moveReason] ?? moveReason.replace(/_/g, ' ')
 }

@@ -55,10 +55,15 @@ const EXTRACTION_TOOL: Anthropic.Tool = {
       },
       move_reason: {
         type: ['string', 'null'],
+        // 'relationship' + 'seasonal_work' added 2026-07-09 (Andy's Alp Hof
+        // Lodge QA): moving in with a partner short of marriage, and a
+        // season's work, are real reasons the old vocabulary forced to
+        // 'unknown' — which the Journey deliberately renders as silence.
         enum: [
-          'career_relocation', 'military_posting', 'marriage', 'divorce_separation',
-          'education', 'family_care', 'financial', 'retirement', 'health',
-          'displacement', 'adventure', 'unknown', null,
+          'career_relocation', 'military_posting', 'marriage', 'relationship',
+          'divorce_separation', 'education', 'family_care', 'financial',
+          'retirement', 'health', 'displacement', 'adventure', 'seasonal_work',
+          'unknown', null,
         ],
       },
       mentioned_people: {
@@ -130,10 +135,25 @@ export async function runGlobeExtraction(
   if (!toolBlock) return { status: 'skipped', reason: 'model returned no extraction' }
   const raw = toolBlock.input as Partial<GlobeExtraction>
 
+  // The model occasionally returns a phrase field as a stringified JSON
+  // array ('["Lorraine Barber"]', seen 2026-07-09) — the fact chips would
+  // render the brackets. Coerce to a human phrase.
+  const asPhrase = (v: string | null | undefined): string | null => {
+    const s = (v ?? '').trim()
+    if (!s) return null
+    if (s.startsWith('[') && s.endsWith(']')) {
+      try {
+        const arr = JSON.parse(s)
+        if (Array.isArray(arr)) return arr.filter((x) => typeof x === 'string' && x.trim()).join(' and ') || null
+      } catch { /* fall through to the raw string */ }
+    }
+    return s
+  }
+
   const extraction: GlobeExtraction = {
     residence_type: raw.residence_type ?? null,
-    residence_detail: raw.residence_detail ?? null,
-    household_composition: raw.household_composition ?? null,
+    residence_detail: asPhrase(raw.residence_detail),
+    household_composition: asPhrase(raw.household_composition),
     move_reason: raw.move_reason ?? null,
     mentioned_people: raw.mentioned_people ?? [],
     mentioned_organisations: raw.mentioned_organisations ?? [],
