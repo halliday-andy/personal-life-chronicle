@@ -79,16 +79,40 @@ export default function JourneyList({
   const [expandedId, setExpandedId] = useState<string | null>(() => owningStopId(stops, initialPin))
   const [details, setDetails] = useState<Record<string, StopDetail | 'loading' | 'error'>>({})
 
-  // Deep-link arrival: bring the linked pin's row into view once, without
-  // scroll-jacking later interactions. Reduced motion → instant jump.
+  // Deep-link / in-page arrival: bring the target pin's row into view ONCE
+  // — but only after the owning stop's detail panel has rendered. Scrolling
+  // at mount aimed correctly and was then shoved away when the async detail
+  // inserted content above the child rows (Andy's J4 QA, 2026-07-10: the
+  // Mars Hill arrival ended up centered on Loring's recollection).
+  // State, not a ref: jumping to a pin whose owning stop is ALREADY the
+  // expanded one changes no other state — the render (and this effect)
+  // must be driven by the arrival target itself.
+  const [arrivalPin, setArrivalPin] = useState<string | null>(initialPin)
   useEffect(() => {
-    if (!initialPin) return
-    const el = document.getElementById(`journey-pin-${initialPin}`)
+    if (!arrivalPin) return
+    const detail = expandedId ? details[expandedId] : undefined
+    if (expandedId && (!detail || detail === 'loading')) return // panel still growing
+    setArrivalPin(null)
+    const el = document.getElementById(`journey-pin-${arrivalPin}`)
     if (!el) return
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     el.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' })
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- arrival-only
-  }, [])
+  }, [arrivalPin, details, expandedId])
+
+  // In-page pin jump (2026-07-10): the provenance headers in "Recollections
+  // that mention this place" point at other JOURNEY pins. A real <Link>
+  // navigation to the page we're already on scrolls to top and changes
+  // nothing (the mounted list ignores new params) — so jump internally:
+  // expand the owning stop, mirror the URL, and let the arrival effect
+  // scroll once that stop's detail is in.
+  function goToPin(relId: string) {
+    const owner = owningStopId(stops, relId)
+    setArrivalPin(relId)
+    // Unanchored pins (no owning stop) live in the "Elsewhere" section —
+    // collapse so the arrival scroll isn't waiting on any detail panel.
+    setExpandedId(owner ?? null)
+    router.replace(`/journey?pin=${relId}`, { scroll: false })
+  }
 
   // Accordion layout-shift guard (Andy's QA 2026-07-09): single-open means
   // clicking stop B while stop A ABOVE it is expanded collapses A in the
@@ -163,6 +187,7 @@ export default function JourneyList({
             expanded={expandedId === stop.relationship_id}
             detail={details[stop.relationship_id]}
             onToggle={() => toggle(stop.relationship_id)}
+            onGoToPin={goToPin}
           />
         ))}
       </ol>
@@ -198,6 +223,7 @@ function StopCard({
   expanded,
   detail,
   onToggle,
+  onGoToPin,
 }: {
   node: JourneyNode
   index: number
@@ -207,6 +233,7 @@ function StopCard({
   expanded: boolean
   detail: StopDetail | 'loading' | 'error' | undefined
   onToggle: () => void
+  onGoToPin: (relationshipId: string) => void
 }) {
   const phrase = transitionPhrase(nextMoveReason)
   return (
@@ -284,7 +311,7 @@ function StopCard({
               aria-labelledby={`journey-stop-btn-${node.relationship_id}`}
               className="border-t border-stone-100 px-4 py-3"
             >
-              <StopDetailBody node={node} detail={detail} />
+              <StopDetailBody node={node} detail={detail} onGoToPin={onGoToPin} />
             </div>
           )}
 
@@ -322,9 +349,11 @@ function StopCard({
 function StopDetailBody({
   node,
   detail,
+  onGoToPin,
 }: {
   node: JourneyNode
   detail: StopDetail | 'loading' | 'error' | undefined
+  onGoToPin: (relationshipId: string) => void
 }) {
   if (!detail || detail === 'loading') {
     return (
@@ -414,6 +443,14 @@ function StopDetailBody({
                     href={`/journey?pin=${r.home.relationship_id}`}
                     title={`Go to ${r.home.name} in the journey`}
                     className="font-medium text-amber-700/90 hover:text-amber-800 hover:underline"
+                    onClick={(e) => {
+                      // Plain click: jump in place (a real navigation to the
+                      // page we're on scrolls to top and changes nothing —
+                      // 2026-07-10). Modified clicks keep native behavior.
+                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                      e.preventDefault()
+                      onGoToPin(r.home!.relationship_id)
+                    }}
                   >
                     {r.home.name}
                     {r.home.when_text && <span className="font-normal text-stone-400"> · {r.home.when_text}</span>}
