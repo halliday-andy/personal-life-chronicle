@@ -108,6 +108,24 @@ body {
   border-radius: 6px;
   pointer-events: none;
   font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+/* Pin NAME line above the when-range (Andy, 2026-07-10). Zoom-gated:
+   DOM markers get no collision culling, so names appear from regional
+   zoom in (.globe-names-on on the map container) — except the selected
+   pin, whose name always shows. Name reads brighter than the ember
+   when-line so identity leads. */
+.globe-pin-name {
+  display: none;
+  color: rgba(237, 233, 224, 0.92);
+  font-weight: 500;
+}
+.globe-names-on .globe-pin-name,
+.globe-pin-selected .globe-pin-name {
+  display: block;
+}
+.globe-pin-when {
+  display: block;
 }
 /* Origin pin (item 2): the first stop — the launching point of the journey.
    A distinct bright star, lighter/whiter than the ember spine so it reads as

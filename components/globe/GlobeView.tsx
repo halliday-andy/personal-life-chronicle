@@ -373,7 +373,10 @@ export default function GlobeView() {
       if (mapRef.current) {
         mapRef.current.flyTo({
           center: [target.lng, target.lat],
-          zoom: Math.max(mapRef.current.getZoom(), 5),
+          // Regional-to-local framing: with the card now compact, the pin
+          // is the subject — land close enough that it reads as the focus
+          // (Andy's J4 QA, 2026-07-10; was 5).
+          zoom: Math.max(mapRef.current.getZoom(), 8),
           speed: 0.9,
           essential: true,
           // Land the pin above the bottom-anchored card, not behind it.
@@ -521,6 +524,16 @@ export default function GlobeView() {
       loadPins()
     })
 
+    // Zoom-gate the at-rest pin NAMES (2026-07-10): DOM markers get no
+    // collision culling, so world-scale views with every name visible are
+    // label soup. From regional zoom in, names join the when-chips; the
+    // selected pin's name always shows (CSS handles both).
+    const applyNameGate = () => {
+      map.getContainer().classList.toggle('globe-names-on', map.getZoom() >= 4)
+    }
+    map.on('zoom', applyNameGate)
+    map.on('load', applyNameGate)
+
     // Tick on pan/zoom so the "side lines in view" reveal re-evaluates.
     map.on('moveend', () => setViewVersion((v) => v + 1))
 
@@ -573,13 +586,28 @@ export default function GlobeView() {
         if (isSel) return
         selectPin(p.relationship_id)
       })
-      // At-rest temporal chip (item 1): the pin's `when` phrase, glanceable
-      // without interaction. Absolutely positioned below the dot so it never
-      // shifts the dot off its coordinate (pins stay aligned with the arcs).
-      if (p.when_text) {
+      // At-rest label (item 1 + Andy's 2026-07-10 call): the pin's NAME on
+      // one line above its `when` phrase, glanceable without interaction.
+      // Absolutely positioned below the dot so it never shifts the dot off
+      // its coordinate (pins stay aligned with the arcs). Names are
+      // zoom-gated via a container class (DOM markers get no collision
+      // culling — world view would be label soup); the when line and the
+      // selected pin's name always show.
+      if (p.when_text || p.name) {
         const chip = document.createElement('span')
         chip.className = 'globe-pin-chip'
-        chip.textContent = p.when_text
+        if (p.name) {
+          const nameLine = document.createElement('span')
+          nameLine.className = 'globe-pin-name'
+          nameLine.textContent = p.name
+          chip.appendChild(nameLine)
+        }
+        if (p.when_text) {
+          const whenLine = document.createElement('span')
+          whenLine.className = 'globe-pin-when'
+          whenLine.textContent = p.when_text
+          chip.appendChild(whenLine)
+        }
         el.appendChild(chip)
       }
       // Hover card (item 1): name + placard, to orient before clicking through.
