@@ -324,6 +324,10 @@ export default function GlobeView() {
     setHoverPreview(null)
   }, [])
 
+  // Compact detail card on J4 arrival (2026-07-10): geography first, the
+  // full card one click away. Any ordinary selection path resets it.
+  const [compactCard, setCompactCard] = useState(false)
+
   // Select an existing pin — opens the detail card (and clears any
   // in-progress new pin).
   const selectPin = useCallback((relId: string) => {
@@ -335,6 +339,7 @@ export default function GlobeView() {
     setEditMode(false)
     setRefining(false)
     setStagedCoords(null)
+    setCompactCard(false)
     // Clear the hover card/preview so the floating name flag can't superimpose
     // over the detail card (and persist into Edit) for the just-clicked pin.
     setHovered(null)
@@ -346,6 +351,11 @@ export default function GlobeView() {
   // shared link) selects that pin and flies to it once the pins and map
   // are ready. One-shot; read via window.location to keep the map free
   // of router re-renders.
+  //
+  // Andy's J4 QA (2026-07-10): the arrival used to center the pin exactly
+  // behind the detail card. Two mitigations: the camera aims the pin at
+  // the upper half (offset above the bottom card), and the card arrives
+  // COMPACT — geography first, full data one click away.
   const deepLinkDoneRef = useRef(false)
   useEffect(() => {
     if (deepLinkDoneRef.current || pins.length === 0) return
@@ -355,6 +365,7 @@ export default function GlobeView() {
     deepLinkDoneRef.current = true
     if (!target) return
     selectPin(target.relationship_id)
+    setCompactCard(true) // after selectPin — selection paths reset it
     // The map may still be initializing on a cold load — retry the fly
     // briefly rather than racing it.
     let tries = 0
@@ -365,6 +376,8 @@ export default function GlobeView() {
           zoom: Math.max(mapRef.current.getZoom(), 5),
           speed: 0.9,
           essential: true,
+          // Land the pin above the bottom-anchored card, not behind it.
+          offset: [0, -Math.round(window.innerHeight * 0.18)],
         })
         return
       }
@@ -1079,6 +1092,8 @@ export default function GlobeView() {
             position={spinePos}
             total={spine.length}
             refining={refining}
+            compact={compactCard}
+            onExpand={() => setCompactCard(false)}
             onNavigate={navigateSpine}
             onRefine={() => { setStagedCoords(null); setRefining(true) }}
             onEdit={() => { setRefining(false); setEditMode(true) }}

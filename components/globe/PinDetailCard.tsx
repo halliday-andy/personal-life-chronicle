@@ -64,6 +64,8 @@ export default function PinDetailCard({
   position,
   total,
   refining,
+  compact = false,
+  onExpand,
   onNavigate,
   onRefine,
   onEdit,
@@ -74,6 +76,10 @@ export default function PinDetailCard({
   position: number   // 0-based index in the SPINE sequence; -1 for off-spine markers
   total: number      // number of primary residences (spine length)
   refining: boolean  // drag-to-refine armed from this card (Phase-5 finding 1)
+  /** J4 arrival (2026-07-10): render only the identity strip so the
+   *  geography stays the subject; onExpand opens the full card. */
+  compact?: boolean
+  onExpand?: () => void
   onNavigate: (dir: -1 | 1) => void  // step prev/next along the spine + fly there
   onRefine: () => void  // arm drag-to-refine without opening the full edit panel
   onEdit: () => void
@@ -185,6 +191,37 @@ export default function PinDetailCard({
         facts.rough_temporal_range,
       ].filter(Boolean) as string[])
     : []
+
+  // Compact arrival strip (J4, 2026-07-10): identity only — the pin and
+  // its surroundings are the subject; one click brings the full card.
+  // Data keeps loading underneath so expansion is instant.
+  if (compact) {
+    return (
+      <div className="glass absolute bottom-6 left-1/2 z-30 w-[min(640px,94vw)] -translate-x-1/2 rounded-2xl px-5 py-3 text-[var(--ink)]">
+        <div className="flex items-center gap-3">
+          <span className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: pinTypeMeta(pin.type_code).color }} />
+          <div className="min-w-0 flex-1">
+            <span className="nocturne-display block truncate text-lg font-medium leading-tight">{pin.name}</span>
+            {pin.when_text && <span className="block text-xs text-[var(--ember-soft)]">{pin.when_text}</span>}
+          </div>
+          <button
+            onClick={onExpand}
+            className="shrink-0 rounded-lg border border-[var(--glass-border)] px-3 py-1.5 text-sm text-[var(--ink)]/90 hover:bg-white/10"
+            title="Open the full card — recollections, photos, context"
+          >
+            Details ▾
+          </button>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="shrink-0 text-lg leading-none text-[var(--ink-dim)] hover:text-[var(--ink)]"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="glass absolute bottom-6 left-1/2 z-30 w-[min(640px,94vw)] -translate-x-1/2 rounded-2xl p-5 text-[var(--ink)]">
