@@ -269,21 +269,17 @@ function StopCard({
 
           {node.children.length > 0 && (
             <ul className="space-y-1.5 border-l border-stone-200 mx-4 mb-4 pl-4">
-              {node.children.map((c) => {
-                const roll = expanded && typeof detail === 'object'
-                  ? detail.anchored.find((a) => a.relationship_id === c.relationship_id)
-                  : undefined
-                return (
-                  <ChildRow
-                    key={c.relationship_id}
-                    node={c}
-                    depth={1}
-                    excerpt={roll?.excerpt}
-                    moreCount={roll?.linked_count}
-                    placeEntityId={roll?.place_entity_id}
-                  />
-                )
-              })}
+              {node.children.map((c) => (
+                <ChildRow
+                  key={c.relationship_id}
+                  node={c}
+                  depth={1}
+                  // The roll-up covers the whole anchored SUBTREE — pass it
+                  // down so grandchildren (a Log on a workplace) gain their
+                  // excerpts too, not only direct children (2026-07-09).
+                  rollup={expanded && typeof detail === 'object' ? detail.anchored : undefined}
+                />
+              ))}
             </ul>
           )}
         </div>
@@ -467,18 +463,18 @@ function StopDetailBody({
 function ChildRow({
   node,
   depth,
-  excerpt,
-  moreCount,
-  placeEntityId,
+  rollup,
 }: {
   node: JourneyNode
   depth: number
-  excerpt?: string
-  /** Recollections on this child beyond the shown overview (2026-07-09). */
-  moreCount?: number
-  placeEntityId?: string
+  /** The expanded stop's subtree roll-up — each row finds its own entry. */
+  rollup?: StopDetail['anchored']
 }) {
   const meta = pinTypeMeta(node.type_code)
+  const roll = rollup?.find((a) => a.relationship_id === node.relationship_id)
+  const excerpt = roll?.excerpt
+  const moreCount = roll?.linked_count
+  const placeEntityId = roll?.place_entity_id
   return (
     <li id={`journey-pin-${node.relationship_id}`}>
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm">
@@ -517,7 +513,7 @@ function ChildRow({
       {node.children.length > 0 && (
         <ul className={depth < 2 ? 'mt-1 space-y-1 border-l border-stone-100 pl-4' : 'mt-1 space-y-1'}>
           {node.children.map((c) => (
-            <ChildRow key={c.relationship_id} node={c} depth={depth + 1} />
+            <ChildRow key={c.relationship_id} node={c} depth={depth + 1} rollup={rollup} />
           ))}
         </ul>
       )}

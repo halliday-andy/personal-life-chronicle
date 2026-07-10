@@ -58,12 +58,41 @@ try {
   const L = rel(ld).relationship_id; created.push(L)
   const Lplace = rel(ld).place_entity_id
 
-  // Route step 1: pins anchored to P.
-  const { data: anchoredRels } = await admin
-    .from('relationships').select('id, object_id, type_id').eq('anchor_residence_id', P).eq('user_id', user.id)
-  const hit = (anchoredRels ?? []).find((r) => r.id === L)
+  // A grandchild: Log M anchored to L (marker-on-marker, the generalized
+  // anchoring case Andy's Queenstown hotels now exercise live).
+  const { data: md, error: em } = await admin.rpc('create_residence_pin', {
+    p_user_id: user.id, p_self_entity_id: self.id, p_lng: 2.1, p_lat: 41.1,
+    p_name: 'TESTPIN roll M', p_place_subtype: 'city', p_country_code: 'XX',
+    p_when_text: null, p_body_text: 'ROLLUP grandchild evening at the springs', p_position: null,
+    p_type_code: 'logged_at', p_anchor_residence_id: L,
+  })
+  if (em) throw new Error('grandchild create: ' + em.message)
+  const M = rel(md).relationship_id; created.push(M)
+
+  // Route step 1 (subtree walk, 2026-07-09): level-by-level from P.
+  const anchoredRels = []
+  {
+    const visited = new Set([P])
+    let frontier = [P]
+    while (frontier.length > 0) {
+      const { data: level } = await admin
+        .from('relationships').select('id, object_id, type_id, anchor_residence_id')
+        .in('anchor_residence_id', frontier).eq('user_id', user.id)
+      const next = []
+      for (const r of level ?? []) {
+        if (visited.has(r.id)) continue
+        visited.add(r.id)
+        anchoredRels.push(r)
+        next.push(r.id)
+      }
+      frontier = next
+    }
+  }
+  const hit = anchoredRels.find((r) => r.id === L)
   if (hit) ok('Log L is discoverable via anchor_residence_id = P')
   else bad('Log L not found among pins anchored to P')
+  if (anchoredRels.find((r) => r.id === M)) ok('grandchild M (anchored to L) is in P’s subtree roll-up')
+  else bad('grandchild M missing from the subtree walk')
 
   // Route step 2: its globe recollection excerpt.
   const { data: mems } = await admin

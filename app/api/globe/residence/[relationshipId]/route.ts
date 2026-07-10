@@ -131,11 +131,33 @@ export async function GET(_req: NextRequest, { params }: { params: { relationshi
   // Recollection roll-up (Slice 3.6): pins anchored to THIS pin (Logs,
   // vacations, work trips…) surface as short descriptors that link to that
   // pin. The recollection still lives on its own pin — this is an index.
-  const { data: anchoredRels } = await admin
-    .from('relationships')
-    .select('id, object_id, type_id')
-    .eq('anchor_residence_id', params.relationshipId)
-    .eq('user_id', user.id)
+  //
+  // SUBTREE, not direct children (2026-07-09, Andy's Journey QA): since
+  // generalized anchoring, a marker can anchor to another marker — his
+  // Queenstown hotels now hang off the ski school, and a direct-children
+  // query left the grandchildren without excerpts in the Journey. Walk
+  // level by level with a visited guard (cycles are theoretically
+  // repairable states — never loop on them).
+  const anchoredRels: { id: string; object_id: string; type_id: string }[] = []
+  {
+    const visited = new Set<string>([params.relationshipId])
+    let frontier = [params.relationshipId]
+    while (frontier.length > 0) {
+      const { data: level } = await admin
+        .from('relationships')
+        .select('id, object_id, type_id, anchor_residence_id')
+        .in('anchor_residence_id', frontier)
+        .eq('user_id', user.id)
+      const next: string[] = []
+      for (const r of level ?? []) {
+        if (visited.has(r.id)) continue
+        visited.add(r.id)
+        anchoredRels.push({ id: r.id, object_id: r.object_id, type_id: r.type_id })
+        next.push(r.id)
+      }
+      frontier = next
+    }
+  }
   let anchored: {
     relationship_id: string; name: string; type_code: string | null; excerpt: string
     place_entity_id: string; linked_count: number
