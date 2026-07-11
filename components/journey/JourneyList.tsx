@@ -17,7 +17,6 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import Markdown from '../Markdown'
 import { transitionPhrase, type JourneyNode } from '@/lib/journey/tree'
 import { pinTypeMeta } from '@/lib/globe/pin-types'
@@ -73,7 +72,6 @@ export default function JourneyList({
    *  the pin's row scrolls into view. */
   initialPin?: string | null
 }) {
-  const router = useRouter()
   // Single-open accordion + per-stop detail cache (an expanded stop that
   // was closed and reopened doesn't refetch).
   const [expandedId, setExpandedId] = useState<string | null>(() => owningStopId(stops, initialPin))
@@ -105,13 +103,24 @@ export default function JourneyList({
   // nothing (the mounted list ignores new params) — so jump internally:
   // expand the owning stop, mirror the URL, and let the arrival effect
   // scroll once that stop's detail is in.
+  // URL mirror (J4): plain history.replaceState, the same idiom the globe
+  // uses — the address bar updates instantly, nothing re-renders, no
+  // server round-trip of this force-dynamic page, and the Back button
+  // stays unpolluted. Cold deep links read ?pin= server-side regardless.
+  // (router.replace here used to sit INSIDE a setState updater — a
+  // render-phase side effect React may drop, which is why the URL never
+  // visibly changed: Andy's J4 QA, 2026-07-10.)
+  function mirrorPinUrl(relId: string | null) {
+    window.history.replaceState(null, '', relId ? `/journey?pin=${relId}` : '/journey')
+  }
+
   function goToPin(relId: string) {
     const owner = owningStopId(stops, relId)
     setArrivalPin(relId)
     // Unanchored pins (no owning stop) live in the "Elsewhere" section —
     // collapse so the arrival scroll isn't waiting on any detail panel.
     setExpandedId(owner ?? null)
-    router.replace(`/journey?pin=${relId}`, { scroll: false })
+    mirrorPinUrl(relId)
   }
 
   // Accordion layout-shift guard (Andy's QA 2026-07-09): single-open means
@@ -129,11 +138,9 @@ export default function JourneyList({
   function toggle(stopId: string) {
     const header = document.getElementById(`journey-stop-btn-${stopId}`)
     if (header) pendingAnchorRef.current = { id: stopId, top: header.getBoundingClientRect().top }
-    setExpandedId((cur) => {
-      const next = cur === stopId ? null : stopId
-      router.replace(next ? `/journey?pin=${next}` : '/journey', { scroll: false })
-      return next
-    })
+    const next = expandedId === stopId ? null : stopId
+    setExpandedId(next)
+    mirrorPinUrl(next)
   }
 
   useLayoutEffect(() => {
