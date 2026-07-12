@@ -148,6 +148,26 @@ async function main() {
       await supabase.from('memory_entities').delete().in('entity_id', strayIds)
       await supabase.from('entities').delete().in('id', strayIds) // stubs cascade
     }
+    // Model-normalized fixture leak guard (2026-07-10: extraction created
+    // "Elena Brandt" from the "TESTINTENT Elena Brandt" story — the prefix
+    // sweep missed it and a merge proposal landed in Andy's real queue).
+    // Any entity born during this run that ends up with ZERO memory links
+    // after the memory sweep is run residue — remove it and its queue rows.
+    const { data: born } = await supabase.from('entities')
+      .select('id').eq('user_id', user.id).gte('created_at', startedAt)
+    for (const e of born ?? []) {
+      const { data: hasLinks } = await supabase.from('memory_entities')
+        .select('memory_id').eq('entity_id', e.id).limit(1)
+      if ((hasLinks ?? []).length > 0) continue
+      await supabase.from('review_queue').delete().eq('item_id', e.id)
+      const { data: mergeRows } = await supabase.from('review_queue')
+        .select('id, context_json').eq('item_type', 'entity_merge_proposal').is('resolved_at', null)
+      for (const r of mergeRows ?? []) {
+        if ((r.context_json as any)?.duplicate_id === e.id) await supabase.from('review_queue').delete().eq('id', r.id)
+      }
+      await supabase.from('assumption_log').delete().eq('entity_id', e.id)
+      await supabase.from('entities').delete().eq('id', e.id)
+    }
     const { data: left } = await supabase.from('entities')
       .select('id').eq('user_id', user.id).ilike('canonical_name', '%TESTLOOP%')
     if ((left ?? []).length === 0) ok('cleanup complete — no TESTLOOP residue')
