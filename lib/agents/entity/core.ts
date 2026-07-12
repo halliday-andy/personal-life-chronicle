@@ -73,7 +73,7 @@ interface ExistingEntity {
 const EXTRACT_TOOL: Anthropic.Tool = {
   name: 'submit_entities',
   description:
-    'Submit the named entities you identified in the memory. Include people by name; named places — anywhere with a physical location the user was at, including towns, addresses, schools, campuses, military bases, hospitals, churches; named organizations — institutions experienced as membership or employment with no single site of their own, such as employers, companies, military commands or units, clubs; and named vehicles or event series if present. Skip pronouns, generic references ("my mother" without a name), and vague locations ("the city").',
+    'Submit the entities you identified in the memory. Include people by name, AND first-person PRIMARY-relationship references kept verbatim as person entities — "my father", "my mother", "my wife", "my husband", "my partner", "my brother", "my sister", "my son", "my daughter", "my grandmother", "my grandfather" (these core relations recur across a chronicle and resolve via the user\'s aliases). Include named places — anywhere with a physical location the user was at, including towns, addresses, schools, campuses, military bases, hospitals, churches; named organizations — institutions experienced as membership or employment with no single site of their own, such as employers, companies, military commands or units, clubs; and named vehicles or event series if present. Skip pronouns, NON-primary generic references ("my friend", "a colleague", "my roommate"), and vague locations ("the city").',
   input_schema: {
     type: 'object' as const,
     properties: {
@@ -117,9 +117,17 @@ const SYSTEM_PROMPT = `You are the Entity sub-agent of the Life Chronicle system
 Your job: extract the named entities that appear in a single memory and submit them via the submit_entities tool.
 
 Guidelines:
-- Extract only named entities. Skip pronouns, common nouns, and vague references.
+- Extract named entities, plus first-person PRIMARY-relationship references
+  (2026-07-10): "my father", "my mother", "my wife", "my husband",
+  "my partner", "my brother", "my sister", "my son", "my daughter",
+  "my grandmother", "my grandfather" — kept VERBATIM as person entities.
+  These core relations recur across the whole chronicle; the user aliases
+  them onto the real person once and every future mention resolves. Skip
+  pronouns, NON-primary references ("my friend", "my roommate", "a
+  colleague"), common nouns, and vague references.
   - "My sister Nancy" → extract Nancy (person)
-  - "My sister" alone → skip (no name)
+  - "My sister" alone → extract "my sister" (person, primary relation)
+  - "my friend from the ski school" → skip (not a primary relation)
   - "Madrid" → extract (place)
   - "the city" → skip
 

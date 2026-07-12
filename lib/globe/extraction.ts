@@ -69,7 +69,8 @@ const EXTRACTION_TOOL: Anthropic.Tool = {
       mentioned_people: {
         type: 'array',
         items: { type: 'string' },
-        description: 'Named people in the text (names only, for later entity resolution)',
+        description:
+          'People in the text: names ("Lorraine"), AND first-person PRIMARY-relationship references kept verbatim — "my father", "my mother", "my wife", "my husband", "my partner", "my brother", "my sister", "my son", "my daughter", "my grandmother", "my grandfather". These core relations recur across a whole chronicle and resolve via the user\'s aliases. Do NOT include vague or non-primary references ("my friend", "a colleague", "my roommate", "the neighbor") or bare pronouns.',
       },
       mentioned_organisations: {
         type: 'array',

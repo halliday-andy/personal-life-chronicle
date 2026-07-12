@@ -19,6 +19,7 @@ import { createClient as createUserClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { linkEntityToMemory, OwnerEditError } from '@/lib/memory/owner-edit'
 import { settleStubState } from '@/lib/globe/stub-resolution'
+import { appendAlias } from '@/lib/entity/alias'
 
 interface Body {
   action?: 'create' | 'link' | 'dismiss'
@@ -98,15 +99,27 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       canonicalName = ent.canonical_name
       // If the user renamed it (e.g. "my father" → "Robert Halliday"), keep
       // the stub phrasing as an alias so future mentions still resolve.
-      if (name.toLowerCase() !== ctx.name.trim().toLowerCase()) {
-        await admin.from('entities').update({ aliases: [ctx.name.trim()] }).eq('id', ent.id)
-      }
+      // appendAlias merges — the old code replaced the array wholesale.
+      const created = appendAlias(null, ctx.name, ent.canonical_name)
+      if (created) await admin.from('entities').update({ aliases: created }).eq('id', ent.id)
       await linkEntityToMemory(admin, user.id, ctx.memory_id, ent.id)
     } else if (body.action === 'link') {
       if (!body.entityId) return NextResponse.json({ error: 'entityId is required for link' }, { status: 400 })
       const result = await linkEntityToMemory(admin, user.id, ctx.memory_id, body.entityId)
       entityId = result.entity.id
       canonicalName = result.entity.canonical_name
+      // The LINK path must fold the stub phrasing too (Andy's QA,
+      // 2026-07-10: resolving "my father" to Bill Halliday dropped the
+      // phrasing — future "my father" mentions wouldn't resolve).
+      const { data: linked } = await admin
+        .from('entities')
+        .select('aliases, canonical_name')
+        .eq('id', result.entity.id)
+        .single()
+      if (linked) {
+        const folded = appendAlias(linked.aliases, ctx.name, linked.canonical_name)
+        if (folded) await admin.from('entities').update({ aliases: folded }).eq('id', result.entity.id)
+      }
     } else {
       resolution = 'dismissed'
     }
