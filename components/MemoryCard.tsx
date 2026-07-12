@@ -369,8 +369,15 @@ export default function MemoryCard({ m }: { m: MemoryRow }) {
           </span>
         )}
         <span className="text-stone-400">
+          {/* time_precision is the fuzziness CLASSIFIER (decade/year/season/
+              month/day) for the future Temporal Agent — appending "time
+              unknown" beside an actual when-phrase is noise (Andy,
+              2026-07-10). A real precision still shows; a memory with no
+              when-phrase at all keeps "time unknown" as its placeholder. */}
           {memory.occurred_at_fuzzy
-            ? `${memory.occurred_at_fuzzy} · ${precisionLabel(memory.time_precision)}`
+            ? memory.time_precision && memory.time_precision !== 'unknown'
+              ? `${memory.occurred_at_fuzzy} · ${precisionLabel(memory.time_precision)}`
+              : memory.occurred_at_fuzzy
             : precisionLabel(memory.time_precision)}
         </span>
         {/* The subject anchor: WHERE this happened. Resolves "this"/"here"
@@ -385,7 +392,7 @@ export default function MemoryCard({ m }: { m: MemoryRow }) {
                 <a
                   href={loc.pinRelationshipId ? `/journey?pin=${loc.pinRelationshipId}` : `/entities/${loc.id}`}
                   title={loc.pinRelationshipId ? `Read ${loc.canonical_name} in the journey` : `Open ${loc.canonical_name}`}
-                  className="font-medium text-amber-700/90 hover:text-amber-800 hover:underline"
+                  className="font-bold text-amber-700/90 hover:text-amber-800 hover:underline"
                 >
                   {loc.canonical_name}
                 </a>
