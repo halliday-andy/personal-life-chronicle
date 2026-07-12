@@ -16,7 +16,7 @@ App: **http://localhost:3001/review** (sign in first).
 - [x] **Add as person** on a clean proper name (e.g. Mike Paplow) → the card
       resolves; the person appears in /entities (People) and as a chip on that
       pin's recollection in /memories.
-- [ ] Edit the **name field first** on a relational reference (e.g. "my
+- [x] Edit the **name field first** on a relational reference (e.g. "my
       father" → his real name) → Add → the entity is created with your name,
       and the stub phrasing ("my father") is kept as an **alias** so future
       mentions still resolve. *(FAILED in Andy's QA 2026-07-10 via the
@@ -34,14 +34,14 @@ App: **http://localhost:3001/review** (sign in first).
       "Green Hotel") → it leaves the queue and will NOT be re-proposed.
 
 ## 2. Suggested matches (fuzzy)
-- [ ] The "Mount Snow" proposal carries a blue strip: *Looks like your
+- [x] The "Mount Snow" proposal carries a blue strip: *Looks like your
       existing Mount Snow, Vermont?* → **Same — link them** links without
       creating anything.
-- [ ] A wrong suggestion (e.g. "Air Force" → Lockbourne) can be ignored —
+- [x] A wrong suggestion (e.g. "Air Force" → Lockbourne) can be ignored —
       Dismiss or Add work independently of the suggestion.
 
 ## 3. Link to existing…
-- [ ] On any proposal, **Link to existing…** opens a typeahead over all your
+- [x] On any proposal, **Link to existing…** opens a typeahead over all your
       entities; picking one links the recollection to it and resolves the card.
       (Useful for "Rick Tole" — the Mount Snow pin's spelling of Rick Toll:
       accept ONE spelling as the entity, then Link the other proposal to it.)

@@ -46,8 +46,15 @@ export interface MemoryRow {
   source_session_id: string | null
   private_notes: string | null
   // Entities this recollection mentions — chips link to each Entity View
-  // (Slice 6.4), the path to add context.
+  // (Slice 6.4), the path to add context. role='location' entities are NOT
+  // here — they arrive as `locations` and render as the header anchor.
   entities?: { id: string; canonical_name: string; type: string }[]
+  /**
+   * Where this happened (role='location' links) — the memory's subject
+   * anchor, rendered prominently so "this"/"here" in the text resolves
+   * (Andy's QA 2026-07-10). Links to the Journey stop when pinned.
+   */
+  locations?: { id: string; canonical_name: string; pinRelationshipId: string | null }[]
 }
 
 const PRECISION_OPTIONS = [
@@ -366,6 +373,26 @@ export default function MemoryCard({ m }: { m: MemoryRow }) {
             ? `${memory.occurred_at_fuzzy} · ${precisionLabel(memory.time_precision)}`
             : precisionLabel(memory.time_precision)}
         </span>
+        {/* The subject anchor: WHERE this happened. Resolves "this"/"here"
+            in the text at a glance; links to the Journey stop when the
+            place is pinned, else its entity page (2026-07-10). */}
+        {(memory.locations ?? []).length > 0 && (
+          <span className="min-w-0 truncate text-stone-500">
+            at{' '}
+            {(memory.locations ?? []).map((loc, i) => (
+              <span key={loc.id}>
+                {i > 0 && <span className="text-stone-300"> · </span>}
+                <a
+                  href={loc.pinRelationshipId ? `/journey?pin=${loc.pinRelationshipId}` : `/entities/${loc.id}`}
+                  title={loc.pinRelationshipId ? `Read ${loc.canonical_name} in the journey` : `Open ${loc.canonical_name}`}
+                  className="font-medium text-amber-700/90 hover:text-amber-800 hover:underline"
+                >
+                  {loc.canonical_name}
+                </a>
+              </span>
+            ))}
+          </span>
+        )}
         <span className="ml-auto text-stone-400">
           {new Date(memory.created_at).toLocaleDateString()}
         </span>

@@ -18,6 +18,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import MemoryCard, { type MemoryRow } from '@/components/MemoryCard'
+import { PIN_TYPE_CODES } from '@/lib/entity/mention-pins'
 
 export const dynamic = 'force-dynamic'
 
@@ -101,22 +102,56 @@ export default async function MemoriesPage({
 
   // Entity chips per memory (Slice 6.4): one join over the listed memories,
   // grouped by memory_id, so each card can link out to its entities' Views.
+  //
+  // role='location' entities are SPLIT OUT (Andy's QA 2026-07-10): they are
+  // the memory's subject anchor — "My father helped me buy THIS" is opaque
+  // until the card says "at My Mt. Snow Chalet". They render as a header
+  // label (linking into the Journey when the place is pinned), not as
+  // peer chips — which also removes the × that could divorce a memory
+  // from its pin.
   const memIds = rows.map((m) => m.id)
   if (memIds.length > 0) {
     const { data: links } = await admin
       .from('memory_entities')
-      .select('memory_id, entities!inner(id, canonical_name, type)')
+      .select('memory_id, role, entities!inner(id, canonical_name, type)')
       .in('memory_id', memIds)
     type Ent = { id: string; canonical_name: string; type: string }
+    type LinkRow = { memory_id: string; role: string; entities: Ent | Ent[] | null }
     const byMem = new Map<string, Ent[]>()
-    for (const l of (links ?? []) as { memory_id: string; entities: Ent | Ent[] | null }[]) {
+    const locByMem = new Map<string, Ent[]>()
+    for (const l of (links ?? []) as LinkRow[]) {
       const e = Array.isArray(l.entities) ? l.entities[0] : l.entities
       if (!e) continue
-      const arr = byMem.get(l.memory_id) ?? []
+      const target = l.role === 'location' ? locByMem : byMem
+      const arr = target.get(l.memory_id) ?? []
       if (!arr.some((x) => x.id === e.id)) arr.push(e)
-      byMem.set(l.memory_id, arr)
+      target.set(l.memory_id, arr)
     }
-    for (const m of rows) m.entities = byMem.get(m.id) ?? []
+    // Which located places are globe pins? The label links to the Journey.
+    const locPlaceIds = Array.from(new Set(Array.from(locByMem.values()).flat().map((e) => e.id)))
+    const pinByPlace = new Map<string, string>()
+    if (locPlaceIds.length > 0) {
+      const { data: relRows } = await admin
+        .from('relationships')
+        .select('id, object_id, relationship_types!inner(code)')
+        .eq('user_id', user.id)
+        .in('object_id', locPlaceIds)
+      type RelRow = { id: string; object_id: string; relationship_types: { code: string } | { code: string }[] | null }
+      for (const r of (relRows ?? []) as RelRow[]) {
+        const rt = Array.isArray(r.relationship_types) ? r.relationship_types[0] : r.relationship_types
+        if (rt && (PIN_TYPE_CODES as ReadonlySet<string>).has(rt.code) && !pinByPlace.has(r.object_id)) {
+          pinByPlace.set(r.object_id, r.id)
+        }
+      }
+    }
+    for (const m of rows) {
+      m.entities = byMem.get(m.id) ?? []
+      m.locations = (locByMem.get(m.id) ?? []).map((e) => ({
+        id: e.id,
+        canonical_name: e.canonical_name,
+        pinRelationshipId: pinByPlace.get(e.id) ?? null,
+      }))
+    }
   }
 
   const draftCount = rows.filter((m) => m.is_draft).length
