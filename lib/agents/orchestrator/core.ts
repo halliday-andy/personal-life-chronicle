@@ -143,6 +143,15 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Orchest
     messages.push({ role: turn.role, content: turn.content })
   }
 
+  // The eliciting question (journalist model, 2026-07-10): when this
+  // submission ANSWERS the assistant's last turn, memories created from it
+  // stamp that question into metadata — an answer without its question
+  // reads as an orphaned fragment (Andy's Leola-thread QA).
+  const lastAssistantTurn = [...(input.conversation_history ?? [])]
+    .reverse()
+    .find((t) => t.role === 'assistant')
+  const elicitingQuestion = lastAssistantTurn?.content.trim().slice(0, 2000) || undefined
+
   const submissionParts: string[] = []
   if (input.intent) {
     // Structured UI intent leads the block — it's standing state for the
@@ -208,6 +217,7 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Orchest
           user_id: input.user_id,
           supabase,
           source_submission_id: submissionId,
+          eliciting_question: elicitingQuestion,
         }),
       ),
     )
@@ -303,6 +313,9 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Orchest
     .from('capture_submissions')
     .update({
       status: hasPendingProposals ? 'awaiting_review' : 'integrated',
+      // Both sides of the exchange persist (2026-07-10): the reply used to
+      // live only in panel React state — threads were half-reconstructible.
+      assistant_reply: finalReply || null,
     })
     .eq('id', submissionId)
 

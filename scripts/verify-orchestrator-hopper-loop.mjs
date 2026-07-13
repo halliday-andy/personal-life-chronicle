@@ -116,6 +116,20 @@ async function main() {
       ok('stub is consumed with lineage to the recollection it became')
     else bad('stub state wrong: ' + JSON.stringify(stubAfter))
 
+    // ── Journalist model (2026-07-10): both sides persist ──
+    const { data: subRow } = await supabase.from('capture_submissions')
+      .select('assistant_reply').eq('id', res.meta.submission_id).single()
+    if (subRow?.assistant_reply === res.reply && res.reply.length > 0)
+      ok('assistant_reply persisted on the submission (threads fully reconstructible)')
+    else bad('assistant_reply missing/mismatched: ' + JSON.stringify(subRow?.assistant_reply)?.slice(0, 60))
+    if (memoryId) {
+      const { data: memMeta } = await supabase.from('memories').select('metadata').eq('id', memoryId).single()
+      const q = (memMeta?.metadata as any)?.interview_question
+      if (typeof q === 'string' && q.includes('night train'))
+        ok('memory carries its eliciting question (metadata.interview_question)')
+      else bad('interview_question missing/wrong: ' + JSON.stringify(q)?.slice(0, 80))
+    }
+
     // ── 3. the id came from list_memory_stubs ──
     if (res.proposals.some((p: any) => p.tool === 'list_memory_stubs')) {
       ok('list_memory_stubs was called to fetch the real stub id')

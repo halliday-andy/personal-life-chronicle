@@ -35,6 +35,13 @@ export interface ToolContext {
    * also used by add_to_backlog so queued items have provenance.
    */
   source_submission_id?: string
+  /**
+   * The assistant's last turn before this submission (journalist model,
+   * 2026-07-10): when the submission answers a question, memories created
+   * from it carry that question in metadata.interview_question — an
+   * answer without its question reads as an orphaned fragment.
+   */
+  eliciting_question?: string
 }
 
 export interface ToolResultPayload {
@@ -365,7 +372,11 @@ async function handleCreateMemory(
       // the proposal cards; persistence waits until the user Accepts via
       // POST /api/memory/[id]/finalize, which removes this flag and
       // re-emits memory/ingested so the listeners run with persist=true.
-      metadata: { created_by: 'orchestrator', skip_async_fanout: true },
+      metadata: {
+        created_by: 'orchestrator',
+        skip_async_fanout: true,
+        ...(ctx.eliciting_question ? { interview_question: ctx.eliciting_question } : {}),
+      },
     })
     .select('id')
     .single()

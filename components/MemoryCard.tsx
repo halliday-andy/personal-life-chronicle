@@ -45,6 +45,8 @@ export interface MemoryRow {
   source_submission_id: string | null
   source_session_id: string | null
   private_notes: string | null
+  /** interview_question (journalist model) is read from here. */
+  metadata?: Record<string, unknown> | null
   // Entities this recollection mentions — chips link to each Entity View
   // (Slice 6.4), the path to add context. role='location' entities are NOT
   // here — they arrive as `locations` and render as the header anchor.
@@ -549,11 +551,22 @@ export default function MemoryCard({ m }: { m: MemoryRow }) {
           </div>
         </div>
       ) : (
-        // Verbatim content_raw rendered as markdown — pasted research notes
-        // keep their headings/lists; plain prose is unaffected (QA item 7).
-        <Markdown className={`text-sm ${dimmed ? 'text-stone-600' : 'text-stone-900'}`}>
-          {memory.content_raw}
-        </Markdown>
+        <>
+          {/* The eliciting question (journalist model, 2026-07-10): an
+              answer without its question reads as an orphaned fragment —
+              show what this recollection was responding to. */}
+          {typeof memory.metadata?.interview_question === 'string' && memory.metadata.interview_question && (
+            <p className="mb-1.5 rounded-lg bg-stone-50 px-3 py-1.5 text-xs italic text-stone-500">
+              asked: &ldquo;{String(memory.metadata.interview_question).slice(0, 280)}
+              {String(memory.metadata.interview_question).length > 280 ? '…' : ''}&rdquo;
+            </p>
+          )}
+          {/* Verbatim content_raw rendered as markdown — pasted research notes
+              keep their headings/lists; plain prose is unaffected (QA item 7). */}
+          <Markdown className={`text-sm ${dimmed ? 'text-stone-600' : 'text-stone-900'}`}>
+            {memory.content_raw}
+          </Markdown>
+        </>
       )}
 
       {/* Entity chips — link out to each mentioned entity's View (where its
@@ -674,7 +687,18 @@ export default function MemoryCard({ m }: { m: MemoryRow }) {
       <div className="mt-2 text-[10px] text-stone-400 font-mono">
         {memory.id.slice(0, 8)} · {memory.source}
         {memory.source_submission_id ? ' · from orchestrator' : ''}
-        {memory.source_session_id ? ' · from interview session' : ''}
+        {memory.source_session_id ? (
+          <>
+            {' · '}
+            <a
+              href={`/sessions/${memory.source_session_id}`}
+              className="text-stone-500 underline decoration-stone-300 hover:text-stone-800"
+              title="Read the interview conversation this recollection came from"
+            >
+              view conversation ↗
+            </a>
+          </>
+        ) : ''}
       </div>
     </article>
   )

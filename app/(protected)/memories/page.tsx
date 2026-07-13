@@ -81,7 +81,8 @@ export default async function MemoriesPage({
       // Safe to include private_notes here: this page is owner-only
       // (the redirect above gates it behind the authenticated user).
       // Step 13 RLS will enforce this at the database layer too.
-      'id, content_raw, occurred_at_fuzzy, time_precision, is_draft, source, created_at, source_submission_id, source_session_id, private_notes',
+      // metadata rides along for interview_question (journalist model).
+      'id, content_raw, occurred_at_fuzzy, time_precision, is_draft, source, created_at, source_submission_id, source_session_id, private_notes, metadata',
     )
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
