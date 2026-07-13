@@ -338,7 +338,19 @@ export default function PinEditPanel({
       )}
 
       <div className="mt-3 flex items-center justify-between">
-        <label className="block text-xs text-[var(--ink-dim)]">Recollection</label>
+        <label className="block text-xs text-[var(--ink-dim)]">
+          Recollection
+          {/* Layer pointer (2026-07-10, Andy's QA): research about the place
+              is CONTEXT, not a recollection — and this panel had no path to
+              it. The Entity View is the context home. */}
+          <a
+            href={`/entities/${pin.place_entity_id}`}
+            className="ml-2 text-[var(--ink-dim)]/70 underline decoration-[var(--glass-border)] hover:text-[var(--ink)]"
+            title="Background research about this place belongs in Context — add it on the place page"
+          >
+            research? → add context ↗
+          </a>
+        </label>
         {!loading && !loadError && body.trim() && (
           <button
             type="button"

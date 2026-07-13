@@ -462,8 +462,17 @@ export default function PinDetailCard({
             </div>
           )}
 
-          {openChip === 'context' && context.length > 0 && (
+          {openChip === 'context' && (
             <div className="mt-2">
+              {/* Add path (2026-07-10): the Entity View is the context home —
+                  this surface finally points at it. */}
+              <a
+                href={`/entities/${pin.place_entity_id}`}
+                className="mb-1 inline-block text-xs text-[var(--ember-soft)] hover:text-[var(--ember)]"
+                title="Add background research about this place on its page"
+              >
+                + add context on the place page ↗
+              </a>
               <ul className="max-h-40 space-y-1 overflow-y-auto">
                 {context.map((c) => (
                   <li key={c.id}>

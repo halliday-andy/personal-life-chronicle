@@ -92,7 +92,7 @@ export default function MemoryCard({ m }: { m: MemoryRow }) {
   )
 
   // Action-in-flight + error.
-  const [busy, setBusy] = useState<null | 'accept' | 'decline' | 'save' | 'edit' | 'link'>(null)
+  const [busy, setBusy] = useState<null | 'accept' | 'decline' | 'save' | 'edit' | 'link' | 'convert'>(null)
   const [error, setError] = useState<string | null>(null)
 
   // Entity-link editing (micro-slice 2026-07-06): "+ link" typeahead +
@@ -104,6 +104,54 @@ export default function MemoryCard({ m }: { m: MemoryRow }) {
 
   // Transient confirmation after a finalized edit preserved a revision.
   const [revisionNotice, setRevisionNotice] = useState(false)
+
+  // Convert-to-context (2026-07-10): research captured as a memory before
+  // the context layer existed moves to entity_context_notes on the entity
+  // it's ABOUT; the memory row is then deleted (two-click confirmed).
+  const [converting, setConverting] = useState(false)
+  const [convQ, setConvQ] = useState('')
+  const [convResults, setConvResults] = useState<{ id: string; canonical_name: string; type: string }[]>([])
+  const [convEntity, setConvEntity] = useState<{ id: string; canonical_name: string } | null>(null)
+  const [convVisibility, setConvVisibility] = useState<'shareable' | 'private'>('shareable')
+  const [convConfirm, setConvConfirm] = useState(false)
+
+  useEffect(() => {
+    if (!converting) return
+    const t = setTimeout(() => {
+      fetch(`/api/entity?q=${encodeURIComponent(convQ)}&limit=8`)
+        .then((r) => r.json())
+        .then((d) => setConvResults(d.items ?? []))
+        .catch(() => setConvResults([]))
+    }, 200)
+    return () => clearTimeout(t)
+  }, [convQ, converting])
+
+  async function handleConvert() {
+    if (!convEntity) return
+    if (!convConfirm) {
+      setConvConfirm(true)
+      setTimeout(() => setConvConfirm(false), CONFIRM_WINDOW_MS)
+      return
+    }
+    setBusy('convert')
+    setError(null)
+    try {
+      const res = await fetch(`/api/memory/${memory.id}/convert-to-context`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entityId: convEntity.id, visibility: convVisibility }),
+      })
+      const d = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(d.detail || d.error || `HTTP ${res.status}`)
+      setRemoved(true) // the memory row is gone; context lives on the entity page
+      router.refresh()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Conversion failed.')
+      setConvConfirm(false)
+    } finally {
+      setBusy(null)
+    }
+  }
 
   useEffect(() => {
     if (!linking) return
@@ -419,6 +467,17 @@ export default function MemoryCard({ m }: { m: MemoryRow }) {
         {!isDraft && !editing && (
           <button
             type="button"
+            onClick={() => { setConverting((v) => !v); setConvConfirm(false) }}
+            disabled={busy !== null}
+            title="This text is research, not a first-person recollection — move it to the CONTEXT layer of the entity it's about"
+            className="rounded px-1.5 py-0.5 text-[10px] font-medium text-stone-400 hover:text-stone-900 disabled:opacity-50"
+          >
+            To context…
+          </button>
+        )}
+        {!isDraft && !editing && (
+          <button
+            type="button"
             onClick={handleDeleteFinal}
             disabled={busy !== null}
             title="Permanently remove this memory and its revisions"
@@ -436,6 +495,70 @@ export default function MemoryCard({ m }: { m: MemoryRow }) {
           </button>
         )}
       </div>
+
+      {/* Convert-to-context panel (2026-07-10) */}
+      {converting && !editing && (
+        <div className="mb-3 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs">
+          <p className="text-stone-600">
+            Move this text to the <span className="font-medium">Context</span> layer — background about an
+            entity, not a first-person recollection. The verbatim text becomes a context note on the entity
+            you pick, and <span className="font-medium text-rose-700">this memory card is deleted</span>.
+          </p>
+          {!convEntity ? (
+            <div className="mt-2">
+              <input
+                value={convQ}
+                onChange={(e) => setConvQ(e.target.value)}
+                placeholder="Which entity is this about? Type to search…"
+                autoFocus
+                className="w-full rounded-md border border-stone-300 px-2 py-1.5 text-xs outline-none focus:border-stone-500"
+              />
+              {convResults.length > 0 && (
+                <ul className="mt-1 max-h-32 overflow-y-auto rounded-md border border-stone-200 bg-white">
+                  {convResults.map((r) => (
+                    <li key={r.id}>
+                      <button
+                        type="button"
+                        onClick={() => setConvEntity({ id: r.id, canonical_name: r.canonical_name })}
+                        className="block w-full px-2 py-1.5 text-left hover:bg-stone-50"
+                      >
+                        <span className="font-medium text-stone-800">{r.canonical_name}</span>
+                        <span className="ml-1.5 text-stone-400">{r.type.replace('_', ' ')}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ) : (
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <span className="text-stone-700">
+                → context on <span className="font-semibold">{convEntity.canonical_name}</span>
+                <button type="button" onClick={() => setConvEntity(null)} className="ml-1 text-stone-400 hover:text-stone-700">×</button>
+              </span>
+              <label className="flex items-center gap-1 text-stone-600">
+                <input type="radio" checked={convVisibility === 'shareable'} onChange={() => setConvVisibility('shareable')} /> shareable
+              </label>
+              <label className="flex items-center gap-1 text-stone-600">
+                <input type="radio" checked={convVisibility === 'private'} onChange={() => setConvVisibility('private')} /> 🔒 private
+              </label>
+              <button
+                type="button"
+                onClick={handleConvert}
+                disabled={busy !== null}
+                className={`rounded-md px-2.5 py-1 font-medium disabled:opacity-50 ${
+                  convConfirm ? 'bg-rose-600 text-white hover:bg-rose-700' : 'bg-stone-800 text-white hover:bg-stone-700'
+                }`}
+              >
+                {busy === 'convert' ? 'Converting…' : convConfirm ? 'Click again — deletes this card' : 'Convert'}
+              </button>
+              <button type="button" onClick={() => { setConverting(false); setConvConfirm(false) }} className="text-stone-500 hover:text-stone-800">
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Action row (drafts only, never below the panel — see file header) */}
       {isDraft && !editing && (

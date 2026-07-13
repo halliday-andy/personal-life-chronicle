@@ -388,8 +388,9 @@ export default function CaptureAssistant() {
             <button
               onClick={() => setShowGuidance(true)}
               className="text-xs text-stone-400 hover:text-stone-700 transition-colors"
+              title="A note to the assistant about this message — who's speaking, when, how confident. (Background research about a place or person is different: just paste it, and it becomes a context-note proposal.)"
             >
-              + Add context (optional)
+              + Guidance for this message (optional)
             </button>
           )}
 
