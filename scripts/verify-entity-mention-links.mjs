@@ -34,7 +34,7 @@ for (const line of readFileSync(join(projectRoot, '.env.local'), 'utf8').split('
 
 const runnerSrc = `
 import { createAdminClient } from '${projectRoot}/lib/supabase/admin'
-import { mapMentionsToPins, PIN_TYPE_CODES } from '${projectRoot}/lib/entity/mention-pins'
+import { mapMentionsToPins, nameCenteredExcerpt, PIN_TYPE_CODES } from '${projectRoot}/lib/entity/mention-pins'
 
 let failures = 0
 const ok = (m: string) => console.log('  \\u2713 ' + m)
@@ -47,6 +47,20 @@ async function main() {
   const { data: self } = await admin.from('entities').select('id')
     .eq('user_id', user.id).eq('type', 'person').eq('metadata->>is_self', 'true').limit(1).maybeSingle()
   if (!self) { console.error('no self entity'); process.exit(1) }
+
+  // ── nameCenteredExcerpt (pure, 2026-07-10) ──
+  const LONG = 'We had known each other superficially through high school, ' + 'x'.repeat(300) +
+    ' and then Leola Lapides came to Winter Carnival and everything changed forever after that season ' + 'y'.repeat(100)
+  const c1 = nameCenteredExcerpt(LONG, ['Leola Lapides', 'Leola'])
+  if (c1.matched && c1.leading && c1.excerpt.toLowerCase().includes('leola lapides'))
+    ok('excerpt windows around the name when it appears deep in the text')
+  else bad('centered excerpt wrong: ' + JSON.stringify(c1).slice(0, 120))
+  const c2 = nameCenteredExcerpt('Leola opened the door. ' + 'z'.repeat(400), ['Leola'])
+  if (!c2.leading && c2.excerpt.startsWith('Leola')) ok('early occurrence keeps the head window (no ellipsis)')
+  else bad('early-name handling wrong')
+  const c3 = nameCenteredExcerpt('An unrelated recollection. ' + 'q'.repeat(400), ['Leola'])
+  if (!c3.matched && !c3.leading && c3.excerpt.startsWith('An unrelated')) ok('no occurrence falls back to the head')
+  else bad('fallback wrong')
 
   const rel = (row: any) => (Array.isArray(row) ? row[0] : row)
   const pins: string[] = []

@@ -39,11 +39,14 @@ export interface MentionRecollection {
   occurred_at_fuzzy: string | null
   created_at: string
   /**
-   * The globe pin this recollection lives on (relationships.id), when it
-   * carries a role='location' link to a pinned place — the mention row
-   * out-links to the Journey stop. Null → /memories row anchor instead.
+   * Where this recollection lives (its role='location' pin) — the row's
+   * provenance header, linking into the Journey. Reworked 2026-07-10
+   * (Andy's Leola QA): the EXCERPT now always opens the memory itself;
+   * geography is the secondary hop, not the primary landing.
    */
-  pinRelationshipId?: string | null
+  home?: { relationship_id: string; name: string; when_text: string | null } | null
+  /** Spine position of the home pin — the thread's reading order. */
+  threadOrder?: number
 }
 
 interface Entity {
@@ -444,27 +447,36 @@ export default function EntityView({ entity, notes: initialNotes, recollections 
             // link affordance must read at rest, not only on hover
             // (Andy's QA, 2026-07-06). Metadata = the memory's own fuzzy
             // time phrase + capture date.
-            // Out-links (Slice 7.1): a mention that lives on a globe pin
-            // opens at its Journey stop (?pin= handoff); the rest land on
-            // the exact card via the /memories row anchor.
-            <ul className="mt-2 space-y-2">
+            // The thread (2026-07-10, Andy's Leola QA): rows read forward
+            // in spine order, each led by its home pin's provenance header
+            // (→ Journey). The EXCERPT always opens the memory itself —
+            // the person's story first, geography one step away.
+            <ul className="mt-2 space-y-2.5">
               {recollections.map((r) => (
                 <li key={r.id}>
+                  {r.home && (
+                    <Link
+                      href={`/journey?pin=${r.home.relationship_id}`}
+                      title={`Go to ${r.home.name} in the journey`}
+                      className="text-[11px] font-medium text-amber-700/90 hover:text-amber-800 hover:underline"
+                    >
+                      {r.home.name}
+                      {r.home.when_text && <span className="font-normal text-stone-400"> · {r.home.when_text}</span>}
+                    </Link>
+                  )}
                   <Link
-                    href={r.pinRelationshipId
-                      ? `/journey?pin=${r.pinRelationshipId}`
-                      : `/memories?entity=${entity.id}#${r.id}`}
-                    title={r.pinRelationshipId ? 'Read at its place in the journey' : 'Open in Recollections'}
+                    href={`/memories?entity=${entity.id}#${r.id}`}
+                    title="Read this recollection"
                     className="group block rounded-lg border border-stone-200 bg-white px-3 py-2 transition-colors hover:border-stone-400 hover:bg-stone-50"
                   >
                     <span className="block text-sm leading-relaxed text-stone-700 group-hover:text-stone-900">
-                      {r.excerpt || '(untitled recollection)'}{r.excerpt.length >= 200 ? '…' : ''}
+                      {r.excerpt || '(untitled recollection)'}{r.excerpt.length >= 220 ? '…' : ''}
                     </span>
                     <span className="mt-1 flex items-baseline gap-2 text-[11px] text-stone-400">
                       {r.occurred_at_fuzzy && <span className="text-stone-500">{r.occurred_at_fuzzy}</span>}
                       <span>captured {new Date(r.created_at).toLocaleDateString()}</span>
                       <span className="ml-auto text-stone-300 transition-colors group-hover:text-stone-500">
-                        {r.pinRelationshipId ? 'read in journey →' : 'open in Recollections →'}
+                        read this recollection →
                       </span>
                     </span>
                   </Link>
