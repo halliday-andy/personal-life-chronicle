@@ -231,6 +231,13 @@ export default function PinEditPanel({
         </button>
       </div>
 
+      {/* Scrollable body (2026-07-10, Andy's QA: the recollection viewer
+          flex-squashed to an illegible sliver once photos + hopper crowded
+          the fixed-height panel — flex children with overflow may legally
+          collapse to zero). The BODY scrolls as a whole; every section
+          keeps its natural height; Save/Delete stay pinned beneath. */}
+      <div className="-mr-2 mt-1 min-h-0 flex-1 overflow-y-auto pr-2">
+
       {/* Reorder applies only to the residential spine. The selector is the
           authoritative control (jump to any slot in one write); Earlier/Later
           are quick adjacent nudges. */}
@@ -344,7 +351,7 @@ export default function PinEditPanel({
       </div>
       {!loading && !loadError && body.trim() && !bodyEditing ? (
         // Rendered view — markdown formatting preserved, not raw syntax.
-        <div className="mt-1 max-h-60 flex-1 overflow-y-auto rounded-lg border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm leading-relaxed text-[var(--ink)]">
+        <div className="mt-1 max-h-60 min-h-[6rem] overflow-y-auto rounded-lg border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm leading-relaxed text-[var(--ink)]">
           <Markdown>{body}</Markdown>
         </div>
       ) : (
@@ -353,7 +360,7 @@ export default function PinEditPanel({
           onChange={(e) => setBody(e.target.value)}
           disabled={saving || loading || loadError}
           placeholder={loading ? 'Loading…' : 'Add a memory of this place…'}
-          className="mt-1 min-h-[8rem] flex-1 resize-none rounded-lg border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm leading-relaxed text-[var(--ink)] placeholder-[var(--ink-dim)]/70 outline-none focus:border-[var(--ember-soft)]"
+          className="mt-1 min-h-[8rem] w-full resize-y rounded-lg border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm leading-relaxed text-[var(--ink)] placeholder-[var(--ink-dim)]/70 outline-none focus:border-[var(--ember-soft)]"
         />
       )}
 
@@ -478,7 +485,10 @@ export default function PinEditPanel({
         <p className="mt-2 text-xs text-[var(--ember-soft)]">Pin moved — Save to keep the new location.</p>
       )}
 
-      <div className="mt-4 flex items-center gap-2">
+      {/* end scrollable body */}
+      </div>
+
+      <div className="mt-3 flex shrink-0 items-center gap-2 border-t border-[var(--glass-border)] pt-3">
         <button
           onClick={() => onSave({
             name, whenText, body,
