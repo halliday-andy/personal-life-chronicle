@@ -360,13 +360,20 @@ export default function GlobeView() {
   const deepLinkDoneRef = useRef(false)
   useEffect(() => {
     if (deepLinkDoneRef.current || pins.length === 0) return
-    const wanted = new URLSearchParams(window.location.search).get('pin')
+    const params = new URLSearchParams(window.location.search)
+    const wanted = params.get('pin')
     if (!wanted) { deepLinkDoneRef.current = true; return }
     const target = pins.find((p) => p.relationship_id === wanted)
     deepLinkDoneRef.current = true
     if (!target) return
     selectPin(target.relationship_id)
-    setCompactCard(true) // after selectPin — selection paths reset it
+    if (params.get('edit') === '1') {
+      // "Edit on globe →" from a Journey stop (2026-07-10): straight into
+      // the pin edit panel — no compact strip, no extra click.
+      setEditMode(true)
+    } else {
+      setCompactCard(true) // after selectPin — selection paths reset it
+    }
     // The map may still be initializing on a cold load — retry the fly
     // briefly rather than racing it.
     let tries = 0

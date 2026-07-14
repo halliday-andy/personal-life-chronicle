@@ -506,6 +506,15 @@ function StopDetailBody({
         >
           Show on globe →
         </Link>
+        {/* Straight into the pin edit panel — the reading surface's one-click
+            path to fixing text/photos/fields (Andy, 2026-07-10). */}
+        <Link
+          href={`/globe?pin=${node.relationship_id}&edit=1`}
+          className="text-amber-700 hover:text-amber-900 hover:underline"
+          title="Open this pin's edit panel on the globe — recollection text, photos, name, when"
+        >
+          Edit on globe →
+        </Link>
         <Link
           href={`/entities/${node.place_entity_id}`}
           className="text-amber-700 hover:text-amber-900 hover:underline"
