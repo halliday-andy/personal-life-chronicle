@@ -64,7 +64,7 @@ The origin brainstorm was held against the Codex instance, which lacks upfront p
 
 **Retroactive framing & Logs**
 
-- R14. An existing non-primary pin (Vacation, Professional travel, Log) can be retroactively framed as a Trip destination without losing its identity, tether, recollections, or jots.
+- R14. An existing non-primary pin (Vacation, Professional travel, Log) can be retroactively framed as a Trip destination without losing its identity, tether, recollections, or jots — and unframed: deleting the trip preserves the pin and restores its pre-trip state.
 - R15. A Log may attach to a residence, a Trip, or a Trip stop, or remain standalone and be linked later (stop-level attachment rides the stop's pin).
 
 **Frequent traveler**
@@ -161,13 +161,14 @@ Sliced to match the track convention (each unit ≈ one shippable slice, T1–T8
 - **Requirements:** R1–R5, R7, R9, R14 (data layer).
 - **Dependencies:** none.
 - **Files:** `supabase/migrations/<ts>_trips_travel.sql`; `scripts/verify-trips-travel.mjs`.
-- **Approach:** Additive migration: `ALTER TYPE entity_type ADD VALUE 'trip'`; `trips` and `trip_stops` per KTD1/KTD3 (FKs `ON DELETE SET NULL` for origin — a deleted origin pin demotes the trip to draft, never cascades it; destination FK restricts delete or nulls-to-draft, decide at implementation with the gentler option). RPCs: `create_trip` (destination pin id or new-pin params, subtype, optional everything else — mints the backing trip entity), `frame_trip` (origin, title, when_text, year_hint), `add_trip_stop`/`reorder_trip_stops`/`remove_trip_stop` (leg-aware), `get_trips` (joins pins for coordinates), `frame_pin_as_trip` (existing relationship id → new trip with that pin as destination). All ownership-guarded like `validate_pin_anchor`.
+- **Approach:** Additive migration: `ALTER TYPE entity_type ADD VALUE 'trip'` — caution: a just-added enum value cannot be used inside the same transaction, and `db-apply` runs each migration as one transaction, so the migration must not insert any `trip`-typed entity (runtime RPC usage after commit is fine). `trips` and `trip_stops` per KTD1/KTD3 (FKs: `ON DELETE SET NULL` for origin — a deleted origin pin demotes the trip to draft, never cascades it; destination FK restricts delete — deleting a pin that is a trip destination is blocked, and the UI prompts to unframe or delete the trip first). RPCs: `create_trip` (destination pin id or new-pin params, subtype, optional everything else — mints the backing trip entity), `frame_trip` (origin, title, when_text, year_hint), `add_trip_stop`/`reorder_trip_stops`/`remove_trip_stop` (leg-aware), `get_trips` (joins pins for coordinates), `frame_pin_as_trip` (existing relationship id → new trip with that pin as destination). All ownership-guarded like `validate_pin_anchor`.
 - **Patterns to follow:** DROP-then-recreate for signature changes; ownership validation per the anchor-safety pattern (migration `20260615120000`); finalize-on-save semantics from `create_residence_pin`.
 - **Test scenarios (verify script, relative-only, self-cleaning, live-DB-safe):**
   - Covers AE1: create draft with destination only → trip saved, origin null, derived state draft, backing entity type `trip` exists.
   - Covers AE2: `frame_pin_as_trip` on a pre-created vacation pin → trip created, pin relationship unchanged (same id, type, anchor, metadata).
   - Covers AE3: add outbound and return stops around the destination → `get_trips` returns them ordered with the leg divider correct; reorder within a leg works; cross-leg reorder is rejected or re-legged (pick one, assert it).
   - Frame draft with origin → derived state framed; delete the origin pin → origin nulls, trip survives as draft.
+  - Deleting a pin that is a trip destination is rejected while the trip exists; after unframing (trip deleted), pin deletion succeeds.
   - Ownership: framing another user's pin as trip destination is rejected; anchoring a stop to another user's pin is rejected.
   - Repeat destination: two trips to the same place entity → both exist independently (R2).
   - Cleanup leaves zero residue (entities, relationships, trips, stops) — the zero-links guard class.
