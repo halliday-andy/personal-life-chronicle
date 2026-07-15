@@ -35,9 +35,11 @@ export default async function JourneyPage({
   const admin = createAdminClient()
   // Both modes' data in one pass (U5): the residential tree and the
   // trips. Switching modes is instant; nothing refetches.
-  const [{ data: pins, error }, { data: trips }] = await Promise.all([
+  const [{ data: pins, error }, { data: trips }, { data: homeBase }] = await Promise.all([
     admin.rpc('get_residence_pins', { p_user_id: user.id }),
     admin.rpc('get_trips', { p_user_id: user.id }),
+    admin.from('relationships').select('id').eq('user_id', user.id)
+      .filter('metadata->>home_base', 'eq', 'true').limit(1).maybeSingle(),
   ])
   if (error) {
     return (
@@ -76,6 +78,7 @@ export default async function JourneyPage({
         stops={tree.stops}
         unanchored={tree.unanchored}
         trips={tripRows}
+        homeBaseId={homeBase?.id ?? null}
         initialPin={searchParams.pin ?? null}
         initialTrip={searchParams.trip ?? null}
         initialMode={initialMode}

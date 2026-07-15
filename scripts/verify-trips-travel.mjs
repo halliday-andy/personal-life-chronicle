@@ -144,6 +144,18 @@ try {
   const s1row = t1.stops.find((s) => s.stop_id === st1)
   s1row && s1row.position === 0 ? ok('remove resequences the leg') : bad('resequence wrong: ' + JSON.stringify(t1.stops))
 
+  // ── 5b. Home Base (U7, KTD8) ─────────────────────────────────────────
+  const { error: hbErr } = await admin.rpc('set_home_base', { p_user_id: user.id, p_relationship_id: home.relationship_id })
+  if (hbErr) bad('set_home_base failed: ' + hbErr.message)
+  const { data: hbRow } = await admin.from('relationships').select('metadata').eq('id', home.relationship_id).single()
+  hbRow?.metadata?.home_base === true ? ok('home base flag set on the primary') : bad('home base flag missing')
+  const { error: hbMarkerErr } = await admin.rpc('set_home_base', { p_user_id: user.id, p_relationship_id: dest.relationship_id })
+  hbMarkerErr ? ok('home base rejects a non-primary pin') : bad('non-primary accepted as home base')
+  const { error: hbClearErr } = await admin.rpc('set_home_base', { p_user_id: user.id, p_relationship_id: null })
+  if (hbClearErr) bad('clearing home base failed: ' + hbClearErr.message)
+  const { data: hbCleared } = await admin.from('relationships').select('id').eq('user_id', user.id).filter('metadata->>home_base', 'eq', 'true')
+  ;(hbCleared ?? []).length === 0 ? ok('home base clears (one at a time)') : bad('home base flag lingered')
+
   // ── 6. Repeat destination ────────────────────────────────────────────
   const trip2 = rel((await admin.rpc('create_trip', { p_user_id: user.id, p_destination_relationship_id: dest.relationship_id, p_subtype: 'vacation' })).data)
   const both = (await getTrips()).filter((t) => t.destination_relationship_id === dest.relationship_id)

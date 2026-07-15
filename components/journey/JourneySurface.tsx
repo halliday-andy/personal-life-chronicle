@@ -20,6 +20,7 @@ export default function JourneySurface({
   stops,
   unanchored,
   trips,
+  homeBaseId = null,
   initialPin = null,
   initialTrip = null,
   initialMode = 'residential',
@@ -27,6 +28,7 @@ export default function JourneySurface({
   stops: JourneyNode[]
   unanchored: JourneyNode[]
   trips: TripRow[]
+  homeBaseId?: string | null
   initialPin?: string | null
   initialTrip?: string | null
   initialMode?: Mode
@@ -79,7 +81,12 @@ export default function JourneySurface({
           <JourneyList stops={stops} unanchored={unanchored} initialPin={initialPin} />
         )
       ) : (
-        <TravelJournal trips={trips} initialTrip={initialTrip} />
+        <TravelJournal
+          trips={trips}
+          initialTrip={initialTrip}
+          homeBaseId={homeBaseId}
+          primaries={stops.map((s) => ({ relationship_id: s.relationship_id, name: s.name }))}
+        />
       )}
     </>
   )

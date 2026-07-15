@@ -21,11 +21,16 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const admin = createAdminClient()
-  const { data, error } = await admin.rpc('get_trips', { p_user_id: user.id })
+  const [{ data, error }, { data: hb }] = await Promise.all([
+    admin.rpc('get_trips', { p_user_id: user.id }),
+    // Home Base (U7/KTD8): the one lived_at carrying the flag, if any.
+    admin.from('relationships').select('id').eq('user_id', user.id)
+      .filter('metadata->>home_base', 'eq', 'true').limit(1).maybeSingle(),
+  ])
   if (error) {
     return NextResponse.json({ error: 'Failed to load trips', detail: error.message }, { status: 500 })
   }
-  return NextResponse.json({ trips: data ?? [] })
+  return NextResponse.json({ trips: data ?? [], homeBaseRelationshipId: hb?.id ?? null })
 }
 
 interface PostBody {

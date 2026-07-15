@@ -258,6 +258,8 @@ export default function GlobeView() {
   const [trips, setTrips] = useState<TripRow[]>([])
   const [tripsLoaded, setTripsLoaded] = useState(false)
   const [tripsVisible, setTripsVisible] = useState(false)
+  // Home Base (U7/KTD8): the reusable default origin suggestion.
+  const [homeBaseId, setHomeBaseId] = useState<string | null>(null)
   const [routeEdit, setRouteEdit] = useState<{ tripId: string; leg: TripLeg } | null>(null)
   // Refs mirror route-edit state for the once-bound map/marker handlers.
   const routeEditRef = useRef<{ tripId: string; leg: TripLeg } | null>(null)
@@ -836,6 +838,7 @@ export default function GlobeView() {
       if (!res.ok) return
       const d = await res.json()
       setTrips(d.trips ?? [])
+      setHomeBaseId(d.homeBaseRelationshipId ?? null)
     } catch { /* non-fatal — the globe works without routes */
     } finally {
       setTripsLoaded(true) // even on failure — deep links must not hang
@@ -947,13 +950,13 @@ export default function GlobeView() {
       setFraming({
         tripId,
         destinationName: selPin.name,
-        suggestedOriginId: selPin.anchor_residence_id,
+        suggestedOriginId: selPin.anchor_residence_id ?? homeBaseId,
         defaultWhen: selPin.when_text ?? '',
       })
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not frame the trip.')
     }
-  }, [pins, selectedId, loadTrips])
+  }, [pins, selectedId, loadTrips, homeBaseId])
 
   // Un-framing (U6, R14): delete the trip, keep the pin. Two-step inline
   // confirm (the edit panel's delete pattern).
@@ -1031,7 +1034,8 @@ export default function GlobeView() {
         setFraming({
           tripId,
           destinationName: data.name?.trim() || draft.label || 'This place',
-          suggestedOriginId: data.anchorId,
+          // Anchor first ("home at the time"); Home Base when unanchored (R16).
+          suggestedOriginId: data.anchorId ?? homeBaseId,
           defaultWhen: data.whenText,
         })
       }
@@ -1040,7 +1044,7 @@ export default function GlobeView() {
     } finally {
       setSaving(false)
     }
-  }, [draft, clearDraft, loadPins, loadTrips])
+  }, [draft, clearDraft, loadPins, loadTrips, homeBaseId])
 
   const handlePanelSave = useCallback(async (fields: { name: string; whenText: string; body: string; typeCode: string; anchorId: string | null; description: string }) => {
     if (!selectedId) return
@@ -1417,6 +1421,27 @@ export default function GlobeView() {
           t.origin_relationship_id === selectedId ||
           t.stops.some((s) => s.relationship_id === selectedId))
         const selPin = pins.find((p) => p.relationship_id === selectedId)
+        // A residence summarizes rather than enumerates (U7, R19): homes
+        // with many departures link to the Travel Journal instead of
+        // stacking rows over the globe.
+        if (selPin && (selPin.type_code === SPINE_CODE || selPin.type_code === null)) {
+          const fromHere = trips.filter((t) => t.origin_relationship_id === selectedId).length
+          if (fromHere === 0) return null
+          return (
+            <div className="glass absolute left-1/2 top-20 z-30 flex max-w-[min(560px,92vw)] -translate-x-1/2 items-center gap-2 rounded-xl px-3 py-2 text-xs text-[var(--ink)]">
+              <span style={{ color: TRIP_ROUTE_COLOR }}>✈</span>
+              <span>{fromHere} trip{fromHere === 1 ? '' : 's'} originated here</span>
+              {homeBaseId === selectedId && (
+                <span className="rounded-full border border-[var(--glass-border)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[var(--ember-soft)]">
+                  home base
+                </span>
+              )}
+              <a href="/journey?mode=travel" className="ml-auto rounded-lg border border-[var(--glass-border)] px-2 py-0.5 hover:text-[var(--ember-soft)]">
+                Travel Journal →
+              </a>
+            </div>
+          )
+        }
         if (mine.length === 0) {
           if (!selPin || selPin.type_code === SPINE_CODE || selPin.type_code === null) return null
           return (
@@ -1487,6 +1512,22 @@ export default function GlobeView() {
                 </span>
               </div>
             ))}
+            {/* Reuse this destination (U7, R17): repeat visits stay
+                distinct trips on the same pin (R2). */}
+            {selPin && selPin.type_code !== SPINE_CODE && (
+              <div className="flex flex-wrap items-center gap-2 border-t border-[var(--glass-border)] pt-1.5 text-[var(--ink-dim)]">
+                <span>Another trip here:</span>
+                {(Object.keys(TRIP_SUBTYPE_LABELS) as (keyof typeof TRIP_SUBTYPE_LABELS)[]).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => void frameSelectedAsTrip(s)}
+                    className="rounded-lg border border-[var(--glass-border)] px-2 py-0.5 hover:text-[var(--ember-soft)]"
+                  >
+                    {TRIP_SUBTYPE_LABELS[s]}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )
       })()}

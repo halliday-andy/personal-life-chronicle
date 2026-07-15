@@ -31,11 +31,53 @@ function groupTrips(trips: TripRow[]): { label: string; trips: TripRow[] }[] {
 export default function TravelJournal({
   trips,
   initialTrip = null,
+  homeBaseId = null,
+  primaries = [],
 }: {
   trips: TripRow[]
   initialTrip?: string | null
+  /** Home Base (U7/KTD8) — the reusable default trip origin. */
+  homeBaseId?: string | null
+  /** Spine residences, for the Home Base selector. */
+  primaries?: { relationship_id: string; name: string }[]
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(initialTrip)
+  // Filters (U7, R18): subtypes multi-toggle + a decade cut over the
+  // typed year hints (derived from explicit hints only — never parsed).
+  const [subtypeFilter, setSubtypeFilter] = useState<Set<string>>(new Set())
+  const [decade, setDecade] = useState<string>('')
+  // Home Base control — optimistic local state over PUT /api/trips/home-base.
+  const [homeBase, setHomeBase] = useState<string | null>(homeBaseId)
+  const [homeBaseError, setHomeBaseError] = useState<string | null>(null)
+  const setHomeBaseRemote = async (relationshipId: string | null) => {
+    const prev = homeBase
+    setHomeBase(relationshipId)
+    setHomeBaseError(null)
+    try {
+      const res = await fetch('/api/trips/home-base', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ relationshipId }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    } catch {
+      setHomeBase(prev)
+      setHomeBaseError('Could not save the home base — try again.')
+    }
+  }
+
+  const decades = Array.from(new Set(
+    trips.filter((t) => t.year_hint !== null).map((t) => Math.floor((t.year_hint as number) / 10) * 10),
+  )).sort((a, b) => a - b)
+
+  const filtered = trips.filter((t) => {
+    if (subtypeFilter.size > 0 && !subtypeFilter.has(t.subtype)) return false
+    if (decade !== '') {
+      if (t.year_hint === null) return false
+      if (Math.floor(t.year_hint / 10) * 10 !== Number(decade)) return false
+    }
+    return true
+  })
 
   // Deep-link arrival (?trip=): bring the card into view once.
   useEffect(() => {
@@ -64,13 +106,75 @@ export default function TravelJournal({
 
   return (
     <>
+      {/* Frequent-traveler bar (U7): filters + Home Base. */}
+      <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
+        {(Object.keys(TRIP_SUBTYPE_LABELS) as (keyof typeof TRIP_SUBTYPE_LABELS)[]).map((s) => {
+          const on = subtypeFilter.has(s)
+          return (
+            <button
+              key={s}
+              type="button"
+              aria-pressed={on}
+              onClick={() => setSubtypeFilter((prev) => {
+                const next = new Set(prev)
+                if (next.has(s)) next.delete(s); else next.add(s)
+                return next
+              })}
+              className={
+                'rounded-full border px-2.5 py-1 transition-colors ' +
+                (on
+                  ? 'border-amber-500 bg-amber-50 text-amber-800'
+                  : 'border-stone-200 text-stone-500 hover:text-stone-800')
+              }
+            >
+              {TRIP_SUBTYPE_LABELS[s]}
+            </button>
+          )
+        })}
+        {decades.length > 1 && (
+          <select
+            value={decade}
+            onChange={(e) => setDecade(e.target.value)}
+            aria-label="Filter by decade"
+            className="rounded-full border border-stone-200 bg-white px-2 py-1 text-stone-600"
+          >
+            <option value="">All decades</option>
+            {decades.map((d) => (
+              <option key={d} value={d}>{d}s</option>
+            ))}
+          </select>
+        )}
+        {primaries.length > 0 && (
+          <label className="ml-auto flex items-center gap-1.5 text-stone-500">
+            Home Base
+            <select
+              value={homeBase ?? ''}
+              onChange={(e) => void setHomeBaseRemote(e.target.value || null)}
+              className="rounded-full border border-stone-200 bg-white px-2 py-1 text-stone-600"
+              title="New trips suggest this home as origin automatically"
+            >
+              <option value="">None</option>
+              {primaries.map((p) => (
+                <option key={p.relationship_id} value={p.relationship_id}>{p.name}</option>
+              ))}
+            </select>
+          </label>
+        )}
+      </div>
+      {homeBaseError && (
+        <p className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs text-rose-700">{homeBaseError}</p>
+      )}
+
       {drafts > 0 && (
         <p className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
           {drafts} trip{drafts === 1 ? '' : 's'} still need{drafts === 1 ? 's' : ''} framing —
           a destination is saved, the origin is not. Open one below to complete it.
         </p>
       )}
-      {groupTrips(trips).map((g) => (
+      {filtered.length === 0 && (
+        <p className="mt-6 text-sm italic text-stone-400">No trips match these filters.</p>
+      )}
+      {groupTrips(filtered).map((g) => (
         <section key={g.label} className="mt-8">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-400">{g.label}</h2>
           <ol className="mt-2 space-y-3">
