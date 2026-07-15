@@ -55,9 +55,23 @@ const pins = [
   pin({ id: 'orphan', name: 'Orphaned Trip', type: 'traveled_for_work_to', anchor: 'deleted-pin' }),
   pin({ id: 'cyc-a', name: 'Cycle A', type: 'logged_at', anchor: 'cyc-b' }),
   pin({ id: 'cyc-b', name: 'Cycle B', type: 'logged_at', anchor: 'cyc-a' }),
+  // U9: an unsequenced home (lived_at, sort_order NULL) + a marker on it.
+  pin({ id: 'tbd1', name: 'Unplaced Home', sort: null }),
+  pin({ id: 'tbd1-log', name: 'Corner Bar', type: 'logged_at', anchor: 'tbd1' }),
 ]
 
 const tree = buildJourneyTree(pins as any)
+
+// 0. Unsequenced homes (U9): off the thread, in their own group, with
+// their anchored markers still nested beneath them.
+const unplacedIds = tree.unplaced.map((n) => n.relationship_id)
+if (JSON.stringify(unplacedIds) === JSON.stringify(['tbd1'])) ok('unsequenced home lands in unplaced, not stops')
+else bad('unplaced wrong: ' + JSON.stringify(unplacedIds))
+if (!tree.stops.some((s) => s.relationship_id === 'tbd1')) ok('unsequenced home never renders as a spine stop')
+else bad('unsequenced home leaked into stops')
+const tbd = tree.unplaced[0]
+if (tbd && tbd.children.some((c) => c.relationship_id === 'tbd1-log')) ok('markers still nest under an unplaced home')
+else bad('unplaced home lost its children')
 
 // 1. Spine order
 const stopIds = tree.stops.map((s) => s.relationship_id)

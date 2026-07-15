@@ -27,10 +27,14 @@ export default function TripFramePanel({
   ctx,
   pins,
   onDone,
+  onAddOrigin,
 }: {
   ctx: TripFramingContext
   pins: { relationship_id: string; name: string; type_code: string | null }[]
   onDone: (notice: string | null) => void
+  /** The origin isn't on the globe yet (U9/AE5) — hand off to origin
+   *  capture: the next pin placed becomes this trip's origin. */
+  onAddOrigin?: () => void
 }) {
   const [originId, setOriginId] = useState<string>(ctx.suggestedOriginId ?? '')
   const [title, setTitle] = useState('')
@@ -89,7 +93,10 @@ export default function TripFramePanel({
         <label className="mt-5 block text-sm text-[var(--ink-dim)]">Where did the trip start?</label>
         <select
           value={originId}
-          onChange={(e) => setOriginId(e.target.value)}
+          onChange={(e) => {
+            if (e.target.value === '__new__') { onAddOrigin?.(); return }
+            setOriginId(e.target.value)
+          }}
           disabled={saving}
           className="mt-1 w-full rounded-xl border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--ember-soft)]"
         >
@@ -101,6 +108,9 @@ export default function TripFramePanel({
           {others.map((p) => (
             <option key={p.relationship_id} value={p.relationship_id}>{p.name}</option>
           ))}
+          {onAddOrigin && (
+            <option value="__new__">＋ Pin a new origin on the globe…</option>
+          )}
           <option value="">Decide later</option>
         </select>
 

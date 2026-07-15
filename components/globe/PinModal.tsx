@@ -38,7 +38,13 @@ export interface PinDraftData {
   /** Destination-first trip capture: frame this pin as a trip destination
    *  right after it saves (Trips & Travel U3); null = a plain pin. */
   trip: { subtype: TripSubtype } | null
+  /** Primary residence saved WITHOUT a spine slot — "decide later"
+   *  (U9, KTD10). Placed via the pin's sequence picker whenever. */
+  unsequenced: boolean
 }
+
+/** Sentinel slot value for "Decide later — not yet placed" (U9). */
+const DECIDE_LATER = -1
 
 export default function PinModal({
   placeLabel,
@@ -47,6 +53,7 @@ export default function PinModal({
   allPins,
   onSave,
   onCancel,
+  originCapture = false,
 }: {
   placeLabel: string
   saving: boolean
@@ -54,6 +61,9 @@ export default function PinModal({
   allPins: { relationship_id: string; name: string; type_code: string | null }[]  // every globe pin (Log anchors to any)
   onSave: (data: PinDraftData) => void
   onCancel: () => void
+  /** Trip origin capture (U9/AE5): default the sequence slot to
+   *  "decide later" — the origin home may predate the spine. */
+  originCapture?: boolean
 }) {
   const [name, setName] = useState(placeLabel === 'This place' ? '' : placeLabel)
   const [body, setBody] = useState('')
@@ -61,8 +71,9 @@ export default function PinModal({
   const [placard, setPlacard] = useState('')
   const [typeCode, setTypeCode] = useState<string>(SPINE_CODE)
   const [tripSubtype, setTripSubtype] = useState<TripSubtype>('vacation')
-  // Sequence slot (spine only): 0 = before the first, i = after primaries[i-1].
-  const [position, setPosition] = useState<number>(primaries.length)
+  // Sequence slot (spine only): 0 = before the first, i = after
+  // primaries[i-1], DECIDE_LATER = save unsequenced (U9).
+  const [position, setPosition] = useState<number>(originCapture ? DECIDE_LATER : primaries.length)
   // Anchor (markers only): a primary residence relationship_id, or '' = standalone.
   const [anchorId, setAnchorId] = useState<string>(primaries[0]?.relationship_id ?? '')
   const ghost = useMemo(() => GHOST_TEXTS[Math.floor(Math.random() * GHOST_TEXTS.length)], [])
@@ -232,7 +243,7 @@ export default function PinModal({
         />
 
         {/* Contextual placement: spine → sequence slot; markers → anchor. */}
-        {isSpine && primaries.length > 0 && (
+        {isSpine && (primaries.length > 0 || originCapture) && (
           <>
             <label className="mt-4 block text-sm text-[var(--ink-dim)]">Where does this fall in your life?</label>
             <select
@@ -241,14 +252,23 @@ export default function PinModal({
               disabled={saving}
               className="mt-1 w-full rounded-xl border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--ember-soft)]"
             >
-              <option value={0}>Before {primaries[0].name} (earliest)</option>
+              {primaries.length > 0 && (
+                <option value={0}>Before {primaries[0].name} (earliest)</option>
+              )}
               {primaries.map((p, i) => (
                 <option key={p.relationship_id} value={i + 1}>
                   After {p.name}
                   {i === primaries.length - 1 ? ' (most recent)' : ''}
                 </option>
               ))}
+              <option value={DECIDE_LATER}>Decide later — not yet placed</option>
             </select>
+            {position === DECIDE_LATER && (
+              <p className="mt-1 text-xs text-[var(--ink-dim)]/80">
+                The home stays off the journey&apos;s thread until you place it — everything else
+                (memories, photos, jots) works now.
+              </p>
+            )}
           </>
         )}
 
@@ -290,11 +310,12 @@ export default function PinModal({
               whenText,
               description: placard,
               body,
-              position: isSpine && primaries.length ? position : null,
+              position: isSpine && primaries.length && position !== DECIDE_LATER ? position : null,
               typeCode: effectiveCode,
               anchorId: isSpine ? null : (anchorId || null),
               entityId: useExisting && match ? match.id : null,
               trip: isTrip ? { subtype: tripSubtype } : null,
+              unsequenced: isSpine && position === DECIDE_LATER,
             })}
             disabled={saving}
             className="rounded-lg bg-[var(--ember)] px-5 py-2 text-sm font-medium text-[#241500] shadow-[0_0_20px_rgba(244,177,74,0.45)] hover:bg-[var(--ember-soft)] disabled:opacity-60"

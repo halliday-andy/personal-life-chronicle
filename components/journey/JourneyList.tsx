@@ -63,10 +63,13 @@ const label = (s: string) => s.replace(/_/g, ' ')
 
 export default function JourneyList({
   stops,
+  unplaced = [],
   unanchored,
   initialPin = null,
 }: {
   stops: JourneyNode[]
+  /** Unsequenced homes (U9) — on the globe, not yet on the thread. */
+  unplaced?: JourneyNode[]
   unanchored: JourneyNode[]
   /** ?pin= deep link (J4): the stop hosting this pin opens on load and
    *  the pin's row scrolls into view. */
@@ -198,6 +201,47 @@ export default function JourneyList({
           />
         ))}
       </ol>
+
+      {unplaced.length > 0 && (
+        <section className="mt-10">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">
+            Not yet placed · homes awaiting their spot
+          </h2>
+          <p className="mt-1 text-xs text-stone-400">
+            Homes you&apos;ve pinned without deciding where they fall — place them from the
+            pin&apos;s Edit panel on the globe and they join the thread.
+          </p>
+          <ul className="mt-2 space-y-1.5">
+            {unplaced.map((n) => (
+              <li key={n.relationship_id} id={`journey-pin-${n.relationship_id}`}>
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm">
+                  <span
+                    aria-hidden
+                    className="inline-block h-2 w-2 shrink-0 self-center rounded-full border border-dashed border-amber-500 bg-amber-100"
+                    title="Not yet placed"
+                  />
+                  <span className="font-medium text-stone-800">{n.name}</span>
+                  {n.when_text && <span className="text-[11px] text-stone-500">· {n.when_text}</span>}
+                  <Link
+                    href={`/globe?pin=${n.relationship_id}&edit=1`}
+                    className="text-[11px] text-amber-700 hover:text-amber-900 hover:underline"
+                  >
+                    Place it in sequence →
+                  </Link>
+                </div>
+                {n.description && <p className="pl-4 text-xs italic text-stone-400">{n.description}</p>}
+                {n.children.length > 0 && (
+                  <ul className="mt-1 space-y-1 border-l border-stone-100 pl-4">
+                    {n.children.map((c) => (
+                      <ChildRow key={c.relationship_id} node={c} depth={1} />
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {unanchored.length > 0 && (
         <section className="mt-10">

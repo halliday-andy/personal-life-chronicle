@@ -18,6 +18,7 @@ type Mode = 'residential' | 'travel'
 
 export default function JourneySurface({
   stops,
+  unplaced = [],
   unanchored,
   trips,
   homeBaseId = null,
@@ -26,6 +27,7 @@ export default function JourneySurface({
   initialMode = 'residential',
 }: {
   stops: JourneyNode[]
+  unplaced?: JourneyNode[]
   unanchored: JourneyNode[]
   trips: TripRow[]
   homeBaseId?: string | null
@@ -75,10 +77,10 @@ export default function JourneySurface({
       </div>
 
       {mode === 'residential' ? (
-        stops.length === 0 && unanchored.length === 0 ? (
+        stops.length === 0 && unplaced.length === 0 && unanchored.length === 0 ? (
           <EmptyResidential />
         ) : (
-          <JourneyList stops={stops} unanchored={unanchored} initialPin={initialPin} />
+          <JourneyList stops={stops} unplaced={unplaced} unanchored={unanchored} initialPin={initialPin} />
         )
       ) : (
         <TravelJournal

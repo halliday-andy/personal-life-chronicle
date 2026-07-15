@@ -62,8 +62,11 @@ export interface JourneyNode extends JourneyPin {
 }
 
 export interface JourneyTree {
-  /** Primary residences in spine order — the chapters. */
+  /** SEQUENCED primary residences in spine order — the chapters. */
   stops: JourneyNode[]
+  /** Unsequenced primaries (U9, KTD10): homes awaiting their spot on
+   *  the thread — never rendered as spine stops. */
+  unplaced: JourneyNode[]
   /** Markers with no resolvable anchor (standalone or orphaned). */
   unanchored: JourneyNode[]
 }
@@ -79,11 +82,14 @@ export function buildJourneyTree(pins: JourneyPin[]): JourneyTree {
   for (const p of pins) nodes.set(p.relationship_id, { ...p, children: [] })
 
   const stops: JourneyNode[] = []
+  const unplaced: JourneyNode[] = []
   const unanchored: JourneyNode[] = []
 
   for (const node of Array.from(nodes.values())) {
     if (node.type_code === SPINE_CODE) {
-      stops.push(node)
+      // The thread is the SEQUENCED primaries; an unsequenced home (U9)
+      // reads separately until the user places it.
+      ;(node.sort_order === null ? unplaced : stops).push(node)
       continue
     }
     const parent = node.anchor_residence_id ? nodes.get(node.anchor_residence_id) : undefined
@@ -102,6 +108,7 @@ export function buildJourneyTree(pins: JourneyPin[]): JourneyTree {
 
   for (const n of Array.from(nodes.values())) n.children.sort(byTypeThenCreated)
   unanchored.sort(byTypeThenCreated)
+  unplaced.sort(byTypeThenCreated)
 
   // Reachability guard: a cycle of markers anchored to each other is
   // attached but unreachable from any root — surface such islands in
@@ -113,6 +120,7 @@ export function buildJourneyTree(pins: JourneyPin[]): JourneyTree {
     for (const c of n.children) walk(c)
   }
   for (const s of stops) walk(s)
+  for (const u of unplaced) walk(u)
   for (const u of unanchored) walk(u)
   for (const n of Array.from(nodes.values())) {
     if (!visited.has(n.relationship_id)) {
@@ -122,5 +130,5 @@ export function buildJourneyTree(pins: JourneyPin[]): JourneyTree {
     }
   }
 
-  return { stops, unanchored }
+  return { stops, unplaced, unanchored }
 }

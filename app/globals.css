@@ -260,6 +260,29 @@ body {
   color: #e0709b;
 }
 
+/* Unsequenced residence (Trips & Travel U9, KTD10/R21) — a home that
+   hasn't taken its place on the thread yet. Same "unfinished" dashed-
+   ring language as the trip draft, in the spine's own ember. */
+.globe-pin-unplaced::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 9999px;
+  border: 1.5px dashed rgba(244, 177, 74, 0.85);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .globe-pin-unplaced::before {
+    animation: globe-draft-turn 16s linear infinite;
+  }
+}
+.globe-pin-unplaced-flag {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ember-soft, #f4c17a);
+}
+
 /* Selected pin — ring + lift, and it becomes draggable for relocation.
    The boundary ring/glow take the pin's OWN type hue (--pin-ring, set
    inline per marker in GlobeView) so a selected rose vacation pin no

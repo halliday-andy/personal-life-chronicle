@@ -47,6 +47,7 @@ export async function GET() {
 const PIN_TYPE_CODES = [
   'lived_at', 'worked_at', 'owned_residence_at',
   'lived_briefly_at', 'vacationed_at', 'traveled_for_work_to', 'logged_at',
+  'wants_to_visit',
 ] as const
 type PinTypeCode = (typeof PIN_TYPE_CODES)[number]
 
@@ -57,6 +58,9 @@ interface PostBody {
   whenText?: string   // optional free-text date ("early 70s")
   body?: string       // optional verbatim narrative
   position?: number | null  // spine sequence slot; null/omitted = append
+  /** Primary residence with NO spine slot yet — "decide later" (U9,
+   *  KTD10). Fully embellishable; placed via the sequence picker later. */
+  unsequenced?: boolean
   typeCode?: string   // one of PIN_TYPE_CODES; defaults to 'lived_at'
   anchorId?: string | null  // marker → its primary residence relationship
   description?: string  // placard — a short one-line description of the place
@@ -138,6 +142,7 @@ export async function POST(request: NextRequest) {
     p_type_code: type,
     p_anchor_residence_id: anchor,
     p_entity_id: typeof entityId === 'string' ? entityId : null,
+    p_unsequenced: type === 'lived_at' && payload.unsequenced === true,
   })
   if (error) {
     return NextResponse.json({ error: 'Failed to place pin', detail: error.message }, { status: 500 })

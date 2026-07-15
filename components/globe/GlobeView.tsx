@@ -45,11 +45,17 @@ interface Pin {
   when_text: string | null
   has_memory: boolean
   type_code: string | null         // 'lived_at' = spine; others are markers
+  sort_order: number | null        // spine slot; NULL on markers AND on unsequenced primaries (U9)
   anchor_residence_id: string | null  // marker → its primary residence
   prior_anchor_residence_id: string | null  // last anchor before joining the spine (picker default on revert)
 }
 
 const SPINE_CODE = 'lived_at'
+
+// The SPINE is the sequenced primaries only (U9, KTD10): an unsequenced
+// residence (lived_at, sort_order NULL) is a home awaiting its slot —
+// on the globe, but never on the thread or in spine-derived logic.
+const isSequencedPrimary = (p: Pin) => p.type_code === SPINE_CODE && p.sort_order !== null
 
 // "Side lines in view" only reveals once the user has zoomed past the
 // whole-globe overview into a region, so the zoomed-out globe never clutters.
@@ -254,6 +260,10 @@ export default function GlobeView() {
   // Destination-first trip capture (U3): set right after a "Trip" pin
   // saves; renders the framing panel over the globe.
   const [framing, setFraming] = useState<TripFramingContext | null>(null)
+  // Origin capture (U9/AE5): the framing panel asked for a NEW origin
+  // pin — the next pin placed becomes this trip's origin (an
+  // unsequenced home by default; the spine may not exist yet).
+  const [originCapture, setOriginCapture] = useState<{ tripId: string; destinationName: string } | null>(null)
   // Trip route layer (U4): loaded trips, the hidden-by-default toggle
   // (R10 — the spine stays visually dominant), and route-building mode.
   const [trips, setTrips] = useState<TripRow[]>([])
@@ -501,7 +511,7 @@ export default function GlobeView() {
   // marker "children" (workplaces, second residences) are a deferred design
   // — see documentation/feature_residential_globe_onboarding.md.
   const navigateSpine = useCallback((dir: -1 | 1) => {
-    const spine = pins.filter((p) => p.type_code === SPINE_CODE)
+    const spine = pins.filter(isSequencedPrimary)
     const idx = spine.findIndex((p) => p.relationship_id === selectedId)
     if (idx < 0) return
     const next = spine[idx + dir]
@@ -682,7 +692,7 @@ export default function GlobeView() {
 
     // The connected glowing spine is the primary-residence sequence only;
     // every other type is a marker that tethers to its anchor primary.
-    const spine = pins.filter((p) => p.type_code === SPINE_CODE)
+    const spine = pins.filter(isSequencedPrimary)
     // The origin pin (item 2): wherever the journey starts — sequence
     // position #1, not a semantic "birth" field. Calm "infancy" treatment.
     const originId = spine[0]?.relationship_id ?? null
@@ -700,6 +710,7 @@ export default function GlobeView() {
       const isSel = p.relationship_id === selectedId && (editMode || refining) // draggable while editing or refining
       const isTripDest = tripDest.has(p.relationship_id)
       const isTripDraft = tripDest.get(p.relationship_id) === true
+      const isUnplaced = p.type_code === SPINE_CODE && p.sort_order === null
       const el = document.createElement('div')
       el.className =
         'globe-pin' +
@@ -707,6 +718,7 @@ export default function GlobeView() {
         (p.relationship_id === originId ? ' globe-pin-origin' : '') +
         (isTripDest ? ' globe-pin-trip-dest' : '') +
         (isTripDraft ? ' globe-pin-trip-draft' : '') +
+        (isUnplaced ? ' globe-pin-unplaced' : '') +
         (bloomIdRef.current === p.place_entity_id ? ' globe-pin-bloom' : '') +
         (p.relationship_id === selectedId ? ' globe-pin-selected' : '')
       // Selection ring/glow read this var so they match the pin's type hue.
@@ -749,6 +761,12 @@ export default function GlobeView() {
           const flag = document.createElement('span')
           flag.className = 'globe-pin-draft-flag'
           flag.textContent = 'trip to frame'
+          chip.appendChild(flag)
+        }
+        if (isUnplaced) {
+          const flag = document.createElement('span')
+          flag.className = 'globe-pin-unplaced-flag'
+          flag.textContent = 'not yet placed'
           chip.appendChild(flag)
         }
         el.appendChild(chip)
@@ -1034,6 +1052,23 @@ export default function GlobeView() {
       clearDraft()
       setHint(proximity ?? null)
 
+      // Origin capture (U9/AE5): this pin IS the awaited trip origin.
+      if (originCapture) {
+        const patch = await fetch(`/api/trips/${originCapture.tripId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ originRelationshipId: pin.relationship_id }),
+        })
+        if (!patch.ok) {
+          const b = await patch.json().catch(() => ({}))
+          throw new Error(`The pin is saved, but setting it as the trip origin failed: ${b.detail || b.error || `HTTP ${patch.status}`}`)
+        }
+        setOriginCapture(null)
+        await loadTrips()
+        setNotice(`Origin set — ${data.name?.trim() || 'the new pin'} starts the ${originCapture.destinationName} trip.`)
+        return
+      }
+
       // Destination-first trip capture (U3): the pin is the destination;
       // create the draft trip, then offer the optional framing step. The
       // pin's anchor doubles as the origin suggestion ("home at the time").
@@ -1066,7 +1101,7 @@ export default function GlobeView() {
     } finally {
       setSaving(false)
     }
-  }, [draft, clearDraft, loadPins, loadTrips, homeBaseId])
+  }, [draft, clearDraft, loadPins, loadTrips, homeBaseId, originCapture])
 
   const handlePanelSave = useCallback(async (fields: { name: string; whenText: string; body: string; typeCode: string; anchorId: string | null; description: string }) => {
     if (!selectedId) return
@@ -1176,7 +1211,7 @@ export default function GlobeView() {
   // Nudge the selected pin one slot earlier/later (adjacent swap).
   const handleMove = useCallback((dir: -1 | 1) => {
     if (!selectedId) return
-    const spine = pins.filter((p) => p.type_code === SPINE_CODE)
+    const spine = pins.filter(isSequencedPrimary)
     const idx = spine.findIndex((p) => p.relationship_id === selectedId)
     const to = idx + dir
     if (idx < 0 || to < 0 || to >= spine.length) return
@@ -1186,11 +1221,38 @@ export default function GlobeView() {
   // Jump the selected pin directly to an arbitrary slot (edit-panel selector).
   const handleMoveTo = useCallback((toIndex: number) => {
     if (!selectedId) return
-    const spine = pins.filter((p) => p.type_code === SPINE_CODE)
+    const spine = pins.filter(isSequencedPrimary)
     const idx = spine.findIndex((p) => p.relationship_id === selectedId)
     if (idx < 0 || toIndex === idx) return
     void resequence(moveToIndex(spine.map((p) => p.relationship_id), idx, toIndex))
   }, [selectedId, pins, resequence])
+
+  // Spine membership (U9): place an unsequenced home at a slot, or
+  // demote a sequenced one back to "not yet placed".
+  const handleSequence = useCallback(async (position: number | null) => {
+    if (!selectedId) return
+    setSavingPanel(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/globe/residence/${selectedId}/sequence`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ position }),
+      })
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}))
+        throw new Error(b.detail || b.error || `HTTP ${res.status}`)
+      }
+      await loadPins()
+      setNotice(position === null
+        ? 'Set aside — not yet placed in your journey. Everything on the pin is kept.'
+        : 'Placed — the home joined your journey.')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not change the sequence.')
+    } finally {
+      setSavingPanel(false)
+    }
+  }, [selectedId, loadPins])
 
   const handlePanelDelete = useCallback(async () => {
     if (!selectedId) return
@@ -1414,11 +1476,12 @@ export default function GlobeView() {
           placeLabel={draft.label || 'This place'}
           saving={saving}
           primaries={pins
-            .filter((p) => p.type_code === SPINE_CODE)
+            .filter(isSequencedPrimary)
             .map((p) => ({ relationship_id: p.relationship_id, name: p.name }))}
           allPins={pins.map((p) => ({ relationship_id: p.relationship_id, name: p.name, type_code: p.type_code }))}
           onSave={handleSave}
           onCancel={() => setModalOpen(false)}
+          originCapture={!!originCapture}
         />
       )}
 
@@ -1431,7 +1494,29 @@ export default function GlobeView() {
             if (notice) setNotice(notice)
             void loadTrips()
           }}
+          onAddOrigin={() => {
+            setOriginCapture({ tripId: framing.tripId, destinationName: framing.destinationName })
+            setFraming(null)
+          }}
         />
+      )}
+
+      {/* Origin-capture banner (U9/AE5): the next pin becomes the origin. */}
+      {originCapture && !modalOpen && (
+        <div className="glass absolute left-1/2 top-6 z-40 flex max-w-[min(560px,92vw)] -translate-x-1/2 items-center gap-3 rounded-xl px-4 py-2.5 text-sm text-[var(--ink)]">
+          <span style={{ color: TRIP_ROUTE_COLOR }}>✈</span>
+          <span>
+            Pin where the <strong>{originCapture.destinationName}</strong> trip began — search or
+            click the globe. It can stay “not yet placed” in your journey.
+          </span>
+          <button
+            onClick={() => setOriginCapture(null)}
+            className="ml-1 text-[var(--ink-dim)] hover:text-[var(--ink)]"
+            aria-label="Cancel origin capture"
+          >
+            ✕
+          </button>
+        </div>
       )}
 
       {/* Trips touching the selected pin (U4): frame drafts, build routes.
@@ -1655,7 +1740,7 @@ export default function GlobeView() {
         if (!sel) return null
         // Position/total are SPINE-relative: a marker is off-spine (-1) and
         // shows no "stop N of M" or reorder controls.
-        const spine = pins.filter((p) => p.type_code === SPINE_CODE)
+        const spine = pins.filter(isSequencedPrimary)
         const spinePos = spine.findIndex((p) => p.relationship_id === selectedId)
         const primaries = spine.map((p) => ({ relationship_id: p.relationship_id, name: p.name }))
         const allPins = pins.map((p) => ({ relationship_id: p.relationship_id, name: p.name, type_code: p.type_code }))
@@ -1670,6 +1755,8 @@ export default function GlobeView() {
             allPins={allPins}
             onMove={handleMove}
             onMoveTo={handleMoveTo}
+            onPlace={(i) => void handleSequence(i)}
+            onUnsequence={() => void handleSequence(null)}
             onSave={handlePanelSave}
             onDelete={handlePanelDelete}
             onClose={deselect}

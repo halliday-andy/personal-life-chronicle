@@ -59,6 +59,8 @@ export default function PinEditPanel({
   allPins,
   onMove,
   onMoveTo,
+  onPlace,
+  onUnsequence,
   onSave,
   onDelete,
   onClose,
@@ -72,6 +74,10 @@ export default function PinEditPanel({
   allPins: { relationship_id: string; name: string; type_code: string | null }[]  // every globe pin (Log anchors to any)
   onMove: (dir: -1 | 1) => void
   onMoveTo: (toIndex: number) => void
+  /** U9: place an unsequenced home into the spine at this slot. */
+  onPlace: (toIndex: number) => void
+  /** U9: demote a sequenced home to "not yet placed" (spine closes up). */
+  onUnsequence: () => void
   onSave: (fields: { name: string; whenText: string; body: string; typeCode: string; anchorId: string | null; description: string }) => void
   onDelete: () => void
   onClose: () => void
@@ -241,19 +247,26 @@ export default function PinEditPanel({
       {/* Reorder applies only to the residential spine. The selector is the
           authoritative control (jump to any slot in one write); Earlier/Later
           are quick adjacent nudges. */}
-      {position >= 0 && total > 1 && (
+      {position >= 0 && (
         <div className="mt-3">
           <label className="block text-xs text-[var(--ink-dim)]">Where does this fall in your life?</label>
           <select
             value={position}
-            onChange={(e) => onMoveTo(Number(e.target.value))}
+            onChange={(e) => {
+              // "Decide later" (U9): leave the thread — the remainder
+              // closes up, everything on the pin is kept.
+              if (Number(e.target.value) === -1) { onUnsequence(); return }
+              onMoveTo(Number(e.target.value))
+            }}
             disabled={saving}
             className="mt-1 w-full rounded-lg border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--ember-soft)]"
           >
             {spineSlotOptions(primaries.map((p) => p.name), position).map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
+            <option value={-1}>Decide later — not yet placed</option>
           </select>
+          {total > 1 && (
           <div className="mt-2 flex items-center gap-2">
             <span className="text-xs text-[var(--ink-dim)]">Nudge</span>
             <button
@@ -273,6 +286,32 @@ export default function PinEditPanel({
               ↓ Later
             </button>
           </div>
+          )}
+        </div>
+      )}
+
+      {/* Unsequenced home (U9): not on the thread yet — offer placement.
+          Slot values mirror the create picker: 0 = before the first,
+          i = after primaries[i-1]. */}
+      {typeCode === SPINE_CODE && position === -1 && (
+        <div className="mt-3 rounded-lg border border-dashed border-[var(--ember-soft)]/50 bg-[var(--ember)]/5 px-3 py-2">
+          <p className="text-xs text-[var(--ink)]">Not yet placed in your journey.</p>
+          <label className="mt-1.5 block text-xs text-[var(--ink-dim)]">Place it in sequence</label>
+          <select
+            defaultValue=""
+            onChange={(e) => { if (e.target.value !== '') onPlace(Number(e.target.value)) }}
+            disabled={saving}
+            className="mt-1 w-full rounded-lg border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--ember-soft)]"
+          >
+            <option value="" disabled>Choose its place in the sequence…</option>
+            {primaries.length === 0 && <option value={0}>First home (starts the journey)</option>}
+            {primaries.length > 0 && <option value={0}>Before {primaries[0].name} (earliest)</option>}
+            {primaries.map((p, i) => (
+              <option key={p.relationship_id} value={i + 1}>
+                After {p.name}{i === primaries.length - 1 ? ' (most recent)' : ''}
+              </option>
+            ))}
+          </select>
         </div>
       )}
 

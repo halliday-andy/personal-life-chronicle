@@ -76,6 +76,7 @@ export default async function JourneyPage({
 
       <JourneySurface
         stops={tree.stops}
+        unplaced={tree.unplaced}
         unanchored={tree.unanchored}
         trips={tripRows}
         homeBaseId={homeBase?.id ?? null}
