@@ -12,6 +12,10 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { PIN_TYPES, pinTypeMeta, SPINE_CODE } from '@/lib/globe/pin-types'
+import { TRIP_SUBTYPES, TRIP_SUBTYPE_LABELS, tripSubtypeDefaultPinCode, type TripSubtype } from '@/lib/globe/trip-types'
+
+/** Virtual selector value — a Trip is framing around a pin, not a pin type. */
+const TRIP_OPTION = 'trip'
 
 const GHOST_TEXTS = [
   'What kind of place was it? Who lived there? Why did you move here?',
@@ -31,6 +35,9 @@ export interface PinDraftData {
   /** Adopt this existing entity as the pin's place instead of creating a
    *  new one (2026-07-07 duplicate-twin fix); null = create fresh. */
   entityId: string | null
+  /** Destination-first trip capture: frame this pin as a trip destination
+   *  right after it saves (Trips & Travel U3); null = a plain pin. */
+  trip: { subtype: TripSubtype } | null
 }
 
 export default function PinModal({
@@ -53,6 +60,7 @@ export default function PinModal({
   const [whenText, setWhenText] = useState('')
   const [placard, setPlacard] = useState('')
   const [typeCode, setTypeCode] = useState<string>(SPINE_CODE)
+  const [tripSubtype, setTripSubtype] = useState<TripSubtype>('vacation')
   // Sequence slot (spine only): 0 = before the first, i = after primaries[i-1].
   const [position, setPosition] = useState<number>(primaries.length)
   // Anchor (markers only): a primary residence relationship_id, or '' = standalone.
@@ -84,11 +92,14 @@ export default function PinModal({
   }, [name])
 
   const isSpine = typeCode === SPINE_CODE
+  const isTrip = typeCode === TRIP_OPTION
+  // A trip destination saves as a normal pin typed by its subtype (KTD4).
+  const effectiveCode = isTrip ? tripSubtypeDefaultPinCode[tripSubtype] : typeCode
   // A Log anchors to ANY place; other markers anchor to a primary residence.
   const anchorOptions = typeCode === 'logged_at'
     ? allPins
     : primaries.map((p) => ({ ...p, type_code: 'lived_at' as string | null }))
-  const meta = pinTypeMeta(typeCode)
+  const meta = pinTypeMeta(effectiveCode)
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
@@ -164,8 +175,29 @@ export default function PinModal({
           {PIN_TYPES.map((t) => (
             <option key={t.code} value={t.code}>{t.label}</option>
           ))}
+          <option value={TRIP_OPTION}>Trip — somewhere I traveled</option>
         </select>
-        <p className="mt-1 text-xs leading-relaxed text-[var(--ink-dim)]/80">{meta.description}</p>
+        <p className="mt-1 text-xs leading-relaxed text-[var(--ink-dim)]/80">
+          {isTrip
+            ? 'A journey, not just a place. Begin with the destination — the place that marked the turn toward home — and frame the origin and stops next.'
+            : meta.description}
+        </p>
+
+        {isTrip && (
+          <>
+            <label className="mt-4 block text-sm text-[var(--ink-dim)]">What kind of trip?</label>
+            <select
+              value={tripSubtype}
+              onChange={(e) => setTripSubtype(e.target.value as TripSubtype)}
+              disabled={saving}
+              className="mt-1 w-full rounded-xl border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--ember-soft)]"
+            >
+              {TRIP_SUBTYPES.map((s) => (
+                <option key={s} value={s}>{TRIP_SUBTYPE_LABELS[s]}</option>
+              ))}
+            </select>
+          </>
+        )}
 
         <label className="mt-4 block text-sm text-[var(--ink-dim)]">Your memory of it</label>
         <textarea
@@ -259,9 +291,10 @@ export default function PinModal({
               description: placard,
               body,
               position: isSpine && primaries.length ? position : null,
-              typeCode,
+              typeCode: effectiveCode,
               anchorId: isSpine ? null : (anchorId || null),
               entityId: useExisting && match ? match.id : null,
+              trip: isTrip ? { subtype: tripSubtype } : null,
             })}
             disabled={saving}
             className="rounded-lg bg-[var(--ember)] px-5 py-2 text-sm font-medium text-[#241500] shadow-[0_0_20px_rgba(244,177,74,0.45)] hover:bg-[var(--ember-soft)] disabled:opacity-60"

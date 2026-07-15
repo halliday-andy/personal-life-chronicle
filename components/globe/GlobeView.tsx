@@ -18,6 +18,7 @@ import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import FindLocationBox, { RetrievedPlace } from './FindLocationBox'
 import PinModal, { PinDraftData } from './PinModal'
+import TripFramePanel, { TripFramingContext } from './TripFramePanel'
 import PinEditPanel from './PinEditPanel'
 import PinDetailCard from './PinDetailCard'
 import { useUiChrome } from '../UiChromeContext'
@@ -206,6 +207,9 @@ export default function GlobeView() {
   const [draft, setDraft] = useState<RetrievedPlace | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+  // Destination-first trip capture (U3): set right after a "Trip" pin
+  // saves; renders the framing panel over the globe.
+  const [framing, setFraming] = useState<TripFramingContext | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   // Pin click opens the read view (detail card); Edit escalates to the
@@ -751,6 +755,32 @@ export default function GlobeView() {
       await loadPins()
       clearDraft()
       setHint(proximity ?? null)
+
+      // Destination-first trip capture (U3): the pin is the destination;
+      // create the draft trip, then offer the optional framing step. The
+      // pin's anchor doubles as the origin suggestion ("home at the time").
+      if (data.trip) {
+        const tripRes = await fetch('/api/trips', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            destinationRelationshipId: pin.relationship_id,
+            subtype: data.trip.subtype,
+            whenText: data.whenText || undefined,
+          }),
+        })
+        if (!tripRes.ok) {
+          const b = await tripRes.json().catch(() => ({}))
+          throw new Error(`The pin is saved, but the trip draft failed: ${b.detail || b.error || `HTTP ${tripRes.status}`}`)
+        }
+        const { tripId } = await tripRes.json()
+        setFraming({
+          tripId,
+          destinationName: data.name?.trim() || draft.label || 'This place',
+          suggestedOriginId: data.anchorId,
+          defaultWhen: data.whenText,
+        })
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not place the pin.')
     } finally {
@@ -1081,6 +1111,17 @@ export default function GlobeView() {
           allPins={pins.map((p) => ({ relationship_id: p.relationship_id, name: p.name, type_code: p.type_code }))}
           onSave={handleSave}
           onCancel={() => setModalOpen(false)}
+        />
+      )}
+
+      {framing && (
+        <TripFramePanel
+          ctx={framing}
+          pins={pins.map((p) => ({ relationship_id: p.relationship_id, name: p.name, type_code: p.type_code }))}
+          onDone={(notice) => {
+            setFraming(null)
+            if (notice) setNotice(notice)
+          }}
         />
       )}
 
