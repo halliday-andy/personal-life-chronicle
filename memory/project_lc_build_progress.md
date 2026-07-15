@@ -4,6 +4,45 @@ description: What's been built so far in the Claude Code implementation of Life 
 type: project
 ---
 
+## Session handoff — 2026-07-15 (Trips & Travel Journal T1–T9 BUILT)
+
+The full Trips & Travel track (plan
+`docs/plans/2026-07-15-001-feat-trips-travel-journal-plan.md`, run as a
+/goal) shipped in one autonomous pass, U1–U9, commits `3fbdf08`…`cf19287`:
+
+- **U1 data layer** — `trips` + `trip_stops` over existing pins; backing
+  `trip` entity (new enum value) carries recollections/jots/context via
+  existing machinery; origin nullable (NULL = draft), destination
+  RESTRICT (unframe before pin delete — Andy's call); leg-aware stops.
+  Proof `verify-trips-travel.mjs` **33/33**, self-cleaning.
+- **U2 API** — `/api/trips` (+`[tripId]`, `/stops`, `/home-base`);
+  subtype constants in `lib/globe/trip-types.ts`.
+- **U3 capture** — PinModal "Trip" path (subtype → pin per KTD4) +
+  `TripFramePanel` (origin suggestion: anchor ?? Home Base; year_hint
+  typed only, never parsed).
+- **U4 globe** — `trip-routes` tier (rose; dashed return), hidden behind
+  legend toggle; selection shows full route; destination halo + draft
+  dashed ring; route-builder banner (click pins = stops).
+- **U5 Travel Journal** — `/journey` mode toggle (JourneySurface), trip
+  cards by year_hint ("Sometime" last), `?trip=` handoff both ways.
+- **U6 retro framing** — "frame it as a trip" on markers (AE2 = Wallace
+  Monument walkthrough), Unframe (pin untouched), PinHopper on trip
+  entities, friendly destination-delete error.
+- **U7 frequent traveler** — Home Base (`set_home_base`), "Another trip
+  here", subtype/decade filters, residence "N trips originated here".
+- **U8 Future Places** — `wants_to_visit` pin (hollow mint), whitelists
+  amended from live RPC defs; promotion re-types then frames.
+- **U9 unsequenced residences** — "Decide later" in the sequence picker
+  (create + edit/demote), `place_residence_in_spine`/`unsequence_residence`,
+  spine = sequenced primaries everywhere (arcs, origin star, reorder,
+  nearest_residence), Journey "Not yet placed" group, trip-origin
+  capture for homes that predate the spine (AE5).
+
+**Andy's live QA outstanding** (checklists in `docs/qa/2026-07-15-*`):
+trips-capture, trips-globe, travel-journal, trips-retro-framing (AE2 on
+the real Wallace pin), trips-frequent-traveler, future-places,
+unsequenced-residences. Person-page QA from Slice 7 also still queued.
+
 ## Session handoff — 2026-07-05 (reconciliation; Slice 6.5b in progress)
 
 Supersedes the 2026-06-17 block below, which had gone nine days stale. The
