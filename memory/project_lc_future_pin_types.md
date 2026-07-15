@@ -21,3 +21,5 @@ For families maintaining **several simultaneous domiciles** used seasonally or i
 ## How to apply
 
 When the residential globe MVP (Slices 1–4) is in real use and validated, revisit these as enhancement candidates. The bucket-list pin is the higher-appeal, more self-contained of the two — likely the better first post-MVP pin-type addition.
+
+**Update 2026-07-15:** the bucket-list pin is now SCHEDULED as "Future Places" (U8, working code `wants_to_visit`) in the Trips & Travel Journal plan — `docs/plans/2026-07-15-001-feat-trips-travel-journal-plan.md`. The plan resolves its open design questions: same globe with its own type/styling row in the selector (no separate mode), and promotion via re-type or "start a trip here." The multi-home concurrent-domicile display remains deferred.
