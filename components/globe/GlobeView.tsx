@@ -922,6 +922,58 @@ export default function GlobeView() {
     }
   }, [loadTrips])
 
+  // Retroactive framing (U6, R14): the selected pin becomes a trip's
+  // destination — the pin row itself is untouched (proven in U1).
+  const frameSelectedAsTrip = useCallback(async (subtype: string) => {
+    const selPin = pins.find((p) => p.relationship_id === selectedId)
+    if (!selPin) return
+    setError(null)
+    try {
+      const res = await fetch('/api/trips', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          destinationRelationshipId: selPin.relationship_id,
+          subtype,
+          whenText: selPin.when_text || undefined,
+        }),
+      })
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}))
+        throw new Error(b.detail || b.error || `HTTP ${res.status}`)
+      }
+      const { tripId } = await res.json()
+      await loadTrips()
+      setFraming({
+        tripId,
+        destinationName: selPin.name,
+        suggestedOriginId: selPin.anchor_residence_id,
+        defaultWhen: selPin.when_text ?? '',
+      })
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not frame the trip.')
+    }
+  }, [pins, selectedId, loadTrips])
+
+  // Un-framing (U6, R14): delete the trip, keep the pin. Two-step inline
+  // confirm (the edit panel's delete pattern).
+  const [confirmUnframe, setConfirmUnframe] = useState<string | null>(null)
+  const unframeTrip = useCallback(async (tripId: string) => {
+    setError(null)
+    try {
+      const res = await fetch(`/api/trips/${tripId}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}))
+        throw new Error(b.detail || b.error || `HTTP ${res.status}`)
+      }
+      setConfirmUnframe(null)
+      await loadTrips()
+      setNotice('Trip removed — the pin and its recollections are untouched.')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not remove the trip.')
+    }
+  }, [loadTrips])
+
   const handleRetrieve = useCallback((place: RetrievedPlace) => {
     const map = mapRef.current
     if (!map) return
@@ -1122,16 +1174,24 @@ export default function GlobeView() {
       const res = await fetch(`/api/globe/residence/${selectedId}`, { method: 'DELETE' })
       if (!res.ok) {
         const b = await res.json().catch(() => ({}))
-        throw new Error(b.detail || b.error || `HTTP ${res.status}`)
+        const raw = String(b.detail || b.error || `HTTP ${res.status}`)
+        // The trips FK blocks deleting a destination pin by design
+        // (2026-07-15 decision) — translate the constraint into the action.
+        throw new Error(
+          /trips_destination_relationship_id_fkey|violates foreign key/.test(raw)
+            ? 'This pin is a trip’s destination. Unframe or remove the trip first (select the pin and use its trip strip), then delete.'
+            : raw,
+        )
       }
       await loadPins()
+      await loadTrips()
       deselect()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not delete the pin.')
     } finally {
       setSavingPanel(false)
     }
-  }, [selectedId, loadPins, deselect])
+  }, [selectedId, loadPins, loadTrips, deselect])
 
   return (
     <div className="nocturne relative h-screen w-screen overflow-hidden">
@@ -1348,14 +1408,33 @@ export default function GlobeView() {
         />
       )}
 
-      {/* Trips touching the selected pin (U4): frame drafts, build routes. */}
+      {/* Trips touching the selected pin (U4): frame drafts, build routes.
+          U6 adds the other half: a non-primary pin with NO trip offers
+          "frame as trip" (R14) — the Wallace Monument path. */}
       {selectedId && !editMode && !refining && !routeEdit && !framing && (() => {
         const mine = trips.filter((t) =>
           t.destination_relationship_id === selectedId ||
           t.origin_relationship_id === selectedId ||
           t.stops.some((s) => s.relationship_id === selectedId))
-        if (mine.length === 0) return null
         const selPin = pins.find((p) => p.relationship_id === selectedId)
+        if (mine.length === 0) {
+          if (!selPin || selPin.type_code === SPINE_CODE || selPin.type_code === null) return null
+          return (
+            <div className="glass absolute left-1/2 top-20 z-30 flex max-w-[min(560px,92vw)] -translate-x-1/2 flex-wrap items-center gap-2 rounded-xl px-3 py-2 text-xs text-[var(--ink)]">
+              <span style={{ color: TRIP_ROUTE_COLOR }}>✈</span>
+              <span className="text-[var(--ink-dim)]">This was a journey? Frame it as a trip:</span>
+              {(Object.keys(TRIP_SUBTYPE_LABELS) as (keyof typeof TRIP_SUBTYPE_LABELS)[]).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => void frameSelectedAsTrip(s)}
+                  className="rounded-lg border border-[var(--glass-border)] px-2 py-0.5 hover:text-[var(--ember-soft)]"
+                >
+                  {TRIP_SUBTYPE_LABELS[s]}
+                </button>
+              ))}
+            </div>
+          )
+        }
         return (
           <div className="glass absolute left-1/2 top-20 z-30 flex max-w-[min(560px,92vw)] -translate-x-1/2 flex-col gap-1.5 rounded-xl px-3 py-2 text-xs text-[var(--ink)]">
             {mine.map((t) => (
@@ -1386,6 +1465,25 @@ export default function GlobeView() {
                   >
                     Route
                   </button>
+                  {confirmUnframe === t.trip_id ? (
+                    <button
+                      onClick={() => void unframeTrip(t.trip_id)}
+                      className="rounded-lg border border-rose-400/50 px-2 py-0.5 text-rose-300 hover:bg-rose-500/10"
+                    >
+                      Really remove the trip? The pin stays.
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setConfirmUnframe(t.trip_id)
+                        setTimeout(() => setConfirmUnframe((c) => (c === t.trip_id ? null : c)), 4000)
+                      }}
+                      className="rounded-lg border border-[var(--glass-border)] px-2 py-0.5 text-[var(--ink-dim)] hover:text-rose-300"
+                      title="Delete the trip; the pin and its recollections are untouched"
+                    >
+                      Unframe
+                    </button>
+                  )}
                 </span>
               </div>
             ))}

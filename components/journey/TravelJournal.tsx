@@ -14,6 +14,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import PinHopper from '@/components/globe/PinHopper'
 import { TRIP_SUBTYPE_LABELS, type TripRow, type TripStop } from '@/lib/globe/trip-types'
 
 function groupTrips(trips: TripRow[]): { label: string; trips: TripRow[] }[] {
@@ -184,6 +185,18 @@ function TripCard({
                 )}
               </ul>
             )}
+
+            {/* Trip-level jots (U6, R4): the Hopper hosted on the trip's
+                backing entity — "the Winnipeg conference" belongs to the
+                trip; a stop-level jot lives on the stop's own pin. */}
+            <div className="mt-3 border-t border-stone-100 pt-3">
+              <PinHopper
+                entityId={trip.trip_entity_id}
+                hostName={trip.title || `Trip to ${trip.destination_name}`}
+                variant="card"
+                theme="light"
+              />
+            </div>
 
             <div className="mt-3 flex flex-wrap gap-3 border-t border-stone-100 pt-3 text-xs">
               <Link
