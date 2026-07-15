@@ -19,6 +19,7 @@ import 'mapbox-gl/dist/mapbox-gl.css'
 import FindLocationBox, { RetrievedPlace } from './FindLocationBox'
 import PinModal, { PinDraftData } from './PinModal'
 import TripFramePanel, { TripFramingContext } from './TripFramePanel'
+import { TRIP_SUBTYPE_LABELS, type TripLeg, type TripRow } from '@/lib/globe/trip-types'
 import PinEditPanel from './PinEditPanel'
 import PinDetailCard from './PinDetailCard'
 import { useUiChrome } from '../UiChromeContext'
@@ -192,6 +193,48 @@ function tetherFeatures(
 
 const EMPTY_FC: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] }
 
+// Trip route hue — rose, its own voice among ember (spine), cyan
+// (commute), and slate (tethers). Tier 4, subordinate to the spine.
+const TRIP_ROUTE_COLOR = '#e0709b'
+
+// Trip routes (Trips & Travel U4): origin → outbound stops → destination
+// → return stops → origin, one feature per consecutive pair, tagged by
+// leg so the return renders dashed over the solid outbound ("and back").
+// Drafts have no origin and draw NOTHING at rest (R6) — except the trip
+// being route-built, whose partial stop chain → destination renders so
+// the user sees the route grow under their clicks.
+function tripRouteFeatures(trips: TripRow[], buildingTripId: string | null): GeoJSON.FeatureCollection {
+  const features: GeoJSON.Feature[] = []
+  const pair = (a: [number, number], b: [number, number], trip: string, kind: TripLeg): GeoJSON.Feature => ({
+    type: 'Feature',
+    properties: { trip, kind },
+    geometry: { type: 'LineString', coordinates: greatCirclePath(a, b) },
+  })
+  for (const t of trips) {
+    if (t.is_draft && t.trip_id !== buildingTripId) continue
+    const out: [number, number][] = []
+    if (t.origin_lng !== null && t.origin_lat !== null) out.push([t.origin_lng, t.origin_lat])
+    for (const s of t.stops) {
+      if (s.leg === 'outbound' && s.lng !== null && s.lat !== null) out.push([s.lng, s.lat])
+    }
+    if (t.destination_lng !== null && t.destination_lat !== null) out.push([t.destination_lng, t.destination_lat])
+    for (let i = 0; i < out.length - 1; i++) features.push(pair(out[i], out[i + 1], t.trip_id, 'outbound'))
+
+    const ret: [number, number][] = []
+    if (t.destination_lng !== null && t.destination_lat !== null) ret.push([t.destination_lng, t.destination_lat])
+    for (const s of t.stops) {
+      if (s.leg === 'return' && s.lng !== null && s.lat !== null) ret.push([s.lng, s.lat])
+    }
+    if (t.return_to_origin && t.origin_lng !== null && t.origin_lat !== null) ret.push([t.origin_lng, t.origin_lat])
+    // A return renders only when it says something: return stops exist, or
+    // the trip returns to a known origin.
+    if (ret.length >= 2 && (t.stops.some((s) => s.leg === 'return') || (t.return_to_origin && t.origin_relationship_id))) {
+      for (let i = 0; i < ret.length - 1; i++) features.push(pair(ret[i], ret[i + 1], t.trip_id, 'return'))
+    }
+  }
+  return { type: 'FeatureCollection', features }
+}
+
 export default function GlobeView() {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
@@ -210,6 +253,15 @@ export default function GlobeView() {
   // Destination-first trip capture (U3): set right after a "Trip" pin
   // saves; renders the framing panel over the globe.
   const [framing, setFraming] = useState<TripFramingContext | null>(null)
+  // Trip route layer (U4): loaded trips, the hidden-by-default toggle
+  // (R10 — the spine stays visually dominant), and route-building mode.
+  const [trips, setTrips] = useState<TripRow[]>([])
+  const [tripsVisible, setTripsVisible] = useState(false)
+  const [routeEdit, setRouteEdit] = useState<{ tripId: string; leg: TripLeg } | null>(null)
+  // Refs mirror route-edit state for the once-bound map/marker handlers.
+  const routeEditRef = useRef<{ tripId: string; leg: TripLeg } | null>(null)
+  useEffect(() => { routeEditRef.current = routeEdit }, [routeEdit])
+  const routeClickRef = useRef<((relationshipId: string) => void) | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   // Pin click opens the read view (detail card); Edit escalates to the
@@ -487,6 +539,27 @@ export default function GlobeView() {
           'line-dasharray': [2, 2.5],
         },
       })
+      // Tier 4 — trip routes (Trips & Travel U4): rose journey arcs,
+      // hidden by default behind the Trips toggle / selection (R10).
+      // Solid outbound; dashed return reads as "and back".
+      map.addSource('trip-routes', { type: 'geojson', data: EMPTY_FC })
+      map.addLayer({
+        id: 'trip-routes-outbound',
+        type: 'line',
+        source: 'trip-routes',
+        filter: ['==', ['get', 'kind'], 'outbound'],
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': TRIP_ROUTE_COLOR, 'line-width': 1.4, 'line-opacity': 0.75, 'line-blur': 0.2 },
+      })
+      map.addLayer({
+        id: 'trip-routes-return',
+        type: 'line',
+        source: 'trip-routes',
+        filter: ['==', ['get', 'kind'], 'return'],
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': TRIP_ROUTE_COLOR, 'line-width': 1.2, 'line-opacity': 0.6, 'line-dasharray': [1.6, 1.8] },
+      })
+
       // Tier 2 — commute line (home → workplace): solid, weightier, cool,
       // a soft glow. Superior to trip tethers, subordinate to the spine.
       map.addSource('commute-lines', { type: 'geojson', data: EMPTY_FC })
@@ -573,6 +646,9 @@ export default function GlobeView() {
       // While refining a pin's location, ignore stray map clicks (e.g. a
       // drag-release) — the refine banner owns Save/Cancel.
       if (refiningRef.current) return
+      // While building a trip route, the globe is a click target for
+      // STOPS only (pins) — empty-globe clicks do nothing.
+      if (routeEditRef.current) return
       // Clicking empty globe: deselect an open pin, else drop a new draft.
       if (selectedIdRef.current) { deselect(); return }
       setDraftAt(e.lngLat.lng, e.lngLat.lat, '')
@@ -596,15 +672,26 @@ export default function GlobeView() {
     // position #1, not a semantic "birth" field. Calm "infancy" treatment.
     const originId = spine[0]?.relationship_id ?? null
 
+    // Trip destination markers (R11) + draft "needs framing" flags (R6).
+    const tripDest = new Map<string, boolean>() // relationship_id → any draft?
+    for (const t of trips) {
+      tripDest.set(t.destination_relationship_id,
+        (tripDest.get(t.destination_relationship_id) ?? false) || t.is_draft)
+    }
+
     pinMarkersRef.current.forEach((m) => m.remove())
     pinMarkersRef.current = []
     pins.forEach((p) => {
       const isSel = p.relationship_id === selectedId && (editMode || refining) // draggable while editing or refining
+      const isTripDest = tripDest.has(p.relationship_id)
+      const isTripDraft = tripDest.get(p.relationship_id) === true
       const el = document.createElement('div')
       el.className =
         'globe-pin' +
         pinTypeClass(p.type_code) +
         (p.relationship_id === originId ? ' globe-pin-origin' : '') +
+        (isTripDest ? ' globe-pin-trip-dest' : '') +
+        (isTripDraft ? ' globe-pin-trip-draft' : '') +
         (bloomIdRef.current === p.place_entity_id ? ' globe-pin-bloom' : '') +
         (p.relationship_id === selectedId ? ' globe-pin-selected' : '')
       // Selection ring/glow read this var so they match the pin's type hue.
@@ -612,6 +699,9 @@ export default function GlobeView() {
       el.title = p.name
       el.addEventListener('click', (ev) => {
         ev.stopPropagation()
+        // Route-building mode (U4): a pin click is "add this stop", not a
+        // selection. Ref-based so the once-bound handler never goes stale.
+        if (routeEditRef.current) { routeClickRef.current?.(p.relationship_id); return }
         // A post-drag click on the pin currently being refined/edited must NOT
         // re-select it — selectPin resets refining, which was wiping the "Save
         // location" banner before you could click it (Refine location was broken).
@@ -639,6 +729,12 @@ export default function GlobeView() {
           whenLine.className = 'globe-pin-when'
           whenLine.textContent = p.when_text
           chip.appendChild(whenLine)
+        }
+        if (isTripDraft) {
+          const flag = document.createElement('span')
+          flag.className = 'globe-pin-draft-flag'
+          flag.textContent = 'trip to frame'
+          chip.appendChild(flag)
         }
         el.appendChild(chip)
       }
@@ -690,7 +786,7 @@ export default function GlobeView() {
         map.setPaintProperty('arc-chevrons-active', 'icon-opacity', inOut(0.95, 0.6))
       }
     }
-  }, [pins, ready, selectedId, editMode, refining, selectPin])
+  }, [pins, trips, ready, selectedId, editMode, refining, selectPin])
 
   // Tether visibility (item 3): default = none (bare spine); a hovered pin
   // transiently reveals its associated side lines — a primary shows the
@@ -720,6 +816,96 @@ export default function GlobeView() {
     ;(map.getSource('commute-lines') as mapboxgl.GeoJSONSource | undefined)?.setData(commute)
     ;(map.getSource('trip-tethers') as mapboxgl.GeoJSONSource | undefined)?.setData(trip)
   }, [pins, ready, hoverPreview, typeFilters, linesInView, viewVersion])
+
+  // ── Trips (U4): load, route visibility, route building ──────────────
+  const loadTrips = useCallback(async () => {
+    try {
+      const res = await fetch('/api/trips')
+      if (!res.ok) return
+      const d = await res.json()
+      setTrips(d.trips ?? [])
+    } catch { /* non-fatal — the globe works without routes */ }
+  }, [])
+  useEffect(() => { if (ready) void loadTrips() }, [ready, loadTrips])
+
+  // Which routes render: all framed trips when the toggle is on; always
+  // the trips touching the selected pin (their complete route, R10) and
+  // the trip being route-built.
+  useEffect(() => {
+    if (!ready) return
+    const map = mapRef.current
+    const src = map?.getSource('trip-routes') as mapboxgl.GeoJSONSource | undefined
+    if (!src) return
+    const touches = (t: TripRow) =>
+      t.destination_relationship_id === selectedId ||
+      t.origin_relationship_id === selectedId ||
+      t.stops.some((s) => s.relationship_id === selectedId) ||
+      t.trip_id === routeEdit?.tripId
+    const visible = trips.filter((t) => tripsVisible || touches(t))
+    src.setData(tripRouteFeatures(visible, routeEdit?.tripId ?? null))
+  }, [trips, tripsVisible, selectedId, routeEdit, ready])
+
+  // Route building: a pin click appends a stop to the active leg. Kept in
+  // a ref so the once-bound marker click handlers never go stale.
+  routeClickRef.current = (relationshipId: string) => {
+    const edit = routeEditRef.current
+    if (!edit) return
+    void (async () => {
+      setError(null)
+      try {
+        const res = await fetch(`/api/trips/${edit.tripId}/stops`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ relationshipId, leg: edit.leg }),
+        })
+        if (!res.ok) {
+          const b = await res.json().catch(() => ({}))
+          throw new Error(b.detail || b.error || `HTTP ${res.status}`)
+        }
+        await loadTrips()
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Could not add the stop.')
+      }
+    })()
+  }
+
+  const removeStop = useCallback(async (tripId: string, stopId: string) => {
+    setError(null)
+    try {
+      const res = await fetch(`/api/trips/${tripId}/stops/${stopId}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}))
+        throw new Error(b.detail || b.error || `HTTP ${res.status}`)
+      }
+      await loadTrips()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not remove the stop.')
+    }
+  }, [loadTrips])
+
+  const nudgeStop = useCallback(async (trip: TripRow, leg: TripLeg, stopId: string, dir: -1 | 1) => {
+    const legStops = trip.stops.filter((s) => s.leg === leg).sort((a, b) => a.position - b.position)
+    const idx = legStops.findIndex((s) => s.stop_id === stopId)
+    const to = idx + dir
+    if (idx < 0 || to < 0 || to >= legStops.length) return
+    const order = legStops.map((s) => s.stop_id)
+    ;[order[idx], order[to]] = [order[to], order[idx]]
+    setError(null)
+    try {
+      const res = await fetch(`/api/trips/${trip.trip_id}/stops`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leg, orderedStopIds: order }),
+      })
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}))
+        throw new Error(b.detail || b.error || `HTTP ${res.status}`)
+      }
+      await loadTrips()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not reorder the stops.')
+    }
+  }, [loadTrips])
 
   const handleRetrieve = useCallback((place: RetrievedPlace) => {
     const map = mapRef.current
@@ -774,6 +960,7 @@ export default function GlobeView() {
           throw new Error(`The pin is saved, but the trip draft failed: ${b.detail || b.error || `HTTP ${tripRes.status}`}`)
         }
         const { tripId } = await tripRes.json()
+        await loadTrips()
         setFraming({
           tripId,
           destinationName: data.name?.trim() || draft.label || 'This place',
@@ -786,7 +973,7 @@ export default function GlobeView() {
     } finally {
       setSaving(false)
     }
-  }, [draft, clearDraft, loadPins])
+  }, [draft, clearDraft, loadPins, loadTrips])
 
   const handlePanelSave = useCallback(async (fields: { name: string; whenText: string; body: string; typeCode: string; anchorId: string | null; description: string }) => {
     if (!selectedId) return
@@ -1020,6 +1207,22 @@ export default function GlobeView() {
                     {linesInView ? '● on' : '○ off'}
                   </span>
                 </button>
+                {/* Trip routes (U4) — hidden by default so the spine stays
+                    visually dominant (R10); the selected trip always shows. */}
+                <button
+                  onClick={() => setTripsVisible((v) => !v)}
+                  title="Show every framed trip's route arcs"
+                  className={
+                    'flex w-full items-center gap-2.5 rounded-lg px-1 py-0.5 text-left hover:bg-white/5 ' +
+                    (tripsVisible ? 'text-[var(--ink)]' : 'text-[var(--ink-dim)]')
+                  }
+                >
+                  <span className="inline-flex h-3.5 w-3.5 items-center justify-center" style={{ color: TRIP_ROUTE_COLOR }}>✈</span>
+                  <span>Trip routes</span>
+                  <span className={'ml-auto text-[10px] ' + (tripsVisible ? 'text-[var(--ember-soft)]' : 'text-[var(--ink-dim)]/50')}>
+                    {tripsVisible ? '● on' : '○ off'}
+                  </span>
+                </button>
                 <div className="mt-1 space-y-1.5 border-t border-[var(--glass-border)] px-1 pt-2">
                   <div className="flex items-center gap-2.5">
                     <span className="inline-block h-0 w-6 border-t-2 border-[var(--ember)]" style={{ boxShadow: '0 0 6px var(--ember)' }} />
@@ -1031,7 +1234,11 @@ export default function GlobeView() {
                   </div>
                   <div className="flex items-center gap-2.5">
                     <span className="inline-block h-0 w-6 border-t border-dashed" style={{ borderColor: '#94a0c4' }} />
-                    <span>Trip / temporary</span>
+                    <span>Anchor tether</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <span className="inline-block h-0 w-6 border-t-2" style={{ borderColor: TRIP_ROUTE_COLOR }} />
+                    <span>Trip route (out / ⌁ back)</span>
                   </div>
                 </div>
               </div>
@@ -1121,9 +1328,113 @@ export default function GlobeView() {
           onDone={(notice) => {
             setFraming(null)
             if (notice) setNotice(notice)
+            void loadTrips()
           }}
         />
       )}
+
+      {/* Trips touching the selected pin (U4): frame drafts, build routes. */}
+      {selectedId && !editMode && !refining && !routeEdit && !framing && (() => {
+        const mine = trips.filter((t) =>
+          t.destination_relationship_id === selectedId ||
+          t.origin_relationship_id === selectedId ||
+          t.stops.some((s) => s.relationship_id === selectedId))
+        if (mine.length === 0) return null
+        const selPin = pins.find((p) => p.relationship_id === selectedId)
+        return (
+          <div className="glass absolute left-1/2 top-20 z-30 flex max-w-[min(560px,92vw)] -translate-x-1/2 flex-col gap-1.5 rounded-xl px-3 py-2 text-xs text-[var(--ink)]">
+            {mine.map((t) => (
+              <div key={t.trip_id} className="flex flex-wrap items-center gap-2">
+                <span style={{ color: TRIP_ROUTE_COLOR }}>✈</span>
+                <span className="font-medium">{t.title || `Trip to ${t.destination_name}`}</span>
+                <span className="text-[var(--ink-dim)]">{TRIP_SUBTYPE_LABELS[t.subtype]}{t.when_text ? ` · ${t.when_text}` : ''}</span>
+                {t.is_draft && (
+                  <span className="rounded-full border border-[var(--glass-border)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide" style={{ color: TRIP_ROUTE_COLOR }}>
+                    needs framing
+                  </span>
+                )}
+                <span className="ml-auto flex gap-1.5">
+                  <button
+                    onClick={() => setFraming({
+                      tripId: t.trip_id,
+                      destinationName: t.title || t.destination_name,
+                      suggestedOriginId: t.origin_relationship_id ?? selPin?.anchor_residence_id ?? null,
+                      defaultWhen: t.when_text ?? '',
+                    })}
+                    className="rounded-lg border border-[var(--glass-border)] px-2 py-0.5 hover:text-[var(--ember-soft)]"
+                  >
+                    {t.is_draft ? 'Frame' : 'Edit frame'}
+                  </button>
+                  <button
+                    onClick={() => setRouteEdit({ tripId: t.trip_id, leg: 'outbound' })}
+                    className="rounded-lg border border-[var(--glass-border)] px-2 py-0.5 hover:text-[var(--ember-soft)]"
+                  >
+                    Route
+                  </button>
+                </span>
+              </div>
+            ))}
+          </div>
+        )
+      })()}
+
+      {/* Route-building banner (U4): click pins in travel order. */}
+      {routeEdit && (() => {
+        const t = trips.find((x) => x.trip_id === routeEdit.tripId)
+        if (!t) return null
+        const legStops = (leg: TripLeg) => t.stops.filter((s) => s.leg === leg).sort((a, b) => a.position - b.position)
+        return (
+          <div className="glass absolute left-1/2 top-6 z-40 w-[min(600px,94vw)] -translate-x-1/2 rounded-xl px-4 py-3 text-xs text-[var(--ink)]">
+            <div className="flex flex-wrap items-center gap-2">
+              <span style={{ color: TRIP_ROUTE_COLOR }}>✈</span>
+              <span className="font-medium">{t.title || `Trip to ${t.destination_name}`} — building the route</span>
+              <span className="ml-auto flex items-center gap-1.5">
+                {(['outbound', 'return'] as TripLeg[]).map((leg) => (
+                  <button
+                    key={leg}
+                    onClick={() => setRouteEdit({ tripId: t.trip_id, leg })}
+                    className={
+                      'rounded-full px-2.5 py-0.5 ' +
+                      (routeEdit.leg === leg
+                        ? 'bg-[var(--ember)] font-medium text-[#241500]'
+                        : 'border border-[var(--glass-border)] text-[var(--ink-dim)] hover:text-[var(--ink)]')
+                    }
+                  >
+                    {leg === 'outbound' ? 'Outbound' : 'Return'}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setRouteEdit(null)}
+                  className="rounded-full bg-[var(--ember)] px-3 py-0.5 font-medium text-[#241500]"
+                >
+                  Done
+                </button>
+              </span>
+            </div>
+            <p className="mt-1.5 text-[var(--ink-dim)]">
+              Click pins on the globe in travel order to add {routeEdit.leg} stops.
+              New places: pin them first (a Log works well), then click them.
+            </p>
+            {(['outbound', 'return'] as TripLeg[]).map((leg) => {
+              const stops = legStops(leg)
+              if (stops.length === 0) return null
+              return (
+                <div key={leg} className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                  <span className="text-[10px] uppercase tracking-wide text-[var(--ink-dim)]">{leg}:</span>
+                  {stops.map((s, i) => (
+                    <span key={s.stop_id} className="flex items-center gap-1 rounded-full border border-[var(--glass-border)] px-2 py-0.5">
+                      <span>{s.name}</span>
+                      <button onClick={() => void nudgeStop(t, leg, s.stop_id, -1)} disabled={i === 0} className="text-[var(--ink-dim)] hover:text-[var(--ink)] disabled:opacity-30" aria-label="Move earlier">‹</button>
+                      <button onClick={() => void nudgeStop(t, leg, s.stop_id, 1)} disabled={i === stops.length - 1} className="text-[var(--ink-dim)] hover:text-[var(--ink)] disabled:opacity-30" aria-label="Move later">›</button>
+                      <button onClick={() => void removeStop(t.trip_id, s.stop_id)} className="text-[var(--ink-dim)] hover:text-red-300" aria-label="Remove stop">✕</button>
+                    </span>
+                  ))}
+                </div>
+              )
+            })}
+          </div>
+        )
+      })()}
 
       {hovered && !selectedId && (
         <div
