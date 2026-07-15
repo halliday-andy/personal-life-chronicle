@@ -24,7 +24,7 @@ execution: code
 
 ### Summary
 
-Build the Trips & Travel track agreed in the 2026-07-15 Codex brainstorm, mapped onto this instance's existing substrate: six typed pins with anchoring, the Journey surface, and the Hopper. The new build is the Trip object and its draft lifecycle, the destination-first creation flow, the globe route layer, the Travel Journal mode, retroactive trip framing for existing pins, the frequent-traveler package, and the Future Places pin type.
+Build the Trips & Travel track agreed in the 2026-07-15 Codex brainstorm, mapped onto this instance's existing substrate: six typed pins with anchoring, the Journey surface, and the Hopper. The new build is the Trip object and its draft lifecycle, the destination-first creation flow, the globe route layer, the Travel Journal mode, retroactive trip framing for existing pins, the frequent-traveler package, the Future Places pin type, and unsequenced residences (spine pins embellishable before they join the sequence).
 
 ### Problem Frame
 
@@ -67,6 +67,11 @@ The origin brainstorm was held against the Codex instance, which lacks upfront p
 - R14. An existing non-primary pin (Vacation, Professional travel, Log) can be retroactively framed as a Trip destination without losing its identity, tether, recollections, or jots — and unframed: deleting the trip preserves the pin and restores its pre-trip state.
 - R15. A Log may attach to a residence, a Trip, or a Trip stop, or remain standalone and be linked later (stop-level attachment rides the stop's pin).
 
+**Unsequenced residences**
+
+- R21. A primary residence pin can be created without a position in the spine sequence ("decide later"): fully embellishable (narrative, photos, facts, jots), visibly not-yet-placed, and excluded from the spine thread and all spine-derived logic until the user places it in sequence.
+- R22. A trip origin can be an unsequenced residence — the origin may not yet exist in the residential spine, and confirming it must not force a spine insertion.
+
 **Frequent traveler**
 
 - R16. A user can designate a Home Base residence that new trips suggest as origin automatically.
@@ -84,6 +89,7 @@ The origin brainstorm was held against the Codex instance, which lacks upfront p
 - AE2. **Scotland 1960 (retroactive framing).** The existing `vacationed_at` pin "Memorial Castle of Sir William Wallace" (when "1960", tethered to RAF Mildenhall) is framed as a Trip: RAF Mildenhall suggested and confirmed as origin, the monument becomes the destination, and the Moffat/lowlands visit — today only prose in the recollection — is added as an itinerary stop. The pin keeps its identity, tether, recollection, and jots. Covers R1, R2, R8, R14.
 - AE3. **Round trip with turnaround.** For New Hampshire → Utah → New Hampshire, the user marks Utah as the destination (the turnaround) and the trip returns to origin; outbound and return stops order around the destination divider in one itinerary. Covers R1, R9.
 - AE4. **Spine dominance.** With twelve trips saved, the default globe view shows the residential spine and point markers exactly as today; enabling the Trips toggle reveals route arcs; selecting one trip shows its complete route even with the toggle off. Covers R10, R11.
+- AE5. **Origin before the spine.** While framing a trip, the user picks "add an origin pin" for a home not yet on the globe. A residence pin is created without a spine position: the spine thread and its order are unchanged, the pin shows a not-yet-placed treatment, and the trip's origin is set. Later the user places it in sequence and it joins the thread at the chosen position. Covers R21, R22, R8.
 
 ### Scope Boundaries
 
@@ -116,6 +122,7 @@ The origin brainstorm was held against the Codex instance, which lacks upfront p
 - **KTD7 — Travel Journal is a mode of `/journey`, not a new route.** A segmented control switches Residential Journey / Travel Journal, per the brainstorm's agreed recommendation; trip cards reuse Journey's card grammar (chips, lazy expand, `?trip=` handoff mirroring `?pin=`).
 - **KTD8 — Home Base is a user-level default, not a pin type.** A flag on one `lived_at` relationship (or user setting) that pre-fills origin suggestions (R16); it never alters spine semantics.
 - **KTD9 — Future Places is a new relationship type, not a trip draft.** `wants_to_visit` (+ inverse), non-spine, no anchor required, distinct styling; a Future Place can later be promoted into a real pin/trip when visited (R20). Resolves the deferred bucket-list memory (`memory/project_lc_future_pin_types.md`).
+- **KTD10 — An unsequenced residence is `lived_at` with `sort_order NULL`.** The marker convention already carries NULL-sort_order pins outside the spine thread, so the state needs no new column — only capture support ("decide later" skips the insert-and-shift), a placement action that reuses the existing position picker and insert-and-shift, and an audit of spine-derived code paths to ignore NULLs. The not-yet-placed treatment shares visual language with the trip-draft "needs framing" badge so the two incomplete states read as one idea.
 
 ### High-Level Technical Design
 
@@ -153,7 +160,7 @@ Draft lifecycle: `destination only (draft)` → `origin confirmed (framed)` → 
 
 ## Implementation Units
 
-Sliced to match the track convention (each unit ≈ one shippable slice, T1–T8).
+Sliced to match the track convention (each unit ≈ one shippable slice, T1–T9).
 
 ### U1. Trips schema + RPCs (T1)
 
@@ -190,7 +197,7 @@ Sliced to match the track convention (each unit ≈ one shippable slice, T1–T8
 - **Requirements:** R5–R9; R3 (origin suggestion is context, not ownership).
 - **Dependencies:** U2.
 - **Files:** `components/globe/PinModal.tsx`, new `components/globe/TripFramePanel.tsx`; QA checklist `docs/qa/<date>-trips-capture-qa-checklist.md`.
-- **Approach:** PinModal's existing type selector gains a Trip path ("For a trip, begin with the place that marked the turn toward home"). Choosing Trip → subtype → the pin saves via the entity-match/adoption strip exactly like today → `create_trip`. Then an optional framing step: origin suggestion = the residence active around that time when `year_hint`/anchor data allows, else the pin's anchor residence, else Home Base (U7) — with alternatives (pick another pin, add origin pin, decide later). Saving at any point is valid (R5, R9).
+- **Approach:** PinModal's existing type selector gains a Trip path ("For a trip, begin with the place that marked the turn toward home"). Choosing Trip → subtype → the pin saves via the entity-match/adoption strip exactly like today → `create_trip`. Then an optional framing step: origin suggestion = the residence active around that time when `year_hint`/anchor data allows, else the pin's anchor residence, else Home Base (U7) — with alternatives (pick another pin, add origin pin, decide later). "Add an origin pin" creates an unsequenced residence per KTD10 (wired in U9; until U9 lands the option can defer). Saving at any point is valid (R5, R9).
 - **Patterns to follow:** the PinModal adoption offer strip (`GET /api/globe/entity-match`); anchor picker phrasing from the place-types design.
 - **Test scenarios (QA checklist + lint/tsc gates):**
   - Covers AE1 end-to-end in the live app (draft save with nothing but destination + subtype).
@@ -262,6 +269,22 @@ Sliced to match the track convention (each unit ≈ one shippable slice, T1–T8
 - **Test scenarios (QA + verify extension):** create/edit/re-type round-trip; a Future Place never enters the spine or the Travel Journal; promotion to Vacation preserves entity and recollections; promotion via "start a trip here" creates a draft trip on the same pin.
 - **Verification:** Andy's live QA; `tsc`/`lint`; verify script.
 
+### U9. Unsequenced residences (T9)
+
+- **Goal:** A primary residence can exist off the spine — embellishable now, placed in sequence later — and trip framing can mint one as an origin.
+- **Requirements:** R21, R22; AE5.
+- **Dependencies:** U1 (verify script exists), U3 (origin option wiring).
+- **Files:** migration/RPC change (`create_residence_pin` accepts a no-position `lived_at`; placement action reusing the existing insert-and-shift path); `components/globe/PinModal.tsx`, `components/globe/PinDetailCard.tsx`, `components/globe/PinEditPanel.tsx`, `components/globe/GlobeView.tsx`; Journey grouping; verify-script extension; QA checklist `docs/qa/<date>-unsequenced-residences-qa-checklist.md`.
+- **Approach:** Per KTD10: "decide later" in the PinModal position picker writes `lived_at` with `sort_order NULL` (no insert-and-shift); "Place in sequence →" on the detail/edit panel reopens the position picker and runs the existing insert-and-shift. Distinct not-yet-placed pin treatment sharing the trip-draft badge language. Wire U3's "add an origin pin" to create one and set it as trip origin. Audit spine-derived paths to ignore NULLs: `reorder_residence_pins` rejects unsequenced ids; Journey shows unsequenced residences in a "not yet placed" group, never as spine stops; origin-star and present-tense "now" logic key on ordered pins only; `nearest_residence` stays scoped to sequenced primaries.
+- **Patterns to follow:** marker NULL-`sort_order` semantics from the place-types design; the U4 draft-badge treatment; the existing sequence-position picker.
+- **Test scenarios (verify extension + QA checklist):**
+  - Covers AE5 end-to-end: trip framing → "add an origin pin" → unsequenced residence created, trip origin set, spine order unchanged.
+  - Create `lived_at` with decide-later → `sort_order NULL`; existing spine untouched; `get_residence_pins` returns it distinguishable from sequenced primaries.
+  - Place in sequence at an interior position → insert-and-shift correct; thread renders it; origin star and "now" endpoints correct afterward.
+  - `reorder_residence_pins` rejects an unsequenced id; deleting an unsequenced residence never resequences the spine.
+  - Journey: unsequenced residence appears under "not yet placed", not on the thread; markers anchored to it still nest under it.
+- **Verification:** verify extension green; Andy's live QA per checklist; `tsc`/`lint`.
+
 ---
 
 ## Verification Contract
@@ -270,17 +293,17 @@ Sliced to match the track convention (each unit ≈ one shippable slice, T1–T8
 |---|---|---|
 | Types | `npx tsc --noEmit` | every unit |
 | Lint | `npm run lint` | every unit |
-| Data-layer proof | `node scripts/verify-trips-travel.mjs` (relative-only, self-cleaning, live-DB-safe) | U1, U6, U7, U8 extensions |
-| Migration safety | Show migration before apply via `scripts/db-apply.mjs`; additive-only without Andy's gate | U1, U7, U8 |
-| Live QA | Per-slice checklist in `docs/qa/`, walked by Andy on the dev server | U3–U8 |
+| Data-layer proof | `node scripts/verify-trips-travel.mjs` (relative-only, self-cleaning, live-DB-safe) | U1, U6, U7, U8, U9 extensions |
+| Migration safety | Show migration before apply via `scripts/db-apply.mjs`; additive-only without Andy's gate | U1, U7, U8, U9 |
+| Live QA | Per-slice checklist in `docs/qa/`, walked by Andy on the dev server | U3–U9 |
 | Dev-server discipline | Never `npm run build` while `next dev` runs | every unit |
 
 ---
 
 ## Definition of Done
 
-- All eight units shipped with their gates green and Andy's per-slice QA walked (or explicitly waived per slice).
-- AE1–AE4 demonstrated live, AE2 on the real Wallace Monument pin.
+- All nine units shipped with their gates green and Andy's per-slice QA walked (or explicitly waived per slice).
+- AE1–AE5 demonstrated live, AE2 on the real Wallace Monument pin.
 - No fixture residue in the live DB after any verify run (zero-links sweep clean).
 - `memory/project_lc_build_progress.md` handoff block and `memory/MEMORY.md` updated to record this track as the active forward plan; the deferred bucket-list memory updated to point here.
 - No dead-end experimental code left behind from abandoned approaches.
