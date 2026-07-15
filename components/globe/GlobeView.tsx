@@ -65,6 +65,7 @@ function pinTypeClass(typeCode: string | null): string {
     case 'vacationed_at': return ' globe-pin--vacation'
     case 'traveled_for_work_to': return ' globe-pin--work-travel'
     case 'logged_at': return ' globe-pin--log'
+    case 'wants_to_visit': return ' globe-pin--future'
     default: return '' // lived_at / unknown → base ember
   }
 }
@@ -932,6 +933,27 @@ export default function GlobeView() {
     if (!selPin) return
     setError(null)
     try {
+      // Future-place promotion (U8, R20): "been there now" — the
+      // aspiration becomes history: re-type the pin to the subtype's
+      // historical code, then frame the visit as a trip.
+      if (selPin.type_code === 'wants_to_visit') {
+        const promoteTo = subtype === 'professional' ? 'traveled_for_work_to' : 'vacationed_at'
+        const promoteRes = await fetch(`/api/globe/residence/${selPin.relationship_id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: selPin.name,
+            whenText: selPin.when_text ?? '',
+            typeCode: promoteTo,
+            anchorId: selPin.anchor_residence_id,
+          }),
+        })
+        if (!promoteRes.ok) {
+          const b = await promoteRes.json().catch(() => ({}))
+          throw new Error(b.detail || b.error || `HTTP ${promoteRes.status}`)
+        }
+        await loadPins()
+      }
       const res = await fetch('/api/trips', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -956,7 +978,7 @@ export default function GlobeView() {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not frame the trip.')
     }
-  }, [pins, selectedId, loadTrips, homeBaseId])
+  }, [pins, selectedId, loadTrips, loadPins, homeBaseId])
 
   // Un-framing (U6, R14): delete the trip, keep the pin. Two-step inline
   // confirm (the edit panel's delete pattern).
@@ -1447,7 +1469,11 @@ export default function GlobeView() {
           return (
             <div className="glass absolute left-1/2 top-20 z-30 flex max-w-[min(560px,92vw)] -translate-x-1/2 flex-wrap items-center gap-2 rounded-xl px-3 py-2 text-xs text-[var(--ink)]">
               <span style={{ color: TRIP_ROUTE_COLOR }}>✈</span>
-              <span className="text-[var(--ink-dim)]">This was a journey? Frame it as a trip:</span>
+              <span className="text-[var(--ink-dim)]">
+                {selPin.type_code === 'wants_to_visit'
+                  ? 'Been there now? It becomes a real place + trip:'
+                  : 'This was a journey? Frame it as a trip:'}
+              </span>
               {(Object.keys(TRIP_SUBTYPE_LABELS) as (keyof typeof TRIP_SUBTYPE_LABELS)[]).map((s) => (
                 <button
                   key={s}

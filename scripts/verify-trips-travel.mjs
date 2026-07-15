@@ -156,6 +156,19 @@ try {
   const { data: hbCleared } = await admin.from('relationships').select('id').eq('user_id', user.id).filter('metadata->>home_base', 'eq', 'true')
   ;(hbCleared ?? []).length === 0 ? ok('home base clears (one at a time)') : bad('home base flag lingered')
 
+  // ── 5c. Future place pin type (U8, KTD9/R20) ─────────────────────────
+  const { data: fpRow, error: fpErr } = await mkPin(24, 55, 'TESTTRIP Future Place', 'wants_to_visit')
+  if (fpErr) bad('wants_to_visit pin rejected: ' + fpErr.message)
+  else {
+    const fp = rel(fpRow)
+    pins.push(fp.relationship_id)
+    const { data: fpRel } = await admin.from('relationships').select('sort_order').eq('id', fp.relationship_id).single()
+    fpRel?.sort_order === null ? ok('future place is non-spine (no sort_order)') : bad('future place entered the spine: ' + JSON.stringify(fpRel))
+    const { data: allPins } = await admin.rpc('get_residence_pins', { p_user_id: user.id })
+    const fpOut = (allPins ?? []).find((p) => p.relationship_id === fp.relationship_id)
+    fpOut?.type_code === 'wants_to_visit' ? ok('get_residence_pins returns the future place with its type') : bad('future place missing from get_residence_pins')
+  }
+
   // ── 6. Repeat destination ────────────────────────────────────────────
   const trip2 = rel((await admin.rpc('create_trip', { p_user_id: user.id, p_destination_relationship_id: dest.relationship_id, p_subtype: 'vacation' })).data)
   const both = (await getTrips()).filter((t) => t.destination_relationship_id === dest.relationship_id)
