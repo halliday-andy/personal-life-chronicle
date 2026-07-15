@@ -169,6 +169,58 @@ try {
     fpOut?.type_code === 'wants_to_visit' ? ok('get_residence_pins returns the future place with its type') : bad('future place missing from get_residence_pins')
   }
 
+  // ── 5d. Unsequenced residences (U9, KTD10/R21-R22) ───────────────────
+  {
+    const spineBefore = async () => {
+      const { data } = await admin.from('relationships').select('id, sort_order')
+        .eq('user_id', user.id).not('sort_order', 'is', null).order('sort_order')
+      return (data ?? []).map((r) => `${r.id}:${r.sort_order}`).join('|')
+    }
+    const snap = await spineBefore()
+    const { data: uRow, error: uErr } = await admin.rpc('create_residence_pin', {
+      p_user_id: user.id, p_self_entity_id: self.id, p_lng: 25, p_lat: 56,
+      p_name: 'TESTTRIP Unplaced Home', p_place_subtype: 'city', p_country_code: 'XX',
+      p_when_text: '1979', p_body_text: null, p_position: null,
+      p_type_code: 'lived_at', p_anchor_residence_id: null, p_entity_id: null,
+      p_unsequenced: true,
+    })
+    if (uErr) { bad('unsequenced create failed: ' + uErr.message) } else {
+      const u = rel(uRow)
+      pins.push(u.relationship_id)
+      const { data: uRel } = await admin.from('relationships').select('sort_order').eq('id', u.relationship_id).single()
+      uRel?.sort_order === null ? ok('decide-later home saves with NULL sort_order (R21)') : bad('unsequenced got a slot: ' + JSON.stringify(uRel))
+      ;(await spineBefore()) === snap ? ok('existing spine untouched by an unsequenced create') : bad('spine shifted on unsequenced create')
+
+      // Unsequenced home as a trip origin (R22/AE5).
+      const t = rel((await admin.rpc('create_trip', { p_user_id: user.id, p_destination_relationship_id: s1.relationship_id, p_subtype: 'road_trip', p_origin_relationship_id: u.relationship_id })).data)
+      const tRow = await tripById(t.trip_id)
+      tRow && !tRow.is_draft && tRow.origin_relationship_id === u.relationship_id
+        ? ok('an unsequenced home frames a trip origin (AE5)') : bad('unsequenced origin rejected: ' + JSON.stringify(tRow))
+      await admin.rpc('delete_trip', { p_user_id: user.id, p_trip_id: t.trip_id })
+
+      // Reorder rejects an unsequenced id.
+      const { data: spineIds } = await admin.from('relationships').select('id')
+        .eq('user_id', user.id).not('sort_order', 'is', null).order('sort_order')
+      const { error: roErr } = await admin.rpc('reorder_residence_pins', {
+        p_user_id: user.id, p_ordered_ids: [...(spineIds ?? []).map((r) => r.id).slice(0, -1), u.relationship_id],
+      })
+      roErr ? ok('reorder_residence_pins rejects an unsequenced id') : bad('reorder accepted an unsequenced id')
+
+      // Place at the end, then interior demote/replace round-trip.
+      const { data: placedPos, error: plErr } = await admin.rpc('place_residence_in_spine', { p_user_id: user.id, p_relationship_id: u.relationship_id, p_position: null })
+      if (plErr) bad('place_residence_in_spine failed: ' + plErr.message)
+      else {
+        ok(`placed at the spine's end (slot ${placedPos})`)
+        const { error: unsErr } = await admin.rpc('unsequence_residence', { p_user_id: user.id, p_relationship_id: u.relationship_id })
+        if (unsErr) bad('unsequence_residence failed: ' + unsErr.message)
+        ;(await spineBefore()) === snap ? ok('demote restores the original spine (contiguous, R21)') : bad('spine wrong after demote')
+      }
+      // Cleanup this fixture now (it is lived_at — the sweep below only best-efforts pins).
+      const { error: delErr } = await admin.rpc('delete_residence_pin', { p_relationship_id: u.relationship_id, p_user_id: user.id })
+      if (!delErr) pins.splice(pins.indexOf(u.relationship_id), 1)
+    }
+  }
+
   // ── 6. Repeat destination ────────────────────────────────────────────
   const trip2 = rel((await admin.rpc('create_trip', { p_user_id: user.id, p_destination_relationship_id: dest.relationship_id, p_subtype: 'vacation' })).data)
   const both = (await getTrips()).filter((t) => t.destination_relationship_id === dest.relationship_id)
