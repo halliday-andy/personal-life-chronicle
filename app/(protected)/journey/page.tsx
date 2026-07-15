@@ -14,11 +14,11 @@
  * parsed (invariant #5). The `?pin=` globe handoff is J4.
  */
 
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { buildJourneyTree, type JourneyPin } from '@/lib/journey/tree'
-import JourneyList from '@/components/journey/JourneyList'
+import JourneySurface from '@/components/journey/JourneySurface'
+import type { TripRow } from '@/lib/globe/trip-types'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,13 +27,18 @@ export const metadata = { title: 'Journey — Life Chronicle' }
 export default async function JourneyPage({
   searchParams,
 }: {
-  searchParams: { pin?: string }
+  searchParams: { pin?: string; trip?: string; mode?: string }
 }) {
   const { data: { user } } = await createClient().auth.getUser()
   if (!user) return null // layout guard redirects; belt and braces
 
   const admin = createAdminClient()
-  const { data: pins, error } = await admin.rpc('get_residence_pins', { p_user_id: user.id })
+  // Both modes' data in one pass (U5): the residential tree and the
+  // trips. Switching modes is instant; nothing refetches.
+  const [{ data: pins, error }, { data: trips }] = await Promise.all([
+    admin.rpc('get_residence_pins', { p_user_id: user.id }),
+    admin.rpc('get_trips', { p_user_id: user.id }),
+  ])
   if (error) {
     return (
       <main className="mx-auto max-w-2xl px-4 py-10">
@@ -46,38 +51,35 @@ export default async function JourneyPage({
   }
 
   const tree = buildJourneyTree((pins ?? []) as JourneyPin[])
+  const tripRows = (trips ?? []) as TripRow[]
+  // ?trip= or ?mode=travel lands in the Travel Journal (U5).
+  const initialMode =
+    searchParams.mode === 'travel' || (searchParams.trip && !searchParams.pin)
+      ? ('travel' as const)
+      : ('residential' as const)
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-8 sm:py-10">
       <div className="flex items-baseline justify-between">
         <h1 className="text-2xl font-semibold text-stone-900">Journey</h1>
-        {tree.stops.length > 0 && (
-          <span className="text-sm text-stone-400">
-            {tree.stops.length} stop{tree.stops.length === 1 ? '' : 's'}
-          </span>
-        )}
+        <span className="text-sm text-stone-400">
+          {tree.stops.length > 0 && `${tree.stops.length} stop${tree.stops.length === 1 ? '' : 's'}`}
+          {tree.stops.length > 0 && tripRows.length > 0 && ' · '}
+          {tripRows.length > 0 && `${tripRows.length} trip${tripRows.length === 1 ? '' : 's'}`}
+        </span>
       </div>
       <p className="mt-1 text-sm text-stone-500">
-        Your life journey, read in order — the same stops as the globe. Open a stop to read it.
+        Your life journey, read in order — the places you lived, and the journeys you made.
       </p>
 
-      {tree.stops.length === 0 && tree.unanchored.length === 0 ? (
-        <div className="mt-12 rounded-xl border border-stone-200 bg-white px-6 py-10 text-center">
-          <p className="text-stone-600">Your journey starts with a first home.</p>
-          <Link
-            href="/globe"
-            className="mt-2 inline-block text-sm text-amber-700 underline hover:text-amber-900"
-          >
-            Place it on the globe →
-          </Link>
-        </div>
-      ) : (
-        <JourneyList
-          stops={tree.stops}
-          unanchored={tree.unanchored}
-          initialPin={searchParams.pin ?? null}
-        />
-      )}
+      <JourneySurface
+        stops={tree.stops}
+        unanchored={tree.unanchored}
+        trips={tripRows}
+        initialPin={searchParams.pin ?? null}
+        initialTrip={searchParams.trip ?? null}
+        initialMode={initialMode}
+      />
     </main>
   )
 }

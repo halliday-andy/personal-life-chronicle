@@ -256,6 +256,7 @@ export default function GlobeView() {
   // Trip route layer (U4): loaded trips, the hidden-by-default toggle
   // (R10 — the spine stays visually dominant), and route-building mode.
   const [trips, setTrips] = useState<TripRow[]>([])
+  const [tripsLoaded, setTripsLoaded] = useState(false)
   const [tripsVisible, setTripsVisible] = useState(false)
   const [routeEdit, setRouteEdit] = useState<{ tripId: string; leg: TripLeg } | null>(null)
   // Refs mirror route-edit state for the once-bound map/marker handlers.
@@ -418,8 +419,19 @@ export default function GlobeView() {
     if (deepLinkDoneRef.current || pins.length === 0) return
     const params = new URLSearchParams(window.location.search)
     const wanted = params.get('pin')
-    if (!wanted) { deepLinkDoneRef.current = true; return }
-    const target = pins.find((p) => p.relationship_id === wanted)
+    const wantedTrip = params.get('trip')
+    if (!wanted && !wantedTrip) { deepLinkDoneRef.current = true; return }
+    let target: Pin | undefined
+    if (wanted) {
+      target = pins.find((p) => p.relationship_id === wanted)
+    } else {
+      // ?trip= handoff (U5): arrive on the trip's destination pin —
+      // selection reveals the trip strip and its complete route (U4).
+      // Trips load in their own fetch; wait for it before resolving.
+      if (!tripsLoaded) return
+      const t = trips.find((x) => x.trip_id === wantedTrip)
+      target = t ? pins.find((p) => p.relationship_id === t.destination_relationship_id) : undefined
+    }
     deepLinkDoneRef.current = true
     if (!target) return
     selectPin(target.relationship_id)
@@ -471,7 +483,7 @@ export default function GlobeView() {
       if (++tries < 15) setTimeout(fly, 200)
     }
     fly()
-  }, [pins, selectPin])
+  }, [pins, trips, tripsLoaded, selectPin])
 
   // Mirror the current selection into ?pin= (replace, never push) so
   // switching to Journey — or copying the URL — lands on the same stop.
@@ -824,7 +836,10 @@ export default function GlobeView() {
       if (!res.ok) return
       const d = await res.json()
       setTrips(d.trips ?? [])
-    } catch { /* non-fatal — the globe works without routes */ }
+    } catch { /* non-fatal — the globe works without routes */
+    } finally {
+      setTripsLoaded(true) // even on failure — deep links must not hang
+    }
   }, [])
   useEffect(() => { if (ready) void loadTrips() }, [ready, loadTrips])
 
