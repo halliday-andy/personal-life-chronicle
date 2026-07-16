@@ -16,6 +16,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { ProposalCard, type MemoryCardData } from './ProposalCard'
 import { ContextProposalCard, type ContextProposalData } from './ContextProposalCard'
 import { useUiChrome } from './UiChromeContext'
+import { handleRichPaste } from '@/lib/richPaste'
 
 type ConversationTurn = { role: 'user' | 'assistant'; content: string }
 
@@ -399,6 +400,7 @@ export default function CaptureAssistant() {
               ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              onPaste={(e) => handleRichPaste(e, setInput)}
               onKeyDown={onKeyDown}
               placeholder={assistantSeed
                 ? 'Tell the story — or just say "interview me" and I’ll ask. (⌘↵ to send)'

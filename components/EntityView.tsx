@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Markdown from './Markdown'
+import { handleRichPaste } from '@/lib/richPaste'
 import PinHopper from './globe/PinHopper'
 import { useUiChrome } from './UiChromeContext'
 
@@ -409,6 +410,7 @@ export default function EntityView({ entity, notes: initialNotes, recollections 
               <textarea
                 value={recBody}
                 onChange={(e) => setRecBody(e.target.value)}
+                onPaste={(e) => handleRichPaste(e, setRecBody)}
                 placeholder="What happened, as you remember it…"
                 rows={5}
                 autoFocus
@@ -518,7 +520,7 @@ export default function EntityView({ entity, notes: initialNotes, recollections 
 function NoteFields({
   body, setBody, sourceLabel, setSourceLabel, sourceUrl, setSourceUrl, visibility, setVisibility,
 }: {
-  body: string; setBody: (v: string) => void
+  body: string; setBody: React.Dispatch<React.SetStateAction<string>>
   sourceLabel: string; setSourceLabel: (v: string) => void
   sourceUrl: string; setSourceUrl: (v: string) => void
   visibility: 'private' | 'shareable'; setVisibility: (v: 'private' | 'shareable') => void
@@ -532,6 +534,7 @@ function NoteFields({
       <textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
+        onPaste={(e) => handleRichPaste(e, setBody)}
         placeholder="## A short title&#10;&#10;Background, research, a fact worth keeping…"
         rows={4}
         className="w-full resize-y rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 outline-none focus:border-stone-500"

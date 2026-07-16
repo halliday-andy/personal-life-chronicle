@@ -17,6 +17,7 @@ import { spineSlotOptions } from '@/lib/globe/reorder'
 import PhotoLightbox from './PhotoLightbox'
 import PinHopper from './PinHopper'
 import Markdown from '../Markdown'
+import { handleRichPaste } from '@/lib/richPaste'
 
 export interface EditablePin {
   relationship_id: string
@@ -409,6 +410,7 @@ export default function PinEditPanel({
         <textarea
           value={body}
           onChange={(e) => setBody(e.target.value)}
+          onPaste={(e) => handleRichPaste(e, setBody)}
           disabled={saving || loading || loadError}
           placeholder={loading ? 'Loading…' : 'Add a memory of this place…'}
           className="mt-1 min-h-[8rem] w-full resize-y rounded-lg border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm leading-relaxed text-[var(--ink)] placeholder-[var(--ink-dim)]/70 outline-none focus:border-[var(--ember-soft)]"

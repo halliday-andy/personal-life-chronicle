@@ -13,6 +13,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { PIN_TYPES, pinTypeMeta, SPINE_CODE } from '@/lib/globe/pin-types'
 import { TRIP_SUBTYPES, TRIP_SUBTYPE_LABELS, tripSubtypeDefaultPinCode, type TripSubtype } from '@/lib/globe/trip-types'
+import { handleRichPaste } from '@/lib/richPaste'
 
 /** Virtual selector value — a Trip is framing around a pin, not a pin type. */
 const TRIP_OPTION = 'trip'
@@ -215,6 +216,7 @@ export default function PinModal({
           autoFocus
           value={body}
           onChange={(e) => setBody(e.target.value)}
+          onPaste={(e) => handleRichPaste(e, setBody)}
           placeholder={ghost}
           rows={5}
           disabled={saving}
