@@ -1,3 +1,5 @@
+> **Archived 2026-07-17.** Superseded by `2026-07-07-claude-code-handoff-prompt-post-slice7.md` (per that file's own header) and now further superseded by the 2026-07-15 Trips & Travel Journal ship; kept for history only, not to be used to start a new session. See `memory/MEMORY.md` for current state.
+
 # Claude Code handoff prompt — resume at Slice 7 (Person page + Life's Cast + Hopper 5b)
 
 *Copy everything below the line into Claude Code at the start of a session in this repo. Supersedes `docs/plans/2026-07-04-claude-code-handoff-prompt.md`.*

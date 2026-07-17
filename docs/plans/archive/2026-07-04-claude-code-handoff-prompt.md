@@ -1,3 +1,5 @@
+> **Archived 2026-07-17.** Superseded by `2026-07-07-claude-code-handoff-prompt.md` (per that file's own header) and now further superseded by the 2026-07-15 Trips & Travel Journal ship; kept for history only, not to be used to start a new session. See `memory/MEMORY.md` for current state.
+
 # Claude Code handoff prompt — resume Step 7 (get current, propose next)
 
 *Copy everything below the line into Claude Code at the start of a session in this repo.*
