@@ -10,29 +10,29 @@ with a few mentions — Leola Lapides is the richest test subject.
 > job (when-phrases are never parsed).
 
 ## 1. Mention out-links (7.1)
-- [ ] Open a person page. Every "Recollections that mention…" row is an
+- [x] Open a person page. Every "Recollections that mention…" row is an
       out-link. A mention that lives on a globe pin says **read in
       journey →** and lands on the OWNING STOP in /journey, opened and
       scrolled into view.
-- [ ] A mention with no pin says **open in Recollections →** and lands on
+- [x] A mention with no pin says **open in Recollections →** and lands on
       the EXACT card in /memories — scrolled to center with a brief amber
       ring. (Not just the filtered list — the card itself.)
-- [ ] Cold deep link: copy such a /memories?entity=…#… URL into a fresh
+- [x] Cold deep link: copy such a /memories?entity=…#… URL into a fresh
       tab — same landing.
-- [ ] Place pages get the same treatment: a pin's own recollection row
+- [x] Place pages get the same treatment: a pin's own recollection row
       goes to the journey; hand-linked mentions go to /memories.
 
 ## 2. Life's Cast + content filter (7.2)
-- [ ] On a person page: **☆ Add to Life's Cast** next to the name. Click →
+- [x] On a person page: **☆ Add to Life's Cast** next to the name. Click →
       ★ In Life's Cast (amber). Reload — it sticks. Click again → demoted.
-- [ ] Nothing you didn't promote is in the Cast (it never auto-populates).
-- [ ] /entities People tab: promoted people lead the list with a
+- [x] Nothing you didn't promote is in the Cast (it never auto-populates).
+- [x] /entities People tab: promoted people lead the list with a
       **★ Life's Cast** badge.
-- [ ] "with content only" checkbox hides blank rows (no mentions, no
+- [x] "with content only" checkbox hides blank rows (no mentions, no
       context, no jots, no description) and shows "(N hidden)".
       **[taste]** default is OFF because blank rows are also your cleanup
       targets — say if you want it remembered per-visit or default ON.
-- [ ] Non-person pages show NO Cast button (it's people-only; the API
+- [x] Non-person pages show NO Cast button (it's people-only; the API
       rejects the rest).
 
 ## 3. Person-anchored recollections (7.3)

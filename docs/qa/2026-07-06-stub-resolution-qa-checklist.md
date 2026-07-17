@@ -47,7 +47,7 @@ App: **http://localhost:3001/review** (sign in first).
       accept ONE spelling as the entity, then Link the other proposal to it.)
 
 ## 4. The pipeline going forward
-- [ ] Edit any pin recollection to mention a NEW person → Save → within ~30s
+- [x] Edit any pin recollection to mention a NEW person → Save → within ~30s
       (Inngest) a fresh "New mention" proposal appears on /review; names
       already settled do NOT reappear.
 
