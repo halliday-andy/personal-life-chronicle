@@ -4,6 +4,11 @@
 Raised 2026-07-09 during Journey QA. No build should start from this note without
 that discussion happening first.*
 
+*Update 2026-07-17: this question now has a scheduled home — it folds into the
+**Shareable Collections** design (`2026-07-17-spine-and-share-roadmap.md` §4),
+where its hardest parts (viewer-side third-party embeds, link rot in shared
+views) become concrete.*
+
 ## Trigger
 
 A context note on Zaragoza AB, pasted from agent research (Gemini/Google), carried

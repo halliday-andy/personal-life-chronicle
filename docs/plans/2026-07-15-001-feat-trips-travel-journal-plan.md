@@ -11,6 +11,13 @@ execution: code
 
 # Trips & Travel Journal - Plan
 
+> **Status (2026-07-17): BUILT — all nine units T1–T9 shipped 2026-07-15**
+> (commits `3fbdf08`…`cf19287`; see `memory/project_lc_build_progress.md`).
+> Andy's live QA outstanding — walked as Phases 1 (U9) and 4 of
+> `docs/qa/2026-07-17-master-qa-sequence.md`. Archive this doc once that QA
+> completes; the "Deferred to Follow-Up Work" list is re-homed in
+> `2026-07-17-spine-and-share-roadmap.md` §5.
+
 ## Goal Capsule
 
 - **Objective:** Make travel a first-class strand of the chronicle: Trips as structured objects (origin → ordered stops → distinct destination) layered over existing globe pins, destination-only Trip drafts as a core novice workflow, a toggleable trip-route layer on the globe, and a Travel Journal mode alongside the Residential Journey.

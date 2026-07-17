@@ -3,6 +3,7 @@
 **Date:** 2026-06-14
 **Status:** Design validated with Andy. **DEFERRED — explicitly post-MVP.**
 **Why deferred:** This is a narrative-biography *editing/presentation* enhancement, not a capture primitive. Andy's MVP proofing of platform use cases does not depend on it. The design is captured here so the thinking survives; build it after the MVP use cases are exercised.
+**Update 2026-07-17:** No longer dormant — this is named raw material for the **Shareable Collections** design (`2026-07-17-spine-and-share-roadmap.md` §4): the journalist model is how a collection *reads* (woven narrative preserving verbatim quotes).
 
 ---
 

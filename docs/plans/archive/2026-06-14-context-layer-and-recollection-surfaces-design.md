@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-17** — BUILT as Slice 6 (June–July 2026) except /memories full-text search, now tracked in `../2026-07-17-spine-and-share-roadmap.md` §5.
+
 # Context Layer & the Recollection → Entity Journey
 
 **Date:** 2026-06-14

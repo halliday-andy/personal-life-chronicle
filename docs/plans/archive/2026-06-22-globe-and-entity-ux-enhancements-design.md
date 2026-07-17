@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-17** — Product-intent record for the (now exhausted) 2026-06-22 roadmap. Everything shipped or re-homed; see `../2026-07-17-spine-and-share-roadmap.md`.
+
 # Globe & Entity UX Enhancements — Design Brief
 
 **Date:** 2026-06-22

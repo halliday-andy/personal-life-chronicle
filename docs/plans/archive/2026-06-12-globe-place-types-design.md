@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-17** — BUILT (Slices 3 / 3.5 / 3.6, June 2026). Intent record only. Successor roadmap: `../2026-07-17-spine-and-share-roadmap.md`.
+
 # Step 7 Slice 3 — Globe Place Types & Temporal Line Language
 
 **Date:** 2026-06-12

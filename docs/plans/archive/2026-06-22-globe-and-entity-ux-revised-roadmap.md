@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-17** — Slice list EXHAUSTED 2026-07-07 (all built). Parked items (pin-visual redesign, Vertical Moments, /memories search) re-homed in `../2026-07-17-spine-and-share-roadmap.md` §5.
+
 # Globe & Entity UX — Revised Slice Roadmap
 
 **Date:** 2026-06-22

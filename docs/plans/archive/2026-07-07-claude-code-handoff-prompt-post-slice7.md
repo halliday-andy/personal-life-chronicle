@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-17** — Superseded by `../2026-07-17-spine-and-share-roadmap.md` — this handoff predates the 2026-07-15 Trips & Travel build entirely.
+
 # Claude Code handoff prompt — resume after Slice 7 (roadmap exhausted; pick the next build unit)
 
 *Copy everything below the line into Claude Code at the start of a session in this repo. Supersedes `docs/plans/2026-07-07-claude-code-handoff-prompt.md` (whose task — Slice 7 — is now BUILT).*

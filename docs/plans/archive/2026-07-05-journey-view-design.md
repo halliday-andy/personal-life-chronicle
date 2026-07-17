@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-17** — BUILT J1–J5 (2026-07-06/07). Predates the Travel Journal mode added 2026-07-15; the Journey/Journal naming pass lives in `../2026-07-17-spine-and-share-roadmap.md` §5.
+
 # Journey — slice design & phased plan
 
 **Date:** 2026-07-05
