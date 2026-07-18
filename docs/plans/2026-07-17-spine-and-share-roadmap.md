@@ -65,6 +65,13 @@ celebrate what exists (coverage so far, recollections written) at least as
 prominently as what's missing; every item is an *invitation into a capture
 flow*, one tap from acting on it.
 
+**Prevention beats display:** the surface shows pending review proposals,
+so anything that reduces their inflow serves it. The June Gemini commentary
+(§2C) suggests a session-end cleanup moment — "here are the N recollections
+I captured from our talk; save/adjust/discard?" — bulk triage while the
+conversation is fresh, instead of quiet drafts accreting into backlog.
+Consider it in this design.
+
 **Absorbs Step 8's unspecced half:** the orchestrated strand — the capture
 assistant proactively prompting off chronicle state
 (`chronicle/threshold.reached`). The surface is the passive face; the
@@ -101,6 +108,28 @@ The give-back arc, sequenced inside one design:
 **Spine share:** the design should also cover the simpler sibling — a
 shareable read-only spine/Journey view — since Track A's payoff is showing
 it to someone.
+
+**Design inputs on file** (from the June 2026 Gemini commentary,
+`documentation/research/2026-06-gemini-design-commentary.md` §§1B, 2A, 2B,
+2D — reviewed 2026-07-18; everything else in it was independently built):
+
+- **DB-level privacy enforcement for shared context** — an Access-Card
+  grant on an entity must never leak its private notes; Gemini sketches
+  the RLS policy pair. Fold into the Step-13 slice of this design (the
+  existing app-layer-now/RLS-at-13 decision stands; this is the §13 shape).
+- **Synthesis staleness + diff-review regeneration** — a collection is a
+  synthesis over memories; when an underlying memory is revised (Stroll
+  pathway C, owner-edit), the collection goes stale. Regeneration should
+  be propose-and-confirm with a side-by-side diff, never silent. The
+  roadmap's collections design must own this lifecycle.
+- **Quote provenance** — transcript-turn → memory linking
+  (`extracted_memory_id` on transcript turns; not built) would let a
+  journalist-model collection cite its verbatim quotes back to source.
+  Optional machinery; decide in design whether MVP needs it.
+- **Temporal ordering of multi-memory narratives** — a collection needs an
+  order (curated? capture? temporal?); weaving memories with revised or
+  conflicting time estimates can produce chronological contradictions.
+  This may be the concrete trigger for the §5 Temporal Agent conversation.
 
 ## 5. Later, named so nothing is lost
 
