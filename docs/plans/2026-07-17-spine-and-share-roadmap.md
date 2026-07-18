@@ -44,7 +44,14 @@ first globe-region remediation, as does **globe pin search** (agreed
 2026-07-18, the first Phase-1 finding: the Find-Location box gains a
 "Your pins" results group — ALL pin types, Andy's call — that flies to
 and selects the matched pin; search-as-navigation in one merged dropdown,
-with the coordinate-paste and suggest-crash-guard behaviors preserved). QA phases interleave with the units below;
+with the coordinate-paste and suggest-crash-guard behaviors preserved)
+and the **basemap regime** (agreed 2026-07-18 from Andy's Sunshine
+Village dark-vs-detail comparison: nocturne stays the identity canvas at
+world/regional zoom; past reading zoom the basemap crosses to the
+detailed outdoors style with hysteresis and a dissolve — the identity
+lives in the chrome and pins, the basemap is content). Both BUILT
+2026-07-18; QA checklists in Phase 1. This shrinks the §5 globe
+visual-language pass to pin/marker styling proper. QA phases interleave with the units below;
 only Phase 1 (spine correctness) hard-gates Unit 1's build.
 
 ## 3. Unit 1 — the Loose-Ends surface *(Track A's engine; design doc first)*

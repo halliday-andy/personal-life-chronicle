@@ -32,6 +32,7 @@ mechanics that placing, sequencing, and correcting it depend on.
 - [ ] **UI checklist spine remnants** — [2026-06-15-ui-qa-checklist.md](2026-06-15-ui-qa-checklist.md) §3 standalone-marker, §4 re-type anchor-safety + relocate-save (3 items; leave §5 photos for Phase 5).
 
 - [ ] **Globe pin search** — [2026-07-18-globe-pin-search-qa-checklist.md](2026-07-18-globe-pin-search-qa-checklist.md). Built 2026-07-18 from this phase's first finding (navigating to a prior spine stop required manual globe flying or a detour through Journey): the search box now matches your own pins (all types) above external places.
+- [ ] **Basemap regime (nocturne ↔ daylight)** — [2026-07-18-basemap-regime-qa-checklist.md](2026-07-18-basemap-regime-qa-checklist.md). Built 2026-07-18 from the Sunshine Village comparison: past reading zoom the dark basemap crosses to the detailed outdoors style (hysteresis + dissolve), back to nocturne on zoom-out.
 
 **Data chores to fold into this sitting** (5 minutes each, all on /entities
 or /review): merge the Phillips Exeter twins (safe in either direction since

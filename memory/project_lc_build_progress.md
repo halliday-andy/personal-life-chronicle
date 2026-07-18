@@ -4,6 +4,43 @@ description: What's been built so far in the Claude Code implementation of Life 
 type: project
 ---
 
+## Session handoff — 2026-07-18 (Spine & Share direction set; two Phase-1 riders BUILT)
+
+- **2026-07-17: the Spine & Share roadmap is the active forward plan**
+  (`docs/plans/2026-07-17-spine-and-share-roadmap.md`; direction memory
+  [[project_lc_direction_2026-07-17]]): Track A = complete birth-to-now
+  spine in weeks via a Loose-Ends surface (design doc next); Track B =
+  shareable spine + Shareable Collections. All open QA consolidated into
+  `docs/qa/2026-07-17-master-qa-sequence.md` (five phases, objective
+  order, not build order). Plans folder archived/re-homed the same day;
+  June Gemini commentary folded in 2026-07-18 (four inputs to the
+  Collections design, one to Loose-Ends).
+- **Globe pin search BUILT 2026-07-18** (`01cd5ee`/`aa04524`/`2e8d957`),
+  from Andy's first Phase-1 QA finding: FindLocationBox rebuilt headless
+  on SearchBoxCore — merged dropdown, "Your pins" (ALL types; matcher
+  `lib/globe/pin-search.ts`, proof 8/8, tiered + diacritic-tolerant +
+  spine-first) above Mapbox places; pin pick = `framePinOnMap` (extracted
+  from the ?pin= deep-link effect — cluster-aware, compact-card arrival);
+  route-building treats a search pick as "add this stop". Preserved:
+  lat,lng paste (reverse-geocoded) + suggest-failure swallowing.
+- **Basemap regime BUILT 2026-07-18** (Andy's Sunshine Village
+  comparison; his call: outdoors style, build now): nocturne = canvas at
+  world/regional zoom; ≥13.2 crosses to `outdoors-v12` detail, ≤12.6
+  back (hysteresis `lib/globe/style-regime.ts`, proof 8/8; dissolve via
+  `.globe-basemap-fading`, reduced-motion safe). **Class-of-change note:
+  `setStyle` wipes all sources/layers/images** — chronicle layers now
+  install idempotently on EVERY `style.load`, seeded from `lineDataRef`
+  (latest arcs/tethers/commutes/routes FCs) + `activeArcRef` (selected
+  leg emphasis), so swaps come back fully drawn with no effect re-runs.
+  Fog is nocturne-only. `.globe-daylight` lands on the container as a
+  daylight CSS tuning hook (pills carry their own dark backgrounds — no
+  flip needed up front).
+- **Andy's QA state:** working the master sequence, Phase 1 (unsequenced
+  residences in progress). New checklists queued into Phase 1:
+  `2026-07-18-globe-pin-search-` and `2026-07-18-basemap-regime-`.
+- **NEXT:** Phase-1 QA continues → remediation (+ pin-facts rider);
+  then the Loose-Ends surface design doc (roadmap §3).
+
 ## Session handoff — 2026-07-15 (Trips & Travel Journal T1–T9 BUILT)
 
 The full Trips & Travel track (plan
