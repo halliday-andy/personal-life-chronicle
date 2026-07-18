@@ -332,3 +332,19 @@ body {
   0%, 100% { box-shadow: 0 0 0 2px rgba(7,11,24,.85), 0 0 14px 4px rgba(247,201,120,.55); }
   50%      { box-shadow: 0 0 0 2px rgba(7,11,24,.85), 0 0 26px 9px rgba(247,201,120,.85); }
 }
+
+/* Basemap regime crossfade (lib/globe/style-regime, 2026-07-18): while a
+   nocturne↔daylight setStyle reloads, the canvas dims so the swap reads as
+   a deliberate dissolve, not a flash. `.globe-daylight` also lands on the
+   container in the detail regime — a styling hook for any pin/label tuning
+   the QA walk asks for (pills carry their own dark backgrounds, so none is
+   needed up front). */
+.mapboxgl-canvas {
+  transition: opacity 280ms ease;
+}
+.globe-basemap-fading .mapboxgl-canvas {
+  opacity: 0.3;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mapboxgl-canvas { transition: none; }
+}

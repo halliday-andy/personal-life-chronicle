@@ -24,6 +24,7 @@ import PinEditPanel from './PinEditPanel'
 import PinDetailCard from './PinDetailCard'
 import { useUiChrome } from '../UiChromeContext'
 import { clusterFrame } from '@/lib/globe/cluster-frame'
+import { nextRegime, styleForRegime, NOCTURNE_STYLE, type GlobeRegime } from '@/lib/globe/style-regime'
 import type { ProximityHint } from '@/lib/globe/proximity'
 import { pinTypeMeta, PIN_TYPES } from '@/lib/globe/pin-types'
 import { moveToIndex } from '@/lib/globe/reorder'
@@ -310,6 +311,19 @@ export default function GlobeView() {
   const routeEditRef = useRef<{ tripId: string; leg: TripLeg } | null>(null)
   useEffect(() => { routeEditRef.current = routeEdit }, [routeEdit])
   const routeClickRef = useRef<((relationshipId: string) => void) | null>(null)
+
+  // Basemap regime (style-regime, 2026-07-18): a setStyle swap wipes every
+  // source/layer/image, so the latest line data + selected-leg emphasis live
+  // in refs — the style.load installer re-creates everything from them
+  // without waiting for (or re-running) the data effects.
+  const regimeRef = useRef<GlobeRegime>('nocturne')
+  const lineDataRef = useRef<{
+    arcs?: GeoJSON.FeatureCollection
+    commute?: GeoJSON.FeatureCollection
+    tethers?: GeoJSON.FeatureCollection
+    tripRoutes?: GeoJSON.FeatureCollection
+  }>({})
+  const activeArcRef = useRef<{ filter: mapboxgl.FilterSpecification; idx: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   // Pin click opens the read view (detail card); Edit escalates to the
@@ -533,28 +547,22 @@ export default function GlobeView() {
     mapboxgl.accessToken = TOKEN
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
+      style: NOCTURNE_STYLE,
       center: [0, 20],
       zoom: 1.4,
       attributionControl: false,
     })
     mapRef.current = map
 
-    map.on('style.load', () => {
-      map.setProjection('globe')
-      map.setFog({
-        color: 'rgb(13,20,38)',
-        'high-color': 'rgb(36,52,102)',
-        'horizon-blend': 0.2,
-        'space-color': 'rgb(7,11,24)',
-        'star-intensity': 0.5,
-      })
-    })
-
-    map.on('load', () => {
+    // Installs every chronicle source/layer/image into the CURRENT style,
+    // seeded from lineDataRef so a basemap swap comes back fully drawn.
+    // Idempotent (first source guards) — runs on every style.load.
+    const installChronicleLayers = () => {
+      if (map.getSource('trip-tethers')) return
+      const data = lineDataRef.current
       // Tethers first, so the residential spine always draws on top of them.
       // Tier 3 — dashed, dim, no glow: trips that aren't a change of residence.
-      map.addSource('trip-tethers', { type: 'geojson', data: EMPTY_FC })
+      map.addSource('trip-tethers', { type: 'geojson', data: data.tethers ?? EMPTY_FC })
       map.addLayer({
         id: 'trip-tethers',
         type: 'line',
@@ -572,7 +580,7 @@ export default function GlobeView() {
       // Tier 4 — trip routes (Trips & Travel U4): rose journey arcs,
       // hidden by default behind the Trips toggle / selection (R10).
       // Solid outbound; dashed return reads as "and back".
-      map.addSource('trip-routes', { type: 'geojson', data: EMPTY_FC })
+      map.addSource('trip-routes', { type: 'geojson', data: data.tripRoutes ?? EMPTY_FC })
       map.addLayer({
         id: 'trip-routes-outbound',
         type: 'line',
@@ -592,7 +600,7 @@ export default function GlobeView() {
 
       // Tier 2 — commute line (home → workplace): solid, weightier, cool,
       // a soft glow. Superior to trip tethers, subordinate to the spine.
-      map.addSource('commute-lines', { type: 'geojson', data: EMPTY_FC })
+      map.addSource('commute-lines', { type: 'geojson', data: data.commute ?? EMPTY_FC })
       map.addLayer({
         id: 'commute-lines',
         type: 'line',
@@ -602,7 +610,7 @@ export default function GlobeView() {
       })
 
       // Tier 1 — the residential spine (lived_at), solid glowing chevron arcs.
-      map.addSource('arcs', { type: 'geojson', data: arcSegments([]) })
+      map.addSource('arcs', { type: 'geojson', data: data.arcs ?? arcSegments([]) })
       map.addLayer({
         id: 'arcs',
         type: 'line',
@@ -654,6 +662,37 @@ export default function GlobeView() {
         },
         paint: { 'icon-opacity': 0.95 },
       })
+      // Re-arm the selected pin's leg emphasis (filters/paint died with
+      // the old style; DOM markers survive on their own).
+      const active = activeArcRef.current
+      if (active) {
+        const inOut = (inbound: number, outbound: number): mapboxgl.ExpressionSpecification =>
+          ['case', ['==', ['get', 'seq'], active.idx - 1], inbound, outbound]
+        map.setFilter('arcs-active', active.filter)
+        map.setFilter('arc-chevrons-active', active.filter)
+        map.setPaintProperty('arcs-active', 'line-opacity', inOut(0.95, 0.55))
+        map.setPaintProperty('arcs-active', 'line-width', inOut(2.8, 2.2))
+        map.setPaintProperty('arc-chevrons-active', 'icon-opacity', inOut(0.95, 0.6))
+      }
+    }
+
+    map.on('style.load', () => {
+      map.setProjection('globe')
+      // The ember-space atmosphere belongs to nocturne; daylight keeps the
+      // outdoors style's own sky (invisible at reading zoom anyway).
+      if (regimeRef.current === 'nocturne') {
+        map.setFog({
+          color: 'rgb(13,20,38)',
+          'high-color': 'rgb(36,52,102)',
+          'horizon-blend': 0.2,
+          'space-color': 'rgb(7,11,24)',
+          'star-intensity': 0.5,
+        })
+      }
+      installChronicleLayers()
+    })
+
+    map.on('load', () => {
       map.resize()
       setReady(true)
       loadPins()
@@ -668,6 +707,26 @@ export default function GlobeView() {
     }
     map.on('zoom', applyNameGate)
     map.on('load', applyNameGate)
+
+    // Basemap regime (2026-07-18): nocturne is the identity view — the map
+    // as CANVAS; past reading zoom the map is a DOCUMENT and crosses to the
+    // detailed outdoors style (Andy's Sunshine Village comparison).
+    // Hysteresis lives in lib/globe/style-regime; the fade class masks the
+    // style reload as a deliberate dissolve.
+    const applyRegime = () => {
+      const next = nextRegime(map.getZoom(), regimeRef.current)
+      if (next === regimeRef.current) return
+      regimeRef.current = next
+      const el = map.getContainer()
+      el.classList.add('globe-basemap-fading')
+      el.classList.toggle('globe-daylight', next === 'daylight')
+      map.setStyle(styleForRegime(next))
+      // 'idle' = new style fully rendered; the timeout is a fallback in
+      // case continued interaction starves idle.
+      map.once('idle', () => el.classList.remove('globe-basemap-fading'))
+      window.setTimeout(() => el.classList.remove('globe-basemap-fading'), 1500)
+    }
+    map.on('zoom', applyRegime)
 
     // Tick on pan/zoom so the "side lines in view" reveal re-evaluates.
     map.on('moveend', () => setViewVersion((v) => v + 1))
@@ -797,8 +856,10 @@ export default function GlobeView() {
     })
     bloomIdRef.current = null
 
+    const arcData = arcSegments(spine)
+    lineDataRef.current.arcs = arcData
     const arcSrc = map.getSource('arcs') as mapboxgl.GeoJSONSource | undefined
-    arcSrc?.setData(arcSegments(spine))
+    arcSrc?.setData(arcData)
     // Tether visibility (item 3) is driven by hover preview in its own effect
     // below — default view is the bare spine.
 
@@ -810,6 +871,7 @@ export default function GlobeView() {
       idx >= 0
         ? ['any', ['==', ['get', 'seq'], idx - 1], ['==', ['get', 'seq'], idx]]
         : NO_SEGMENT
+    activeArcRef.current = idx >= 0 ? { filter: activeFilter, idx } : null
     const inOut = (inbound: number, outbound: number): mapboxgl.ExpressionSpecification =>
       ['case', ['==', ['get', 'seq'], idx - 1], inbound, outbound]
     for (const layer of ['arcs-active', 'arc-chevrons-active'] as const) {
@@ -851,6 +913,8 @@ export default function GlobeView() {
       return inFilter || inView || inHover
     })
     const { commute, trip } = tetherFeatures(visible, byId)
+    lineDataRef.current.commute = commute
+    lineDataRef.current.tethers = trip
     ;(map.getSource('commute-lines') as mapboxgl.GeoJSONSource | undefined)?.setData(commute)
     ;(map.getSource('trip-tethers') as mapboxgl.GeoJSONSource | undefined)?.setData(trip)
   }, [pins, ready, hoverPreview, typeFilters, linesInView, viewVersion])
@@ -876,15 +940,17 @@ export default function GlobeView() {
   useEffect(() => {
     if (!ready) return
     const map = mapRef.current
-    const src = map?.getSource('trip-routes') as mapboxgl.GeoJSONSource | undefined
-    if (!src) return
     const touches = (t: TripRow) =>
       t.destination_relationship_id === selectedId ||
       t.origin_relationship_id === selectedId ||
       t.stops.some((s) => s.relationship_id === selectedId) ||
       t.trip_id === routeEdit?.tripId
     const visible = trips.filter((t) => tripsVisible || touches(t))
-    src.setData(tripRouteFeatures(visible, routeEdit?.tripId ?? null))
+    const routeData = tripRouteFeatures(visible, routeEdit?.tripId ?? null)
+    lineDataRef.current.tripRoutes = routeData // before the src guard — a mid-swap update must survive
+    const src = map?.getSource('trip-routes') as mapboxgl.GeoJSONSource | undefined
+    if (!src) return
+    src.setData(routeData)
   }, [trips, tripsVisible, selectedId, routeEdit, ready])
 
   // Route building: a pin click appends a stop to the active leg. Kept in
