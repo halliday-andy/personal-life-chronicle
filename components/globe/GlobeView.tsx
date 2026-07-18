@@ -78,6 +78,40 @@ function pinTypeClass(typeCode: string | null): string {
 
 const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? ''
 
+// Shared camera framing for "go to this pin" navigation (?pin= deep links
+// and the find box's pin results). Cluster-aware (2026-07-10): a target
+// with close neighbors (Queenstown: four pins in a few km) fits the whole
+// local cluster, zoomed toward label separation; a lone target gets the
+// plain regional fly. Either way the pin lands above the bottom card.
+function framePinOnMap(map: mapboxgl.Map, target: Pin, pins: Pin[]) {
+  const frame = clusterFrame(target, pins)
+  if (frame) {
+    map.fitBounds(frame.bounds, {
+      padding: {
+        top: 110,
+        left: 110,
+        right: 110,
+        // Keep the cluster above the bottom-anchored card.
+        bottom: 110 + Math.round(window.innerHeight * 0.2),
+      },
+      maxZoom: frame.maxZoom,
+      speed: 0.9,
+      essential: true,
+    })
+  } else {
+    map.flyTo({
+      center: [target.lng, target.lat],
+      // Regional-to-local framing: with the card compact, the pin is
+      // the subject (Andy's J4 QA, 2026-07-10; was 5).
+      zoom: Math.max(map.getZoom(), 8),
+      speed: 0.9,
+      essential: true,
+      // Land the pin above the bottom-anchored card, not behind it.
+      offset: [0, -Math.round(window.innerHeight * 0.18)],
+    })
+  }
+}
+
 // Densified great-circle path between two pins. A bare 2-point segment
 // breaks down on the globe projection: the line layer and the
 // symbol-along-line placement disagree about where a long straight
@@ -461,36 +495,7 @@ export default function GlobeView() {
     const fly = () => {
       const map = mapRef.current
       if (map) {
-        // Cluster-aware framing (2026-07-10): a target with close
-        // neighbors (Queenstown: four pins in a few km) fits the whole
-        // local cluster, zoomed toward label separation. A lone target
-        // gets the plain regional fly.
-        const frame = clusterFrame(target, pins)
-        if (frame) {
-          map.fitBounds(frame.bounds, {
-            padding: {
-              top: 110,
-              left: 110,
-              right: 110,
-              // Keep the cluster above the bottom-anchored card.
-              bottom: 110 + Math.round(window.innerHeight * 0.2),
-            },
-            maxZoom: frame.maxZoom,
-            speed: 0.9,
-            essential: true,
-          })
-        } else {
-          map.flyTo({
-            center: [target.lng, target.lat],
-            // Regional-to-local framing: with the card now compact, the
-            // pin is the subject (Andy's J4 QA, 2026-07-10; was 5).
-            zoom: Math.max(map.getZoom(), 8),
-            speed: 0.9,
-            essential: true,
-            // Land the pin above the bottom-anchored card, not behind it.
-            offset: [0, -Math.round(window.innerHeight * 0.18)],
-          })
-        }
+        framePinOnMap(map, target, pins)
         return
       }
       if (++tries < 15) setTimeout(fly, 200)
@@ -1025,6 +1030,23 @@ export default function GlobeView() {
     setDraftAt(place.lng, place.lat, place.label)
   }, [setDraftAt, deselect])
 
+  // Pin search (2026-07-18): a "Your pins" result navigates — fly to and
+  // select the pin, arriving compact like a ?pin= deep link. During
+  // route-building a pick means "add this stop", exactly what clicking
+  // the pin itself would do (then fly, helpful for far-away stops).
+  const handleSearchSelectPin = useCallback((relId: string) => {
+    const target = pins.find((p) => p.relationship_id === relId)
+    if (!target) return
+    if (routeEditRef.current) {
+      routeClickRef.current?.(relId)
+    } else {
+      selectPin(relId)
+      setCompactCard(true) // after selectPin — selection paths reset it
+    }
+    const map = mapRef.current
+    if (map) framePinOnMap(map, target, pins)
+  }, [pins, selectPin])
+
   const handleSave = useCallback(async (data: PinDraftData) => {
     if (!draft) return
     setSaving(true)
@@ -1290,7 +1312,7 @@ export default function GlobeView() {
 
       {/* Find Location — search-first entry */}
       <div className="absolute left-1/2 top-6 z-20 w-[min(440px,90vw)] -translate-x-1/2">
-        <FindLocationBox accessToken={TOKEN} onRetrieve={handleRetrieve} />
+        <FindLocationBox accessToken={TOKEN} pins={pins} onRetrieve={handleRetrieve} onSelectPin={handleSearchSelectPin} />
       </div>
 
       {/* Pin count */}
