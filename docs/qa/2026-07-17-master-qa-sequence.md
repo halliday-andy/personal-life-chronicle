@@ -31,6 +31,8 @@ mechanics that placing, sequencing, and correcting it depend on.
 - [ ] **Slice 3 close-out re-tests** — [2026-06-24-globe-slice3-closeout-qa-checklist.md](2026-06-24-globe-slice3-closeout-qa-checklist.md) (37/50; open: §4 chevron-on-line, §5 refine-location fix, §12 re-type round-trip restore, §13 orphan-on-retype, §14 pin naming + recollection markdown). These are the spine-editing correctness fixes that were re-queued after the 06-24 rounds.
 - [ ] **UI checklist spine remnants** — [2026-06-15-ui-qa-checklist.md](2026-06-15-ui-qa-checklist.md) §3 standalone-marker, §4 re-type anchor-safety + relocate-save (3 items; leave §5 photos for Phase 5).
 
+- [ ] **Globe pin search** — [2026-07-18-globe-pin-search-qa-checklist.md](2026-07-18-globe-pin-search-qa-checklist.md). Built 2026-07-18 from this phase's first finding (navigating to a prior spine stop required manual globe flying or a detour through Journey): the search box now matches your own pins (all types) above external places.
+
 **Data chores to fold into this sitting** (5 minutes each, all on /entities
 or /review): merge the Phillips Exeter twins (safe in either direction since
 `20260706130000`); confirm the junk "Leo" alias is gone from Leola Lapides

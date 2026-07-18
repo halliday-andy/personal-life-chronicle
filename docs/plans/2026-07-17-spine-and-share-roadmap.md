@@ -40,7 +40,11 @@ objectives (spine correctness → loose-ends machinery → context/collection
 substrate → trips → polish), each phase one sitting, findings feeding a
 same-week remediation pass. The
 [pin-facts editor](2026-07-10-pin-facts-editor-enhancement.md) rides the
-first globe-region remediation. QA phases interleave with the units below;
+first globe-region remediation, as does **globe pin search** (agreed
+2026-07-18, the first Phase-1 finding: the Find-Location box gains a
+"Your pins" results group — ALL pin types, Andy's call — that flies to
+and selects the matched pin; search-as-navigation in one merged dropdown,
+with the coordinate-paste and suggest-crash-guard behaviors preserved). QA phases interleave with the units below;
 only Phase 1 (spine correctness) hard-gates Unit 1's build.
 
 ## 3. Unit 1 — the Loose-Ends surface *(Track A's engine; design doc first)*
