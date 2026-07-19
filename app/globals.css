@@ -283,6 +283,21 @@ body {
   color: var(--ember-soft, #f4c17a);
 }
 
+/* Daylight regime (basemap swap, lib/globe/style-regime): the pale
+   outdoors basemap washes out the light dashed "unfinished" rings tuned
+   for nocturne (Andy's Phase-1 find, 2026-07-18). Same hue families —
+   amber = awaiting placement, rose = awaiting framing — driven deep and
+   slightly heavier so they read on beige/pale green. First use of the
+   .globe-daylight tuning hook. */
+.globe-daylight .globe-pin-unplaced::before {
+  border-color: rgba(154, 96, 8, 0.95);
+  border-width: 2px;
+}
+.globe-daylight .globe-pin-trip-draft::before {
+  border-color: rgba(158, 44, 88, 0.95);
+  border-width: 2px;
+}
+
 /* Selected pin — ring + lift, and it becomes draggable for relocation.
    The boundary ring/glow take the pin's OWN type hue (--pin-ring, set
    inline per marker in GlobeView) so a selected rose vacation pin no
