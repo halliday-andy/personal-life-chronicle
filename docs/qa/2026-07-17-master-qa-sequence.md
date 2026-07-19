@@ -33,6 +33,7 @@ mechanics that placing, sequencing, and correcting it depend on.
 
 - [ ] **Globe pin search** — [2026-07-18-globe-pin-search-qa-checklist.md](2026-07-18-globe-pin-search-qa-checklist.md). Built 2026-07-18 from this phase's first finding (navigating to a prior spine stop required manual globe flying or a detour through Journey): the search box now matches your own pins (all types) above external places.
 - [ ] **Basemap regime (nocturne ↔ daylight)** — [2026-07-18-basemap-regime-qa-checklist.md](2026-07-18-basemap-regime-qa-checklist.md). Built 2026-07-18 from the Sunshine Village comparison: past reading zoom the dark basemap crosses to the detailed outdoors style (hysteresis + dissolve), back to nocturne on zoom-out.
+- [ ] **"Start a trip from here"** — [2026-07-19-trip-from-here-qa-checklist.md](2026-07-19-trip-from-here-qa-checklist.md). Built 2026-07-19 from the Mt. Snow Chalet question: home pins' trip strip arms an origin-first entry into the destination-first trip flow.
 
 **Data chores to fold into this sitting** (5 minutes each, all on /entities
 or /review): merge the Phillips Exeter twins (safe in either direction since

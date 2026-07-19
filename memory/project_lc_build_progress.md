@@ -65,9 +65,22 @@ type: project
   only.** `primaries` prop still feeds the sequence-position picker
   (sequenced-only, correct). TripFramePanel already passed all pins — no
   gap there.
+- **"Start a trip from here" BUILT 2026-07-19** (Andy's ask, from the
+  Mt.-Snow-Chalet "how do I trip from an existing pin?" question): the
+  home-pin trip strip (now ALWAYS shown for primaries, not only when
+  departures exist) arms `tripFromHere`; a banner mirrors origin-capture;
+  the next PinModal opens pre-set to Trip; framing suggestion runs
+  through `suggestTripOrigin` (`lib/globe/trip-origin.ts`, proof 5/5:
+  existing origin > armed > anchor > Home Base > null) at all three
+  setFraming sites; armed state consumed when a framing closes,
+  cancellable from the banner. Trips stay destination-first — this is an
+  origin-first ENTRY, not a new flow. Daylight ring contrast fix same
+  day (`.globe-daylight` hook's first use — burnt amber/deep rose
+  unfinished rings). QA: `2026-07-19-trip-from-here-qa-checklist.md`.
 - **Andy's QA state:** working the master sequence, Phase 1 (unsequenced
   residences in progress). New checklists queued into Phase 1:
-  `2026-07-18-globe-pin-search-` and `2026-07-18-basemap-regime-`.
+  `2026-07-18-globe-pin-search-`, `2026-07-18-basemap-regime-`, and
+  `2026-07-19-trip-from-here-`.
 - **NEXT:** Phase-1 QA continues → remediation (+ pin-facts rider);
   then the Loose-Ends surface design doc (roadmap §3).
 
