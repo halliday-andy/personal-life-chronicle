@@ -35,6 +35,22 @@ type: project
   Fog is nocturne-only. `.globe-daylight` lands on the container as a
   daylight CSS tuning hook (pills carry their own dark backgrounds — no
   flip needed up front).
+- **BUG + fix (2026-07-18, Andy's Phase-1 repro): decide-later primaries
+  landed SEQUENCED at the spine's end.** PinModal produced
+  `unsequenced: true` and the API/RPC honored it — but GlobeView's
+  handleSave re-typed the PinDraftData field list into the POST body and
+  never added U9's `unsequenced`; position:null then meant "append".
+  (Edit path uses the sequence endpoint — that's why correcting worked.)
+  Fix: payload assembly extracted to
+  `lib/globe/create-pin-payload.ts` with a `satisfies
+  Record<keyof PinDraftData, unknown>` exhaustiveness guard — adding a
+  PinDraftData field now fails COMPILE until it is consciously routed
+  (sent, transformed, or documented client-only like `trip`). Proof
+  `verify-create-pin-payload.mjs` 6/6. **Class-of-bug: manual
+  re-enumeration of payload fields at a boundary silently drops newly
+  added fields — assemble boundary payloads in one guarded builder.**
+  The RPC proof passed throughout; the bug lived in the one unproven
+  hop (client assembly). Andy's repro pins already healed via edit.
 - **Andy's QA state:** working the master sequence, Phase 1 (unsequenced
   residences in progress). New checklists queued into Phase 1:
   `2026-07-18-globe-pin-search-` and `2026-07-18-basemap-regime-`.
