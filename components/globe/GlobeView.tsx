@@ -1727,6 +1727,7 @@ export default function GlobeView() {
                         anchorId: selPin?.anchor_residence_id,
                       }),
                       defaultWhen: t.when_text ?? '',
+                      returnToOrigin: t.return_to_origin,
                     })}
                     className="rounded-lg border border-[var(--glass-border)] px-2 py-0.5 hover:text-[var(--ember-soft)]"
                   >

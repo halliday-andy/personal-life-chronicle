@@ -21,6 +21,9 @@ export interface TripFramingContext {
   /** Origin suggestion — the destination pin's anchor residence, if any. */
   suggestedOriginId: string | null
   defaultWhen: string
+  /** Current round-trip flag when re-framing an existing trip; omitted on
+   *  a fresh trip (defaults true — KTD3's "returns to origin" default). */
+  returnToOrigin?: boolean
 }
 
 export default function TripFramePanel({
@@ -40,6 +43,9 @@ export default function TripFramePanel({
   const [title, setTitle] = useState('')
   const [whenText, setWhenText] = useState(ctx.defaultWhen)
   const [yearHint, setYearHint] = useState('')
+  // One-way support (2026-07-19, Andy's chalet→Calgary drive): the model
+  // always had trips.return_to_origin; this is the missing UI for it.
+  const [returnToOrigin, setReturnToOrigin] = useState<boolean>(ctx.returnToOrigin ?? true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -62,6 +68,7 @@ export default function TripFramePanel({
           title: title.trim() || undefined,
           whenText: whenText.trim() || undefined,
           yearHint: year,
+          returnToOrigin,
         }),
       })
       if (!res.ok) {
@@ -113,6 +120,22 @@ export default function TripFramePanel({
           )}
           <option value="">Decide later</option>
         </select>
+
+        <label className="mt-3 flex items-center gap-2 text-sm text-[var(--ink-dim)]">
+          <input
+            type="checkbox"
+            checked={returnToOrigin}
+            onChange={(e) => setReturnToOrigin(e.target.checked)}
+            disabled={saving}
+            className="accent-[var(--ember)]"
+          />
+          Returned to the origin (round trip)
+        </label>
+        {!returnToOrigin && (
+          <p className="mt-1 text-xs text-[var(--ink-dim)]/80">
+            One-way — the journey ends at {ctx.destinationName}; no return arc will draw.
+          </p>
+        )}
 
         <label className="mt-4 block text-sm text-[var(--ink-dim)]">Trip title (optional)</label>
         <input

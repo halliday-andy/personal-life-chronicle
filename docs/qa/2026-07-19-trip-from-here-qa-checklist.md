@@ -32,7 +32,20 @@ master-sequence Phase 1 (rider batch).
 - [ ] After one framing completes, the armed state is consumed — framing
       a second trip suggests anchor/Home Base as usual.
 
-## 3. Strip regressions
+## 3. One-way trips (added same day — the chalet → Calgary drive)
+
+- [ ] The framing panel has a **"Returned to the origin (round trip)"**
+      checkbox, checked by default. Uncheck it → a one-way note appears.
+- [ ] Frame the chalet → Calgary road trip one-way → the globe draws
+      the **outbound arc only** — no dashed return arc.
+- [ ] The Travel Journal card shows origin → destination with **no
+      "and back"** line for a one-way trip.
+- [ ] **Edit frame** on the one-way trip → the checkbox arrives
+      **unchecked** (remembers); re-check + save → the dashed return
+      arc appears.
+- [ ] A round trip framed normally still draws its dashed return.
+
+## 4. Strip regressions
 
 - [ ] A home with existing departures still shows "N trips originated
       here", the home-base chip, and "Travel Journal →" alongside the
