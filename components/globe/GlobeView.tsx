@@ -25,6 +25,7 @@ import PinDetailCard from './PinDetailCard'
 import { useUiChrome } from '../UiChromeContext'
 import { clusterFrame } from '@/lib/globe/cluster-frame'
 import { nextRegime, styleForRegime, NOCTURNE_STYLE, type GlobeRegime } from '@/lib/globe/style-regime'
+import { buildCreatePinPayload } from '@/lib/globe/create-pin-payload'
 import type { ProximityHint } from '@/lib/globe/proximity'
 import { pinTypeMeta, PIN_TYPES } from '@/lib/globe/pin-types'
 import { moveToIndex } from '@/lib/globe/reorder'
@@ -1121,12 +1122,9 @@ export default function GlobeView() {
       const res = await fetch('/api/globe/residence', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          lng: draft.lng, lat: draft.lat, label: data.name?.trim() || draft.label,
-          whenText: data.whenText, body: data.body, position: data.position,
-          typeCode: data.typeCode, anchorId: data.anchorId, description: data.description,
-          entityId: data.entityId,
-        }),
+        // Assembled by the exhaustiveness-guarded builder — inline field
+        // lists dropped U9's `unsequenced` (the 2026-07-18 decide-later bug).
+        body: JSON.stringify(buildCreatePinPayload(draft, data)),
       })
       if (!res.ok) {
         const b = await res.json().catch(() => ({}))
