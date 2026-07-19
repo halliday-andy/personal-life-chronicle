@@ -56,6 +56,7 @@ export default function PinModal({
   onSave,
   onCancel,
   originCapture = false,
+  defaultTypeCode,
 }: {
   placeLabel: string
   saving: boolean
@@ -66,12 +67,15 @@ export default function PinModal({
   /** Trip origin capture (U9/AE5): default the sequence slot to
    *  "decide later" — the origin home may predate the spine. */
   originCapture?: boolean
+  /** Preselect the type — "Start a trip from here" opens the modal on
+   *  Trip (2026-07-19); the user can still change it. */
+  defaultTypeCode?: string
 }) {
   const [name, setName] = useState(placeLabel === 'This place' ? '' : placeLabel)
   const [body, setBody] = useState('')
   const [whenText, setWhenText] = useState('')
   const [placard, setPlacard] = useState('')
-  const [typeCode, setTypeCode] = useState<string>(SPINE_CODE)
+  const [typeCode, setTypeCode] = useState<string>(defaultTypeCode ?? SPINE_CODE)
   const [tripSubtype, setTripSubtype] = useState<TripSubtype>('vacation')
   // Sequence slot (spine only): 0 = before the first, i = after
   // primaries[i-1], DECIDE_LATER = save unsequenced (U9).

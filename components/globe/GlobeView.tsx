@@ -26,6 +26,7 @@ import { useUiChrome } from '../UiChromeContext'
 import { clusterFrame } from '@/lib/globe/cluster-frame'
 import { nextRegime, styleForRegime, NOCTURNE_STYLE, type GlobeRegime } from '@/lib/globe/style-regime'
 import { buildCreatePinPayload } from '@/lib/globe/create-pin-payload'
+import { suggestTripOrigin } from '@/lib/globe/trip-origin'
 import type { ProximityHint } from '@/lib/globe/proximity'
 import { pinTypeMeta, PIN_TYPES } from '@/lib/globe/pin-types'
 import { moveToIndex } from '@/lib/globe/reorder'
@@ -300,6 +301,10 @@ export default function GlobeView() {
   // pin — the next pin placed becomes this trip's origin (an
   // unsequenced home by default; the spine may not exist yet).
   const [originCapture, setOriginCapture] = useState<{ tripId: string; destinationName: string } | null>(null)
+  // "Start a trip from here" (2026-07-19): a home pin armed as the origin
+  // of the NEXT trip framed — origin-first entry into the destination-first
+  // flow. Consumed when a framing panel closes; cancellable from its banner.
+  const [tripFromHere, setTripFromHere] = useState<{ relationshipId: string; name: string } | null>(null)
   // Trip route layer (U4): loaded trips, the hidden-by-default toggle
   // (R10 — the spine stays visually dominant), and route-building mode.
   const [trips, setTrips] = useState<TripRow[]>([])
@@ -1062,13 +1067,17 @@ export default function GlobeView() {
       setFraming({
         tripId,
         destinationName: selPin.name,
-        suggestedOriginId: selPin.anchor_residence_id ?? homeBaseId,
+        suggestedOriginId: suggestTripOrigin({
+          armedOriginId: tripFromHere?.relationshipId,
+          anchorId: selPin.anchor_residence_id,
+          homeBaseId,
+        }),
         defaultWhen: selPin.when_text ?? '',
       })
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not frame the trip.')
     }
-  }, [pins, selectedId, loadTrips, loadPins, homeBaseId])
+  }, [pins, selectedId, loadTrips, loadPins, homeBaseId, tripFromHere])
 
   // Un-framing (U6, R14): delete the trip, keep the pin. Two-step inline
   // confirm (the edit panel's delete pattern).
@@ -1177,8 +1186,13 @@ export default function GlobeView() {
         setFraming({
           tripId,
           destinationName: data.name?.trim() || draft.label || 'This place',
-          // Anchor first ("home at the time"); Home Base when unanchored (R16).
-          suggestedOriginId: data.anchorId ?? homeBaseId,
+          // Armed "from here" origin first, then anchor ("home at the
+          // time"), then Home Base when unanchored (R16).
+          suggestedOriginId: suggestTripOrigin({
+            armedOriginId: tripFromHere?.relationshipId,
+            anchorId: data.anchorId,
+            homeBaseId,
+          }),
           defaultWhen: data.whenText,
         })
       }
@@ -1187,7 +1201,7 @@ export default function GlobeView() {
     } finally {
       setSaving(false)
     }
-  }, [draft, clearDraft, loadPins, loadTrips, homeBaseId, originCapture])
+  }, [draft, clearDraft, loadPins, loadTrips, homeBaseId, originCapture, tripFromHere])
 
   const handlePanelSave = useCallback(async (fields: { name: string; whenText: string; body: string; typeCode: string; anchorId: string | null; description: string }) => {
     if (!selectedId) return
@@ -1568,6 +1582,7 @@ export default function GlobeView() {
           onSave={handleSave}
           onCancel={() => setModalOpen(false)}
           originCapture={!!originCapture}
+          defaultTypeCode={tripFromHere ? 'trip' : undefined}
         />
       )}
 
@@ -1577,6 +1592,7 @@ export default function GlobeView() {
           pins={pins.map((p) => ({ relationship_id: p.relationship_id, name: p.name, type_code: p.type_code }))}
           onDone={(notice) => {
             setFraming(null)
+            setTripFromHere(null) // the armed "from here" origin is consumed with its framing
             if (notice) setNotice(notice)
             void loadTrips()
           }}
@@ -1605,6 +1621,25 @@ export default function GlobeView() {
         </div>
       )}
 
+      {/* "Start a trip from here" banner: the armed origin awaits its
+          destination — search or click the globe (mirrors origin capture). */}
+      {tripFromHere && !modalOpen && !originCapture && !framing && (
+        <div className="glass absolute left-1/2 top-6 z-40 flex max-w-[min(560px,92vw)] -translate-x-1/2 items-center gap-3 rounded-xl px-4 py-2.5 text-sm text-[var(--ink)]">
+          <span style={{ color: TRIP_ROUTE_COLOR }}>✈</span>
+          <span>
+            Trip from <strong>{tripFromHere.name}</strong> — now pin where it went
+            (the place that marked the turn toward home).
+          </span>
+          <button
+            onClick={() => setTripFromHere(null)}
+            className="ml-1 text-[var(--ink-dim)] hover:text-[var(--ink)]"
+            aria-label="Cancel trip from here"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Trips touching the selected pin (U4): frame drafts, build routes.
           U6 adds the other half: a non-primary pin with NO trip offers
           "frame as trip" (R14) — the Wallace Monument path. */}
@@ -1619,19 +1654,31 @@ export default function GlobeView() {
         // stacking rows over the globe.
         if (selPin && (selPin.type_code === SPINE_CODE || selPin.type_code === null)) {
           const fromHere = trips.filter((t) => t.origin_relationship_id === selectedId).length
-          if (fromHere === 0) return null
           return (
-            <div className="glass absolute left-1/2 top-20 z-30 flex max-w-[min(560px,92vw)] -translate-x-1/2 items-center gap-2 rounded-xl px-3 py-2 text-xs text-[var(--ink)]">
+            <div className="glass absolute left-1/2 top-20 z-30 flex max-w-[min(560px,92vw)] -translate-x-1/2 flex-wrap items-center gap-2 rounded-xl px-3 py-2 text-xs text-[var(--ink)]">
               <span style={{ color: TRIP_ROUTE_COLOR }}>✈</span>
-              <span>{fromHere} trip{fromHere === 1 ? '' : 's'} originated here</span>
+              {fromHere > 0 && <span>{fromHere} trip{fromHere === 1 ? '' : 's'} originated here</span>}
               {homeBaseId === selectedId && (
                 <span className="rounded-full border border-[var(--glass-border)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[var(--ember-soft)]">
                   home base
                 </span>
               )}
-              <a href="/journey?mode=travel" className="ml-auto rounded-lg border border-[var(--glass-border)] px-2 py-0.5 hover:text-[var(--ember-soft)]">
-                Travel Journal →
-              </a>
+              {/* Origin-first entry (2026-07-19, Andy's ask): arm this home
+                  as the next trip's origin, then place the destination. */}
+              <button
+                onClick={() => {
+                  setTripFromHere({ relationshipId: selPin.relationship_id, name: selPin.name })
+                  deselect()
+                }}
+                className="rounded-lg border border-[var(--glass-border)] px-2 py-0.5 hover:text-[var(--ember-soft)]"
+              >
+                Start a trip from here
+              </button>
+              {fromHere > 0 && (
+                <a href="/journey?mode=travel" className="ml-auto rounded-lg border border-[var(--glass-border)] px-2 py-0.5 hover:text-[var(--ember-soft)]">
+                  Travel Journal →
+                </a>
+              )}
             </div>
           )
         }
@@ -1674,7 +1721,11 @@ export default function GlobeView() {
                     onClick={() => setFraming({
                       tripId: t.trip_id,
                       destinationName: t.title || t.destination_name,
-                      suggestedOriginId: t.origin_relationship_id ?? selPin?.anchor_residence_id ?? null,
+                      suggestedOriginId: suggestTripOrigin({
+                        existingOriginId: t.origin_relationship_id,
+                        armedOriginId: tripFromHere?.relationshipId,
+                        anchorId: selPin?.anchor_residence_id,
+                      }),
                       defaultWhen: t.when_text ?? '',
                     })}
                     className="rounded-lg border border-[var(--glass-border)] px-2 py-0.5 hover:text-[var(--ember-soft)]"
