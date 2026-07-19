@@ -51,6 +51,20 @@ type: project
   added fields — assemble boundary payloads in one guarded builder.**
   The RPC proof passed throughout; the bug lived in the one unproven
   hop (client assembly). Andy's repro pins already healed via edit.
+- **Find + fix #2 (2026-07-18, same Phase-1 sitting): the anchor picker
+  ("which home did you commute from?") offered SEQUENCED primaries only** —
+  a workplace couldn't anchor to a just-created decide-later home. Fix:
+  `lib/globe/anchor-options.ts` (proof `verify-anchor-options.mjs` 6/6),
+  used by BOTH PinModal and PinEditPanel: Log keeps anchoring to any pin;
+  every other marker anchors to a HOME = primaries (sequenced first in
+  spine order, then unsequenced "· not yet placed") + second residences +
+  short-term stays (Andy delegated the scoping call; vacations/travel/
+  workplaces stay out — that's what Log is for; DB stays permissive per
+  validate_pin_anchor). **Principle: home-ness is the TYPE, not the spine
+  slot — U9's NULL-sort_order exclusion applies to ORDER-derived logic
+  only.** `primaries` prop still feeds the sequence-position picker
+  (sequenced-only, correct). TripFramePanel already passed all pins — no
+  gap there.
 - **Andy's QA state:** working the master sequence, Phase 1 (unsequenced
   residences in progress). New checklists queued into Phase 1:
   `2026-07-18-globe-pin-search-` and `2026-07-18-basemap-regime-`.
