@@ -1564,7 +1564,7 @@ export default function GlobeView() {
           primaries={pins
             .filter(isSequencedPrimary)
             .map((p) => ({ relationship_id: p.relationship_id, name: p.name }))}
-          allPins={pins.map((p) => ({ relationship_id: p.relationship_id, name: p.name, type_code: p.type_code }))}
+          allPins={pins.map((p) => ({ relationship_id: p.relationship_id, name: p.name, type_code: p.type_code, sort_order: p.sort_order }))}
           onSave={handleSave}
           onCancel={() => setModalOpen(false)}
           originCapture={!!originCapture}
@@ -1829,7 +1829,7 @@ export default function GlobeView() {
         const spine = pins.filter(isSequencedPrimary)
         const spinePos = spine.findIndex((p) => p.relationship_id === selectedId)
         const primaries = spine.map((p) => ({ relationship_id: p.relationship_id, name: p.name }))
-        const allPins = pins.map((p) => ({ relationship_id: p.relationship_id, name: p.name, type_code: p.type_code }))
+        const allPins = pins.map((p) => ({ relationship_id: p.relationship_id, name: p.name, type_code: p.type_code, sort_order: p.sort_order }))
         return editMode ? (
           <PinEditPanel
             pin={sel}

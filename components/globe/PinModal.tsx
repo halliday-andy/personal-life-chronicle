@@ -12,6 +12,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { PIN_TYPES, pinTypeMeta, SPINE_CODE } from '@/lib/globe/pin-types'
+import { anchorCandidates, isUnplacedHome } from '@/lib/globe/anchor-options'
 import { TRIP_SUBTYPES, TRIP_SUBTYPE_LABELS, tripSubtypeDefaultPinCode, type TripSubtype } from '@/lib/globe/trip-types'
 import { handleRichPaste } from '@/lib/richPaste'
 
@@ -59,7 +60,7 @@ export default function PinModal({
   placeLabel: string
   saving: boolean
   primaries: { relationship_id: string; name: string }[]  // primary residences, in sequence
-  allPins: { relationship_id: string; name: string; type_code: string | null }[]  // every globe pin (Log anchors to any)
+  allPins: { relationship_id: string; name: string; type_code: string | null; sort_order: number | null }[]  // every globe pin (Log anchors to any)
   onSave: (data: PinDraftData) => void
   onCancel: () => void
   /** Trip origin capture (U9/AE5): default the sequence slot to
@@ -107,10 +108,10 @@ export default function PinModal({
   const isTrip = typeCode === TRIP_OPTION
   // A trip destination saves as a normal pin typed by its subtype (KTD4).
   const effectiveCode = isTrip ? tripSubtypeDefaultPinCode[tripSubtype] : typeCode
-  // A Log anchors to ANY place; other markers anchor to a primary residence.
-  const anchorOptions = typeCode === 'logged_at'
-    ? allPins
-    : primaries.map((p) => ({ ...p, type_code: 'lived_at' as string | null }))
+  // A Log anchors to ANY place; other markers anchor to a HOME — incl.
+  // unsequenced primaries and second/short-stay residences (2026-07-18,
+  // lib/globe/anchor-options: home-ness is the type, not the spine slot).
+  const anchorOptions = anchorCandidates(allPins, typeCode)
   const meta = pinTypeMeta(effectiveCode)
 
   return (
@@ -285,7 +286,7 @@ export default function PinModal({
             >
               {anchorOptions.map((p) => (
                 <option key={p.relationship_id} value={p.relationship_id}>
-                  {p.name}{p.type_code && p.type_code !== 'lived_at' ? ` · ${pinTypeMeta(p.type_code).label}` : ''}
+                  {p.name}{isUnplacedHome(p) ? ' · not yet placed' : p.type_code && p.type_code !== 'lived_at' ? ` · ${pinTypeMeta(p.type_code).label}` : ''}
                 </option>
               ))}
               <option value="">Not sure / standalone</option>

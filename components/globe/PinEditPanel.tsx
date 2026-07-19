@@ -13,6 +13,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { preprocessPinImage } from '@/lib/globe/image-preprocess'
 import { PIN_TYPES, pinTypeMeta, SPINE_CODE } from '@/lib/globe/pin-types'
+import { anchorCandidates, isUnplacedHome } from '@/lib/globe/anchor-options'
 import { spineSlotOptions } from '@/lib/globe/reorder'
 import PhotoLightbox from './PhotoLightbox'
 import PinHopper from './PinHopper'
@@ -72,7 +73,7 @@ export default function PinEditPanel({
   position: number   // 0-based index in the SPINE; -1 for off-spine markers
   total: number      // number of primary residences
   primaries: { relationship_id: string; name: string }[]
-  allPins: { relationship_id: string; name: string; type_code: string | null }[]  // every globe pin (Log anchors to any)
+  allPins: { relationship_id: string; name: string; type_code: string | null; sort_order: number | null }[]  // every globe pin (Log anchors to any)
   onMove: (dir: -1 | 1) => void
   onMoveTo: (toIndex: number) => void
   /** U9: place an unsequenced home into the spine at this slot. */
@@ -114,10 +115,10 @@ export default function PinEditPanel({
     }
     setTypeCode(next)
   }
-  // A Log anchors to ANY place; other markers anchor to a primary residence.
-  const anchorOptions = typeCode === 'logged_at'
-    ? allPins
-    : primaries.map((p) => ({ ...p, type_code: 'lived_at' as string | null }))
+  // A Log anchors to ANY place; other markers anchor to a HOME — incl.
+  // unsequenced primaries and second/short-stay residences (2026-07-18,
+  // lib/globe/anchor-options: home-ness is the type, not the spine slot).
+  const anchorOptions = anchorCandidates(allPins, typeCode)
   const [loading, setLoading] = useState(true)
   // If the recollection fails to load, Save MUST stay disabled: saving the
   // panel's empty textarea would overwrite the real recollection (PATCH
@@ -369,7 +370,7 @@ export default function PinEditPanel({
               .filter((p) => p.relationship_id !== pin.relationship_id)
               .map((p) => (
                 <option key={p.relationship_id} value={p.relationship_id}>
-                  {p.name}{p.type_code && p.type_code !== 'lived_at' ? ` · ${pinTypeMeta(p.type_code).label}` : ''}
+                  {p.name}{isUnplacedHome(p) ? ' · not yet placed' : p.type_code && p.type_code !== 'lived_at' ? ` · ${pinTypeMeta(p.type_code).label}` : ''}
                 </option>
               ))}
             <option value="">Not sure / standalone</option>
