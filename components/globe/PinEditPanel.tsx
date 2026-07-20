@@ -17,6 +17,7 @@ import { anchorCandidates, isUnplacedHome } from '@/lib/globe/anchor-options'
 import { spineSlotOptions } from '@/lib/globe/reorder'
 import PhotoLightbox from './PhotoLightbox'
 import PinHopper from './PinHopper'
+import PinConnections, { type LinkedRecollection, type AnchoredPin, type ContextEntry } from './PinConnections'
 import Markdown from '../Markdown'
 import { handleRichPaste } from '@/lib/richPaste'
 
@@ -66,6 +67,7 @@ export default function PinEditPanel({
   onSave,
   onDelete,
   onClose,
+  onSelectAnchored,
 }: {
   pin: EditablePin
   relocated: boolean
@@ -83,6 +85,8 @@ export default function PinEditPanel({
   onSave: (fields: { name: string; whenText: string; body: string; typeCode: string; anchorId: string | null; description: string }) => void
   onDelete: () => void
   onClose: () => void
+  /** Open a related (anchored) pin from the connections list. */
+  onSelectAnchored: (relationshipId: string) => void
 }) {
   const [name, setName] = useState(pin.name)
   const [whenText, setWhenText] = useState(pin.when_text ?? '')
@@ -128,7 +132,9 @@ export default function PinEditPanel({
   const [reloadKey, setReloadKey] = useState(0)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [images, setImages] = useState<GalleryImage[]>([])
-  const [linkedCount, setLinkedCount] = useState(0)
+  const [linked, setLinked] = useState<LinkedRecollection[]>([])
+  const [context, setContext] = useState<ContextEntry[]>([])
+  const [anchored, setAnchored] = useState<AnchoredPin[]>([])
   const [galleryBusy, setGalleryBusy] = useState(false)
   const [galleryError, setGalleryError] = useState<string | null>(null)
   const [galleryNotice, setGalleryNotice] = useState<string | null>(null)
@@ -171,7 +177,7 @@ export default function PinEditPanel({
     setLoadError(false)
     fetch(`/api/globe/residence/${pin.relationship_id}`)
       .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
-      .then((d) => { if (active) { setBody(d.body ?? ''); setImages(d.images ?? []); setLinkedCount(d.linked?.length ?? 0); setLoading(false) } })
+      .then((d) => { if (active) { setBody(d.body ?? ''); setImages(d.images ?? []); setLinked(d.linked ?? []); setContext(d.context ?? []); setAnchored(d.anchored ?? []); setLoading(false) } })
       .catch(() => { if (active) { setLoadError(true); setLoading(false) } })
     return () => { active = false }
   }, [pin.relationship_id, reloadKey])
@@ -384,13 +390,12 @@ export default function PinEditPanel({
           {/* Layer pointer (2026-07-10, Andy's QA): research about the place
               is CONTEXT, not a recollection — and this panel had no path to
               it. The Entity View is the context home. */}
-          <a
-            href={`/entities/${pin.place_entity_id}`}
-            className="ml-2 text-[var(--ink-dim)]/70 underline decoration-[var(--glass-border)] hover:text-[var(--ink)]"
-            title="Background research about this place belongs in Context — add it on the place page"
+          <span
+            className="ml-2 text-[var(--ink-dim)]/60"
+            title="Background research about this place belongs in Context — use the Context chip below"
           >
-            research? → add context ↗
-          </a>
+            research goes in Context ↓
+          </span>
         </label>
         {!loading && !loadError && body.trim() && (
           <button
@@ -522,17 +527,21 @@ export default function PinEditPanel({
           recollections. Full variant: add, check off, reopen, delete. */}
       <PinHopper entityId={pin.place_entity_id} hostName={pin.name} variant="panel" />
 
-      {/* Other memories that mention this place — edited in the
-          Recollections surface, not here (this panel owns only the
-          pin's overview text). */}
-      {!loadError && linkedCount > 0 && (
-        <a
-          href={`/memories?entity=${pin.place_entity_id}`}
-          className="mt-2 block text-xs text-[var(--ember-soft)] hover:text-[var(--ember)]"
-        >
-          ◆ {linkedCount} more recollection{linkedCount === 1 ? '' : 's'} mention
-          {linkedCount === 1 ? 's' : ''} this place — view in Recollections →
-        </a>
+      {/* The pin's connected collections — recollections, context, related
+          pins — the SAME shared component the read card uses (2026-07-20
+          reconciliation). Panel variant renders the 3 collection chips; the
+          full jots hopper above stays separate. */}
+      {!loadError && (
+        <PinConnections
+          key={pin.relationship_id}
+          entityId={pin.place_entity_id}
+          placeName={pin.name}
+          linked={linked}
+          context={context}
+          anchored={anchored}
+          onSelectAnchored={onSelectAnchored}
+          variant="panel"
+        />
       )}
 
       {relocated && (
