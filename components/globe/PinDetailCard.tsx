@@ -464,27 +464,39 @@ export default function PinDetailCard({
 
           {openChip === 'context' && (
             <div className="mt-2">
-              {/* Add path (2026-07-10): the Entity View is the context home —
-                  this surface finally points at it. */}
-              <a
-                href={`/entities/${pin.place_entity_id}`}
-                className="mb-1 inline-block text-xs text-[var(--ember-soft)] hover:text-[var(--ember)]"
-                title="Add background research about this place on its page"
-              >
-                + add context on the place page ↗
-              </a>
-              <ul className="max-h-40 space-y-1 overflow-y-auto">
+              {/* Existing context is the primary content — you opened the chip
+                  to SEE it (Andy's finding 2026-07-20; the panel used to lead
+                  with "add" and render the notes as dim, dead-looking text).
+                  "Add" is the secondary action, top-right, mirroring the
+                  recollections block. All context lives on the place's entity
+                  page, so a row opens it there — navigate, not expand-in-place:
+                  notes are often long pasted research and the card stays short
+                  over its own pin. The trailing ↗ is the same "opens elsewhere"
+                  signal as "Open place page ↗" in the header. */}
+              <div className="flex items-baseline justify-end">
+                <a
+                  href={`/entities/${pin.place_entity_id}`}
+                  className="shrink-0 text-xs text-[var(--ember-soft)] hover:text-[var(--ember)]"
+                  title="Add background research about this place on its page"
+                >
+                  ＋ Add on place page ↗
+                </a>
+              </div>
+              <ul className="mt-1.5 max-h-40 space-y-1 overflow-y-auto">
                 {context.map((c) => (
                   <li key={c.id}>
-                    {/* All context lives on the place's entity page; rows link
-                        there rather than deep-linking each note (YAGNI). */}
                     <a
                       href={`/entities/${pin.place_entity_id}`}
-                      title={`Open ${pin.name} context`}
-                      className="flex w-full items-center gap-1.5 rounded-lg px-1 py-0.5 text-left text-xs leading-relaxed text-[var(--ink)]/80 hover:bg-white/5 hover:text-[var(--ink)]"
+                      title={`Open “${c.title}” on the place page`}
+                      className="flex w-full items-center gap-1.5 rounded-lg px-1.5 py-1 text-left text-xs leading-relaxed hover:bg-white/5"
                     >
-                      {c.visibility === 'private' && <span title="Private — only you can see this">🔒</span>}
-                      <span className="truncate">{c.title}</span>
+                      {c.visibility === 'private' ? (
+                        <span className="shrink-0" title="Private — only you can see this">🔒</span>
+                      ) : (
+                        <span aria-hidden className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--ember-soft)]" />
+                      )}
+                      <span className="min-w-0 flex-1 truncate font-medium text-[var(--ink)]">{c.title}</span>
+                      <span aria-hidden className="shrink-0 text-[var(--ember-soft)]">↗</span>
                     </a>
                   </li>
                 ))}
