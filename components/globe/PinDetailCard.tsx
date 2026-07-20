@@ -13,7 +13,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { preprocessPinImage } from '@/lib/globe/image-preprocess'
 import { pinTypeMeta } from '@/lib/globe/pin-types'
 import PhotoLightbox from './PhotoLightbox'
-import PinHopper from './PinHopper'
+import PinConnections, { type LinkedRecollection, type AnchoredPin, type ContextEntry } from './PinConnections'
 import Markdown from '../Markdown'
 
 export interface PinFacts {
@@ -30,32 +30,8 @@ export interface PinImageInfo {
   is_primary?: boolean
 }
 
-export interface LinkedRecollection {
-  id: string
-  excerpt: string
-  text: string
-  created_at: string
-}
-
-export interface AnchoredPin {
-  relationship_id: string
-  name: string
-  type_code: string | null
-  excerpt: string
-  /** Recollections on this child beyond its overview excerpt (2026-07-09). */
-  linked_count?: number
-}
-
-export interface ContextEntry {
-  id: string
-  title: string
-  visibility: string
-}
-
-// Which secondary collection is expanded under the body. Only one opens at a
-// time so the card never grows tall enough to occlude its own pin — presence
-// stays visible as counts, content is opt-in (2026-06-26 reframe).
-type OpenChip = 'recollections' | 'context' | 'anchored' | 'hopper' | null
+// LinkedRecollection, AnchoredPin, ContextEntry, and the open-chip disclosure
+// state moved to PinConnections (shared with the edit panel, 2026-07-20).
 
 const label = (s: string) => s.replace(/_/g, ' ')
 
@@ -96,9 +72,6 @@ export default function PinDetailCard({
   const [linked, setLinked] = useState<LinkedRecollection[]>([])
   const [anchored, setAnchored] = useState<AnchoredPin[]>([])
   const [context, setContext] = useState<ContextEntry[]>([])
-  const [stubCount, setStubCount] = useState(0)
-  const [openChip, setOpenChip] = useState<OpenChip>(null)
-  const [expandedId, setExpandedId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   // A failed load must look like a failure, never like an empty pin —
   // otherwise a dead server reads as "no recollection yet" (data-loss scare,
@@ -115,8 +88,6 @@ export default function PinDetailCard({
     let active = true
     setLoading(true)
     setLoadError(false)
-    setOpenChip(null)
-    setExpandedId(null)
     fetch(`/api/globe/residence/${pin.relationship_id}`)
       .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
       .then((d) => {
@@ -389,153 +360,21 @@ export default function PinDetailCard({
               ))}
             </div>
           )}
-          {/* Secondary collections collapse to a single count-chip row so the
-              card stays short over its own pin; tapping a chip discloses just
-              that list (single-open), tapping again collapses (2026-06-26).
-              The hopper chip is ALWAYS present (Hopper 5a) — jotting a memory
-              at the moment a pin surfaces it is the point of the feature. */}
-          {(
-            <div className="mt-3 flex flex-wrap gap-1.5 border-t border-[var(--glass-border)] pt-3">
-              {([
-                linked.length > 0 && { key: 'recollections' as const, label: `${linked.length} recollection${linked.length === 1 ? '' : 's'}` },
-                context.length > 0 && { key: 'context' as const, label: `${context.length} context` },
-                anchored.length > 0 && { key: 'anchored' as const, label: `${anchored.length} anchored` },
-                { key: 'hopper' as const, label: stubCount > 0 ? `✎ ${stubCount} to write` : '✎ jot' },
-              ].filter(Boolean) as { key: Exclude<OpenChip, null>; label: string }[]).map((c) => {
-                const open = openChip === c.key
-                return (
-                  <button
-                    key={c.key}
-                    onClick={() => setOpenChip(open ? null : c.key)}
-                    aria-expanded={open}
-                    className={
-                      'rounded-full border px-2.5 py-0.5 text-xs transition ' +
-                      (open
-                        ? 'border-[var(--ember-soft)] text-[var(--ember-soft)]'
-                        : 'border-[var(--glass-border)] text-[var(--ink-dim)] hover:text-[var(--ink)]')
-                    }
-                  >
-                    {c.label}
-                  </button>
-                )
-              })}
-            </div>
-          )}
-
-          {openChip === 'recollections' && linked.length > 0 && (
-            <div className="mt-2">
-              <div className="flex items-baseline justify-end">
-                <a
-                  href={`/memories?entity=${pin.place_entity_id}`}
-                  className="shrink-0 text-xs text-[var(--ember-soft)] hover:text-[var(--ember)]"
-                >
-                  View all in Recollections →
-                </a>
-              </div>
-              <ul className="mt-1.5 max-h-40 space-y-1.5 overflow-y-auto">
-                {linked.map((r) => {
-                  const expanded = expandedId === r.id
-                  const truncated = r.text.length > r.excerpt.length || r.excerpt.length >= 240
-                  return (
-                    <li key={r.id} className="text-xs leading-relaxed text-[var(--ink)]/80">
-                      {/* Toggle stays a plain-text button (no block markdown
-                          nested inside <button>); the expanded recollection
-                          renders as markdown below it (QA item 7). */}
-                      <button
-                        onClick={() => setExpandedId(expanded ? null : r.id)}
-                        className="w-full text-left hover:text-[var(--ink)]"
-                        title={expanded ? 'Collapse' : 'Read the full recollection'}
-                      >
-                        <span className="mr-1.5 text-[var(--ember-soft)]">{expanded ? '▾' : '▸'}</span>
-                        {expanded ? 'Collapse' : (
-                          <>
-                            {r.excerpt}
-                            {truncated ? '…' : ''}
-                          </>
-                        )}
-                      </button>
-                      {expanded && <Markdown className="mt-1 pl-4">{r.text}</Markdown>}
-                    </li>
-                  )
-                })}
-              </ul>
-            </div>
-          )}
-
-          {openChip === 'context' && (
-            <div className="mt-2">
-              {/* Existing context is the primary content — you opened the chip
-                  to SEE it (Andy's finding 2026-07-20; the panel used to lead
-                  with "add" and render the notes as dim, dead-looking text).
-                  "Add" is the secondary action, top-right, mirroring the
-                  recollections block. All context lives on the place's entity
-                  page, so a row opens it there — navigate, not expand-in-place:
-                  notes are often long pasted research and the card stays short
-                  over its own pin. The trailing ↗ is the same "opens elsewhere"
-                  signal as "Open place page ↗" in the header. */}
-              <div className="flex items-baseline justify-end">
-                <a
-                  href={`/entities/${pin.place_entity_id}`}
-                  className="shrink-0 text-xs text-[var(--ember-soft)] hover:text-[var(--ember)]"
-                  title="Add background research about this place on its page"
-                >
-                  ＋ Add on place page ↗
-                </a>
-              </div>
-              <ul className="mt-1.5 max-h-40 space-y-1 overflow-y-auto">
-                {context.map((c) => (
-                  <li key={c.id}>
-                    <a
-                      href={`/entities/${pin.place_entity_id}`}
-                      title={`Open “${c.title}” on the place page`}
-                      className="flex w-full items-center gap-1.5 rounded-lg px-1.5 py-1 text-left text-xs leading-relaxed hover:bg-white/5"
-                    >
-                      {c.visibility === 'private' ? (
-                        <span className="shrink-0" title="Private — only you can see this">🔒</span>
-                      ) : (
-                        <span aria-hidden className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--ember-soft)]" />
-                      )}
-                      <span className="min-w-0 flex-1 truncate font-medium text-[var(--ink)]">{c.title}</span>
-                      <span aria-hidden className="shrink-0 text-[var(--ember-soft)]">↗</span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Mounted regardless of which chip is open so the stub count stays
-              live on the chip; it renders its UI only while its chip is open. */}
-          <PinHopper
+          {/* A pin's connected collections — recollections, context, related
+              pins, and (card-only) the jot hopper — as a shared count-chip row
+              with single-open disclosure. The same component renders on the
+              edit panel (2026-07-20 reconciliation); keyed by pin so navigating
+              prev/next resets the open chip. */}
+          <PinConnections
+            key={pin.relationship_id}
             entityId={pin.place_entity_id}
-            hostName={pin.name}
+            placeName={pin.name}
+            linked={linked}
+            context={context}
+            anchored={anchored}
+            onSelectAnchored={onSelectAnchored}
             variant="card"
-            open={openChip === 'hopper'}
-            onCountChange={setStubCount}
           />
-
-          {openChip === 'anchored' && anchored.length > 0 && (
-            <div className="mt-2">
-              <ul className="max-h-40 space-y-1 overflow-y-auto">
-                {anchored.map((a) => (
-                  <li key={a.relationship_id}>
-                    <button
-                      onClick={() => onSelectAnchored(a.relationship_id)}
-                      title={`Open ${a.name}`}
-                      className="w-full rounded-lg px-1 py-0.5 text-left text-xs leading-relaxed text-[var(--ink)]/80 hover:bg-white/5 hover:text-[var(--ink)]"
-                    >
-                      <span className="mr-1.5 inline-block h-2 w-2 rounded-full align-middle" style={{ backgroundColor: pinTypeMeta(a.type_code).color }} />
-                      <span className="font-medium text-[var(--ink)]">{a.name}</span>
-                      {a.excerpt ? <span className="text-[var(--ink-dim)]"> — {a.excerpt}</span> : null}
-                      {(a.linked_count ?? 0) > 0 && (
-                        <span className="text-[var(--ember-soft)]"> · +{a.linked_count} more</span>
-                      )}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
         </div>
       </div>
       )}
