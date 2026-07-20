@@ -47,6 +47,18 @@ expect(
   'The Reflex era',
 )
 
+// ── A "loose" heading with no space after the hashes (##Foo) is not a
+//    valid ATX heading, so it fell through to the raw first line and leaked
+//    its # marks into the title (Andy's Lockbourne finding, 2026-07-20).
+//    A plain-text title must never begin with heading hashes. ──
+expect(
+  'no-space heading',
+  deriveContextTitle('##The preamble to my journey.\\n\\nBody'),
+  'The preamble to my journey.',
+)
+expect('single no-space hash', deriveContextTitle('#Solo note about the base'), 'Solo note about the base')
+expect('hashes-only first line skipped', deriveContextTitle('##\\nReal content on line two'), 'Real content on line two')
+
 // ── stripInlineMarkdown pieces ──
 expect('link \\u2192 label', stripInlineMarkdown('see [Operation Reflex](' + LONG_URL + ') for detail'), 'see Operation Reflex for detail')
 expect('image \\u2192 alt', stripInlineMarkdown('![base gate photo](https://x.example/img.jpg) 1959'), 'base gate photo 1959')

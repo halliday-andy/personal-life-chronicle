@@ -61,8 +61,12 @@ export function deriveContextTitle(body: string): string {
   }
 
   // 2. First ~8 words of the first non-empty line, markdown reduced to text.
+  //    A leading ATX-hash run is stripped first so a "loose" heading with no
+  //    space (`##Foo`) — which step 1 won't accept and the renderer shows
+  //    literally — never leaks its # marks into a plain-text title. A line
+  //    that is only hashes reduces to empty and is skipped.
   const firstLine = lines
-    .map((l) => stripInlineMarkdown(l))
+    .map((l) => stripInlineMarkdown(l.replace(/^\s{0,3}#{1,6}\s*/, '')))
     .find((l) => l.length > 0)
   if (!firstLine) return 'Untitled note'
   const words = firstLine.split(/\s+/)
