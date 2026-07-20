@@ -4,6 +4,58 @@ description: What's been built so far in the Claude Code implementation of Life 
 type: project
 ---
 
+## Session handoff — 2026-07-20 (context-card fix + pin-card reconciliation + sticky facts data layer)
+
+Andy QA'd live while this session built; he checked off **unsequenced
+residences** and **Slice 3 close-out** in the master sequence (Phase 1).
+Three units shipped, all pushed, proofs where there's pure logic:
+
+- **Context-card finding fixed** (Lockbourne card, `74ea542`+`6bca349`):
+  the "N context" chip led with "＋ add context" over the actual note
+  rendered as dim, dead-looking text (inverted hierarchy), and derived
+  titles leaked raw `##`. Root causes: the context block was written
+  add-first with weak-affordance rows; `deriveContextTitle` only accepted a
+  heading WITH a space after the hashes (`## Foo`), so `##Foo` fell through
+  to the raw first line. Fixes: notes-first + strong affordance (Andy's
+  call: navigate-with-strong-affordance), and strip a leading ATX-hash run
+  in the title fallback (`verify-derive-context-title.mjs` 15/15).
+  **Class-of-bug: a derived plain-text label must never carry through block
+  markdown (leading hashes), spacing regardless.**
+- **Pin-card reconciliation** (design `docs/plans/2026-07-20-pin-card-reconciliation-design.md`;
+  `af19c86`/`77fc099`/`324fb20`, Approach A): the detail card and edit panel
+  each rendered the pin's connected collections independently and had
+  DRIFTED — the bigger edit panel showed LESS (no context, no related pins).
+  Extracted `components/globe/PinConnections.tsx`, mounted by BOTH cards; the
+  edit panel is now the pin's workbench. Folded in Andy's two directives:
+  "N anchored" chip → **"N related pin(s)"**; **"＋ Add New Context ↗"**
+  deep-links to `/entities/[id]?addContext=1`, which auto-opens the composer
+  (EntityView reads the param client-side). Hopper is per-variant (card = 4th
+  single-open chip; panel keeps its own full always-open hopper). **Class-of-
+  bug: two surfaces rendering the same data drift — extract a shared
+  component, don't copy the markup.** tsc+lint green; **VISUAL PENDING Andy's
+  eyeball** (Claude is auth-blocked from the running app) — QA
+  `docs/qa/2026-07-20-pin-card-reconciliation-qa-checklist.md`.
+- **Sticky pin-facts DATA LAYER** (`3679df6`; the pin-facts editor's
+  foundation, plan `docs/plans/2026-07-10-pin-facts-editor-enhancement.md`):
+  `runGlobeExtraction` overwrote every fact on each re-run, clobbering owner
+  corrections. New pure `lib/globe/sticky-facts.ts` (`verify-sticky-facts.mjs`
+  16/16): owner-edited fields (provenance in
+  `relationships.metadata.facts_owner_edited`) survive re-extraction;
+  extraction stays frontline for untouched fields. Integrated into
+  runGlobeExtraction (raw model output still logged for audit; metadata stays
+  MERGE-only). **Class-of-bug: an owner-editable field an agent also writes
+  needs per-field provenance so the agent can't clobber the owner** (kin to
+  merge-substance-preservation). `applyOwnerFactEdit` write helper is built +
+  proven for the UI step.
+- **Andy confirmed pin-facts defaults:** all four facts editable
+  (residence_type / residence_detail / household_composition / move_reason);
+  a user-triggered "refresh facts from the recollection" button + the queued
+  offer-after-text-edit.
+- **NEXT:** the pin-facts editor **UI** (the four fields + refresh button on
+  the workbench, using `applyOwnerFactEdit`) — the last step of that unit;
+  then the **Loose-Ends surface design doc** (roadmap §3). Andy returns this
+  evening to eyeball the pin-card work.
+
 ## Session handoff — 2026-07-18 (Spine & Share direction set; two Phase-1 riders BUILT)
 
 - **2026-07-17: the Spine & Share roadmap is the active forward plan**
