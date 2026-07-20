@@ -18,6 +18,7 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { DEFAULT_AGENT_MODEL, getAnthropicClient } from '@/lib/agents/shared/anthropic'
+import { readCurrentFacts, readOwnerEditedFields, resolveStickyFacts } from './sticky-facts'
 
 export interface GlobeExtraction {
   residence_type: string | null
@@ -172,14 +173,33 @@ export async function runGlobeExtraction(
     confidence: typeof raw.confidence === 'number' ? raw.confidence : 0.5,
   }
 
-  // Re-running on an edited recollection overwrites the previous
-  // extraction — latest text wins. The audit trail lives in assumption_log.
+  // Re-running refines the previous extraction — but OWNER-EDITED facts are
+  // final: resolveStickyFacts keeps any field the owner has touched
+  // (metadata.facts_owner_edited) and takes the fresh extraction for the rest.
+  // relationships.metadata stays MERGE-only, so facts_owner_edited survives.
+  // The raw model output is still what we log below (an honest audit of the run).
+  const currentMeta = (rel.metadata ?? {}) as Record<string, unknown>
+  const sticky = resolveStickyFacts({
+    current: readCurrentFacts(currentMeta),
+    extracted: {
+      residence_type: extraction.residence_type,
+      residence_detail: extraction.residence_detail,
+      household_composition: extraction.household_composition,
+      move_reason: extraction.move_reason,
+    },
+    ownerEdited: readOwnerEditedFields(currentMeta),
+  })
   const mergedMetadata = {
-    ...((rel.metadata ?? {}) as Record<string, unknown>),
-    residence_type: extraction.residence_type,
-    move_reason: extraction.move_reason,
+    ...currentMeta,
+    residence_type: sticky.residence_type,
+    move_reason: sticky.move_reason,
     globe_extraction: {
       ...extraction,
+      // Owner-edited facts win over the fresh extraction in the payload too.
+      residence_type: sticky.residence_type,
+      residence_detail: sticky.residence_detail,
+      household_composition: sticky.household_composition,
+      move_reason: sticky.move_reason,
       memory_id: memoryId,
       model: DEFAULT_AGENT_MODEL,
       extracted_at: new Date().toISOString(),
