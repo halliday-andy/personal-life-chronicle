@@ -9,7 +9,7 @@
  * never leave the owner's view; published/synthesis paths read only shareable.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Markdown from './Markdown'
@@ -181,6 +181,7 @@ export default function EntityView({ entity, notes: initialNotes, recollections 
 }) {
   const [notes, setNotes] = useState<ContextNote[]>(initialNotes)
   const [adding, setAdding] = useState(false)
+  const contextSectionRef = useRef<HTMLElement>(null)
   const [body, setBody] = useState('')
   const [sourceLabel, setSourceLabel] = useState('')
   const [sourceUrl, setSourceUrl] = useState('')
@@ -202,6 +203,15 @@ export default function EntityView({ entity, notes: initialNotes, recollections 
     setViewingEntity({ entity_id: entity.id, entity_name: entity.canonical_name, entity_type: entity.type })
     return () => setViewingEntity(null)
   }, [entity.id, entity.canonical_name, entity.type, setViewingEntity])
+  // Deep-link from the pin card's "＋ Add New Context ↗": open the composer on
+  // arrival and scroll it into view (2026-07-20). Client-only param read, so no
+  // Suspense boundary is needed.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('addContext')) {
+      setAdding(true)
+      contextSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [])
   const [addingRec, setAddingRec] = useState(false)
   const [recBody, setRecBody] = useState('')
   const [recWhen, setRecWhen] = useState('')
@@ -327,7 +337,7 @@ export default function EntityView({ entity, notes: initialNotes, recollections 
         {entity.description && <p className="mt-1 text-sm text-stone-600">{entity.description}</p>}
 
         {/* Context ─────────────────────────────────────────────── */}
-        <section className="mt-6">
+        <section ref={contextSectionRef} className="mt-6">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">Context</h2>
             {!adding && (
