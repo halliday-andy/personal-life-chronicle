@@ -144,6 +144,16 @@ it to someone.
 
 ## 5. Later, named so nothing is lost
 
+- **Capture-assistant support knowledge base — content SEEDED 2026-07-19**
+  (`documentation/knowledge-base/`, five articles + authoring rules, from
+  the Phase-1 QA sessions; Andy's request). The remaining half is
+  **integration**: an orchestrator lookup tool so the assistant answers
+  how/why capture questions FROM the articles (never improvised), citing
+  the surface to tap. Rides the Unit-1 / Step-8 orchestrated-strand
+  design — guidance is the assistant's support face, nudging its
+  proactive face. Standing rule: a PR that changes a captured flow
+  updates the affected article in the same change.
+
 - **Globe visual-language pass** — promoted from "parked polish": scope has
   grown since parking (trip arcs = 4th line tier, destination/stop markers,
   draft badges, hollow Future Places, unplaced treatment, the icon-hierarchy
