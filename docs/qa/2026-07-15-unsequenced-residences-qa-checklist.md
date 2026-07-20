@@ -7,38 +7,38 @@ option in both the creation modal and the edit panel.
 
 ## 1. Decide later at creation (R21)
 
-- [ ] Drop a pin, keep **Primary residence**: the "Where does this fall
+- [x] Drop a pin, keep **Primary residence**: the "Where does this fall
       in your life?" dropdown now ends with **Decide later — not yet
       placed** (helper copy appears when chosen).
-- [ ] Save with it → the pin lands with a slowly turning dashed **ember**
+- [x] Save with it → the pin lands with a slowly turning dashed **ember**
       ring and a "not yet placed" line under its chip; the spine thread
       and every other home's position are untouched.
-- [ ] The pin is fully embellishable now: recollection, photos, placard,
+- [x] The pin is fully embellishable now: recollection, photos, placard,
       jots, facts — all work as on any home.
 
 ## 2. Excluded from spine logic
 
-- [ ] The thread doesn't route through it; no chevron leg touches it.
-- [ ] The origin star and the "now" endpoint are unchanged.
-- [ ] Journey (residential mode): it appears under **Not yet placed ·
+- [x] The thread doesn't route through it; no chevron leg touches it.
+- [x] The origin star and the "now" endpoint are unchanged.
+- [x] Journey (residential mode): it appears under **Not yet placed ·
       homes awaiting their spot** with a "Place it in sequence →" link —
       never as a stop on the thread. A Log anchored to it nests beneath
       it there.
 
 ## 3. Place in sequence
 
-- [ ] Its Edit panel shows the dashed "Not yet placed in your journey"
+- [x] Its Edit panel shows the dashed "Not yet placed in your journey"
       block. Choose a slot (e.g. between Mt. Snow and Alp Hof) → the
       thread re-routes through it at that position; "stop N of M"
       appears; the dashed ring is gone.
 
 ## 4. Demote from the edit panel (your screenshot's dropdown)
 
-- [ ] On a SEQUENCED home, the same dropdown now ends with **Decide
+- [x] On a SEQUENCED home, the same dropdown now ends with **Decide
       later — not yet placed**. Choose it → the home leaves the thread,
       the remaining spine closes up in order, and the pin keeps its
       recollection, photos, jots, and tethered markers.
-- [ ] Re-place it → back exactly where you chose.
+- [x] Re-place it → back exactly where you chose.
 
 ## 5. Trip origin before the spine (R22 / AE5)
 
