@@ -1583,6 +1583,7 @@ export default function GlobeView() {
           onCancel={() => setModalOpen(false)}
           originCapture={!!originCapture}
           defaultTypeCode={tripFromHere ? 'trip' : undefined}
+          defaultAnchorId={tripFromHere?.relationshipId}
         />
       )}
 

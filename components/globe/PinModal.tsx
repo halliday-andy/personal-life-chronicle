@@ -57,6 +57,7 @@ export default function PinModal({
   onCancel,
   originCapture = false,
   defaultTypeCode,
+  defaultAnchorId,
 }: {
   placeLabel: string
   saving: boolean
@@ -70,6 +71,11 @@ export default function PinModal({
   /** Preselect the type — "Start a trip from here" opens the modal on
    *  Trip (2026-07-19); the user can still change it. */
   defaultTypeCode?: string
+  /** Preselect the anchor — while "Start a trip from here" is armed, the
+   *  armed home is the era this destination belongs to, so the anchor
+   *  default matches the trip origin instead of the first spine home
+   *  (Andy's chalet→Calgary confusion, 2026-07-19). */
+  defaultAnchorId?: string
 }) {
   const [name, setName] = useState(placeLabel === 'This place' ? '' : placeLabel)
   const [body, setBody] = useState('')
@@ -80,8 +86,8 @@ export default function PinModal({
   // Sequence slot (spine only): 0 = before the first, i = after
   // primaries[i-1], DECIDE_LATER = save unsequenced (U9).
   const [position, setPosition] = useState<number>(originCapture ? DECIDE_LATER : primaries.length)
-  // Anchor (markers only): a primary residence relationship_id, or '' = standalone.
-  const [anchorId, setAnchorId] = useState<string>(primaries[0]?.relationship_id ?? '')
+  // Anchor (markers only): a home relationship_id, or '' = standalone.
+  const [anchorId, setAnchorId] = useState<string>(defaultAnchorId ?? primaries[0]?.relationship_id ?? '')
   const ghost = useMemo(() => GHOST_TEXTS[Math.floor(Math.random() * GHOST_TEXTS.length)], [])
 
   // Duplicate-twin guard (2026-07-07): if the pin name exactly matches an
@@ -296,7 +302,9 @@ export default function PinModal({
               <option value="">Not sure / standalone</option>
             </select>
             <p className="mt-1 text-xs text-[var(--ink-dim)]/80">
-              Connects this with a dashed line to that home.
+              {isTrip
+                ? 'Which home era does this belong to? It draws a dashed line to that home — the trip’s origin is a separate question, asked next.'
+                : 'Connects this with a dashed line to that home.'}
             </p>
           </>
         )}
