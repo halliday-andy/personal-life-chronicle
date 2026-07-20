@@ -22,6 +22,7 @@ import TripFramePanel, { TripFramingContext } from './TripFramePanel'
 import { TRIP_SUBTYPE_LABELS, type TripLeg, type TripRow } from '@/lib/globe/trip-types'
 import PinEditPanel from './PinEditPanel'
 import PinDetailCard from './PinDetailCard'
+import PinHopper from './PinHopper'
 import { useUiChrome } from '../UiChromeContext'
 import { clusterFrame } from '@/lib/globe/cluster-frame'
 import { nextRegime, styleForRegime, NOCTURNE_STYLE, type GlobeRegime } from '@/lib/globe/style-regime'
@@ -305,6 +306,10 @@ export default function GlobeView() {
   // of the NEXT trip framed — origin-first entry into the destination-first
   // flow. Consumed when a framing panel closes; cancellable from its banner.
   const [tripFromHere, setTripFromHere] = useState<{ relationshipId: string; name: string } | null>(null)
+  // Trip jots on the globe strip (2026-07-19, Andy's ask): capture the
+  // highlights while framing; elaborate later in the Travel Journal.
+  const [openJotsTrip, setOpenJotsTrip] = useState<string | null>(null)
+  const [tripJotCounts, setTripJotCounts] = useState<Record<string, number>>({})
   // Trip route layer (U4): loaded trips, the hidden-by-default toggle
   // (R10 — the spine stays visually dominant), and route-building mode.
   const [trips, setTrips] = useState<TripRow[]>([])
@@ -1708,7 +1713,8 @@ export default function GlobeView() {
         return (
           <div className="glass absolute left-1/2 top-20 z-30 flex max-w-[min(560px,92vw)] -translate-x-1/2 flex-col gap-1.5 rounded-xl px-3 py-2 text-xs text-[var(--ink)]">
             {mine.map((t) => (
-              <div key={t.trip_id} className="flex flex-wrap items-center gap-2">
+              <div key={t.trip_id}>
+              <div className="flex flex-wrap items-center gap-2">
                 <span style={{ color: TRIP_ROUTE_COLOR }}>✈</span>
                 <span className="font-medium">{t.title || `Trip to ${t.destination_name}`}</span>
                 <span className="text-[var(--ink-dim)]">{TRIP_SUBTYPE_LABELS[t.subtype]}{t.when_text ? ` · ${t.when_text}` : ''}</span>
@@ -1759,7 +1765,27 @@ export default function GlobeView() {
                       Unframe
                     </button>
                   )}
+                  {/* Trip jots (2026-07-19): highlights captured while the
+                      route is fresh; elaborated later in the Travel Journal. */}
+                  <button
+                    onClick={() => setOpenJotsTrip((c) => (c === t.trip_id ? null : t.trip_id))}
+                    className={`rounded-lg border border-[var(--glass-border)] px-2 py-0.5 hover:text-[var(--ember-soft)] ${openJotsTrip === t.trip_id ? 'text-[var(--ember-soft)]' : ''}`}
+                    title="Jot the trip's highlights — write them up in the Travel Journal"
+                  >
+                    ✎ jots{(tripJotCounts[t.trip_id] ?? 0) > 0 ? ` · ${tripJotCounts[t.trip_id]}` : ''}
+                  </button>
                 </span>
+              </div>
+              {/* Mounted regardless so the count stays live; renders its UI
+                  only while its chip is open (the detail-card pattern). */}
+              <PinHopper
+                entityId={t.trip_entity_id}
+                hostName={t.title || `Trip to ${t.destination_name}`}
+                variant="card"
+                open={openJotsTrip === t.trip_id}
+                onCountChange={(n) =>
+                  setTripJotCounts((m) => (m[t.trip_id] === n ? m : { ...m, [t.trip_id]: n }))}
+              />
               </div>
             ))}
             {/* Reuse this destination (U7, R17): repeat visits stay

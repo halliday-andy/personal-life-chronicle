@@ -45,7 +45,21 @@ master-sequence Phase 1 (rider batch).
       arc appears.
 - [ ] A round trip framed normally still draws its dashed return.
 
-## 4. Strip regressions
+## 4. Trip jots on the globe strip (added same day)
+
+- [ ] Select the Calgary destination pin → the trip's strip row has a
+      **✎ jots** chip (with a live count once jots exist).
+- [ ] Tap it → the trip's hopper opens inline in the strip: add a few
+      highlight jots ("the night in Winnipeg", "the pass in a
+      whiteout"). Multi-line paste still splits into separate jots.
+- [ ] The SAME jots appear on the trip's card in the **Travel Journal**
+      (one hopper, two hosts' views) — with ✍ write available there.
+- [ ] Checking a jot off manually works from either surface — for when
+      one big recollection covers several highlights.
+- [ ] The chip's count updates after adding/consuming; opening another
+      trip's jots closes the first.
+
+## 5. Strip regressions
 
 - [ ] A home with existing departures still shows "N trips originated
       here", the home-base chip, and "Travel Journal →" alongside the
