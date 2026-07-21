@@ -1,0 +1,13 @@
+-- Pin photo carousel ordering (2026-07-20).
+--
+-- entity_media.sort_order gives each linked photo an explicit position in the
+-- pin's gallery/carousel, replacing the implicit created_at-DESC order that
+-- made new photos jump to the front and sequential adds come out reversed
+-- (Andy's Photos-gallery QA finding, UI checklist §5).
+--
+-- Additive + nullable, so it is SAFE (no migration-safety gate): existing rows
+-- keep NULL and sort after positioned photos. NO backfill — Andy will
+-- delete/reinstall the few pins that already have >2 photos.
+--
+-- Design: docs/plans/2026-07-20-pin-photo-ordering-design.md.
+ALTER TABLE entity_media ADD COLUMN IF NOT EXISTS sort_order integer;
