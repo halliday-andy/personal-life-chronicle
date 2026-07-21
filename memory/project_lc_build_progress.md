@@ -47,6 +47,20 @@ Three units shipped, all pushed, proofs where there's pure logic:
   needs per-field provenance so the agent can't clobber the owner** (kin to
   merge-substance-preservation). `applyOwnerFactEdit` write helper is built +
   proven for the UI step.
+- **Pin photo ordering / carousel foundation** (`b325ec7`/`6a4c2ad`/`7609ecb`;
+  design `docs/plans/2026-07-20-pin-photo-ordering-design.md`): from Andy's
+  UI-checklist §5 finding — photos landed at the front and sequential adds came
+  out reversed because the gallery sorted by `created_at` DESC with no stored
+  order. Added `entity_media.sort_order` (additive migration, no gate, applied
+  + column-verified); pure `lib/globe/pin-image-order.ts`
+  (`verify-pin-image-order.mjs` 8/8); backend appends at end + `reorderPinImages`
+  (PATCH `{order}`) + promote drops the former primary to the carousel END
+  (primary = cover, **decoupled** from sequence — Andy's model); drag-to-reorder
+  UI in the edit-panel gallery (native HTML5 DnD, primary not draggable). **No
+  backfill** (Andy reinstalls the few old multi-photo pins). **Deferred:
+  keyboard-accessible reorder** (drag is pointer-only) + the carousel/slideshow
+  presentation itself. Andy can QA this one **live** (not auth-blocked). QA
+  `docs/qa/2026-07-20-photo-ordering-qa-checklist.md`.
 - **Andy confirmed pin-facts defaults:** all four facts editable
   (residence_type / residence_detail / household_composition / move_reason);
   a user-triggered "refresh facts from the recollection" button + the queued
