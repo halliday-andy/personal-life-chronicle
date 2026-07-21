@@ -139,6 +139,7 @@ export default function PinEditPanel({
   const [galleryError, setGalleryError] = useState<string | null>(null)
   const [galleryNotice, setGalleryNotice] = useState<string | null>(null)
   const [lightbox, setLightbox] = useState<string | null>(null)
+  const [dragId, setDragId] = useState<string | null>(null)  // carousel drag-reorder (2026-07-20)
   const fileRef = useRef<HTMLInputElement>(null)
 
   // User-resizable width (QA item 5): drag the left edge to trade globe
@@ -214,6 +215,32 @@ export default function PinEditPanel({
       return fetch(`/api/globe/residence/${pin.relationship_id}/image`, { method: 'POST', body: form })
     })
     if (warning) setGalleryNotice(warning)
+  }
+
+  // Drag-to-reorder the carousel (the non-primary photos). The primary is the
+  // cover and stays first; we move the dragged photo to the drop target's slot,
+  // update optimistically, and persist the new carousel order via PATCH (the
+  // server response reconciles). 2026-07-20.
+  function handleReorderDrop(targetId: string) {
+    const dragged = dragId
+    setDragId(null)
+    if (!dragged || dragged === targetId) return
+    const primary = images.filter((i) => i.is_primary)
+    const carousel = images.filter((i) => !i.is_primary)
+    const from = carousel.findIndex((i) => i.media_id === dragged)
+    const to = carousel.findIndex((i) => i.media_id === targetId)
+    if (from < 0 || to < 0) return
+    const next = [...carousel]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
+    setImages([...primary, ...next]) // optimistic; server response reconciles
+    void galleryCall(() =>
+      fetch(`/api/globe/residence/${pin.relationship_id}/image`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order: next.map((i) => i.media_id) }),
+      }),
+    )
   }
 
   return (
@@ -449,6 +476,9 @@ export default function PinEditPanel({
           <div className="flex items-center justify-between">
             <span className="text-xs text-[var(--ink-dim)]">
               Photos{images.length > 0 ? ` · ${images.length}` : ''}
+              {images.filter((i) => !i.is_primary).length >= 2 && (
+                <span className="text-[var(--ink-dim)]/60"> · drag to reorder</span>
+              )}
             </span>
             <button
               onClick={() => fileRef.current?.click()}
@@ -461,12 +491,22 @@ export default function PinEditPanel({
           {images.length > 0 && (
             <div className="mt-2 grid grid-cols-4 gap-2">
               {images.map((img) => (
-                <div key={img.media_id} className="group relative">
+                <div
+                  key={img.media_id}
+                  className={`group relative rounded-lg ${!img.is_primary ? 'cursor-move' : ''} ${dragId === img.media_id ? 'opacity-40' : ''}`}
+                  draggable={!img.is_primary && !galleryBusy}
+                  onDragStart={!img.is_primary ? (e) => { e.dataTransfer.setData('text/plain', img.media_id); e.dataTransfer.effectAllowed = 'move'; setDragId(img.media_id) } : undefined}
+                  onDragEnd={() => setDragId(null)}
+                  onDragOver={!img.is_primary ? (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' } : undefined}
+                  onDrop={!img.is_primary ? (e) => { e.preventDefault(); handleReorderDrop(img.media_id) } : undefined}
+                  title={!img.is_primary ? 'Drag to reorder' : undefined}
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element -- signed, short-lived URL */}
                   <img
                     src={img.url}
                     alt={img.filename ?? 'Pin photo'}
                     title="Double-click to enlarge"
+                    draggable={false}
                     onDoubleClick={() => setLightbox(img.url)}
                     className={`aspect-square w-full cursor-zoom-in rounded-lg object-cover ${
                       img.is_primary

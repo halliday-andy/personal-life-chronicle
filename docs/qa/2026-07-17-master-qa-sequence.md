@@ -76,6 +76,7 @@ machinery.
 ## Phase 5 — Residual polish
 
 - [ ] **Photos / gallery** — [2026-06-15-ui-qa-checklist.md](2026-06-15-ui-qa-checklist.md) §5 (5 items: HEIC, multi-photo gallery, primary promotion, full-size viewer).
+- [ ] **Photo ordering / carousel foundation** — [2026-07-20-photo-ordering-qa-checklist.md](2026-07-20-photo-ordering-qa-checklist.md). Built 2026-07-20 from Andy's §5 finding: photos added at the front / reversed with no reorder. Now stored `sort_order` — new photos append at the end, drag-to-reorder the carousel, primary decoupled as the cover (former primary drops to the end on promote). Design: `docs/plans/2026-07-20-pin-photo-ordering-design.md`.
 
 ---
 
