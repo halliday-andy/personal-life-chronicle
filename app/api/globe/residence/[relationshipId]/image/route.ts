@@ -24,6 +24,7 @@ import {
   addPinImage,
   listPinImages,
   removePinImageById,
+  reorderPinImages,
   setPrimaryPinImage,
   MAX_PIN_IMAGE_BYTES,
   PIN_IMAGE_MIME_TYPES,
@@ -102,6 +103,29 @@ export async function PUT(request: NextRequest, { params }: { params: { relation
   const admin = createAdminClient()
   const ok = await setPrimaryPinImage(admin, owned.userId, owned.entityId, mediaId)
   if (!ok) return NextResponse.json({ error: 'Image not found on this pin' }, { status: 404 })
+  const images = await listPinImages(admin, owned.userId, owned.entityId)
+  return NextResponse.json({ ok: true, images })
+}
+
+// Reorder the carousel — JSON { order: string[] } of media ids, in the desired
+// sequence. The primary stays the cover; unknown ids are ignored (2026-07-20).
+export async function PATCH(request: NextRequest, { params }: { params: { relationshipId: string } }) {
+  const owned = await ownedPlaceEntity(params.relationshipId)
+  if (!owned) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  let orderedIds: string[] | null = null
+  try {
+    const body = (await request.json()) as { order?: unknown }
+    if (Array.isArray(body.order) && body.order.every((x) => typeof x === 'string')) {
+      orderedIds = body.order as string[]
+    }
+  } catch {
+    return NextResponse.json({ error: 'Body must be JSON' }, { status: 400 })
+  }
+  if (!orderedIds) return NextResponse.json({ error: 'order (string[]) is required' }, { status: 400 })
+
+  const admin = createAdminClient()
+  await reorderPinImages(admin, owned.userId, owned.entityId, orderedIds)
   const images = await listPinImages(admin, owned.userId, owned.entityId)
   return NextResponse.json({ ok: true, images })
 }

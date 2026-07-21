@@ -15,6 +15,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { sortGallery, nextSortOrder, applyReorder } from './pin-image-order'
 
 export const PIN_IMAGES_BUCKET = 'pin_images'
 export const MAX_PIN_IMAGE_BYTES = 5 * 1024 * 1024
@@ -35,6 +36,7 @@ interface PinImageRow {
   uri: string
   filename: string | null
   is_primary: boolean
+  sort_order: number | null
   created_at: string
 }
 
@@ -51,7 +53,7 @@ async function findPinImageRows(
 ): Promise<PinImageRow[]> {
   const { data, error } = await admin
     .from('entity_media')
-    .select('media_id, is_primary, media:media_id (id, user_id, uri, filename, created_at)')
+    .select('media_id, is_primary, sort_order, media:media_id (id, user_id, uri, filename, created_at)')
     .eq('entity_id', entityId)
   if (error || !data) return []
   const rows: PinImageRow[] = []
@@ -63,17 +65,13 @@ async function findPinImageRows(
         uri: m.uri,
         filename: m.filename ?? null,
         is_primary: Boolean(link.is_primary),
+        sort_order: typeof link.sort_order === 'number' ? link.sort_order : null,
         created_at: m.created_at,
       })
     }
   }
-  // Primary first, then newest first.
-  rows.sort((a, b) =>
-    a.is_primary !== b.is_primary
-      ? (a.is_primary ? -1 : 1)
-      : b.created_at.localeCompare(a.created_at),
-  )
-  return rows
+  // Primary first (the cover), then the carousel by stored sort_order.
+  return sortGallery(rows)
 }
 
 async function sign(admin: SupabaseClient, row: PinImageRow): Promise<PinImage | null> {
@@ -136,6 +134,8 @@ export async function addPinImage(
 
   const existing = await findPinImageRows(admin, userId, entityId)
   const asPrimary = Boolean(args.makePrimary) || existing.length === 0
+  // New photos append to the end of the carousel (owner-ordered, 2026-07-20).
+  const sort_order = nextSortOrder(existing)
 
   const safeName = (args.filename ?? 'image')
     .replace(/[^\w.\-]+/g, '_')
@@ -170,7 +170,7 @@ export async function addPinImage(
     }
     const { error: linkErr } = await admin
       .from('entity_media')
-      .insert({ entity_id: entityId, media_id: media.id, is_primary: asPrimary })
+      .insert({ entity_id: entityId, media_id: media.id, is_primary: asPrimary, sort_order })
     if (linkErr) {
       await admin.from('media').delete().eq('id', media.id)
       throw new Error(`entity_media insert failed: ${linkErr.message}`)
@@ -178,7 +178,7 @@ export async function addPinImage(
 
     const img = await sign(admin, {
       media_id: media.id, uri: path, filename: args.filename ?? null,
-      is_primary: asPrimary, created_at: new Date().toISOString(),
+      is_primary: asPrimary, sort_order, created_at: new Date().toISOString(),
     })
     if (!img) throw new Error('Could not sign image URL')
     return img
@@ -197,15 +197,49 @@ export async function setPrimaryPinImage(
   mediaId: string,
 ): Promise<boolean> {
   const rows = await findPinImageRows(admin, userId, entityId)
-  if (!rows.some((r) => r.media_id === mediaId)) return false
+  const target = rows.find((r) => r.media_id === mediaId)
+  if (!target) return false
+  if (target.is_primary) return true // already the cover — no-op
+  const formerPrimary = rows.find((r) => r.is_primary)
   await admin.from('entity_media')
     .update({ is_primary: false })
     .eq('entity_id', entityId)
     .in('media_id', rows.filter((r) => r.media_id !== mediaId).map((r) => r.media_id))
+  // The former primary re-enters the carousel at the END, draggable from there
+  // (Andy's rule 2026-07-20) — the primary is the cover, decoupled from order.
+  if (formerPrimary && formerPrimary.media_id !== mediaId) {
+    await admin.from('entity_media')
+      .update({ sort_order: nextSortOrder(rows) })
+      .eq('entity_id', entityId)
+      .eq('media_id', formerPrimary.media_id)
+  }
   await admin.from('entity_media')
     .update({ is_primary: true })
     .eq('entity_id', entityId)
     .eq('media_id', mediaId)
+  return true
+}
+
+/**
+ * Reorder the carousel — assign dense sort_order 0..N-1 to the given media ids
+ * in order. Only ids belonging to this pin are updated (unknown ids ignored);
+ * the primary is the cover and normally isn't in the list, but including it is
+ * harmless (it still displays first). Used by the drag-to-reorder persist path.
+ */
+export async function reorderPinImages(
+  admin: SupabaseClient,
+  userId: string,
+  entityId: string,
+  orderedMediaIds: string[],
+): Promise<boolean> {
+  const rows = await findPinImageRows(admin, userId, entityId)
+  const known = new Set(rows.map((r) => r.media_id))
+  for (const { media_id, sort_order } of applyReorder(orderedMediaIds.filter((id) => known.has(id)))) {
+    await admin.from('entity_media')
+      .update({ sort_order })
+      .eq('entity_id', entityId)
+      .eq('media_id', media_id)
+  }
   return true
 }
 
