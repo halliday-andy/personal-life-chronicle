@@ -73,10 +73,13 @@ Three units shipped, all pushed, proofs where there's pure logic:
   (residence_type / residence_detail / household_composition / move_reason);
   a user-triggered "refresh facts from the recollection" button + the queued
   offer-after-text-edit.
-- **NEXT:** the pin-facts editor **UI** (the four fields + refresh button on
-  the workbench, using `applyOwnerFactEdit`) — the last step of that unit;
-  then the **Loose-Ends surface design doc** (roadmap §3). Andy returns this
-  evening to eyeball the pin-card work.
+- **NEXT (2026-07-20 session closed here):** Andy resumes QA **tomorrow at the
+  2026-07-19 "start a trip from here" checklist**
+  (`docs/qa/2026-07-19-trip-from-here-qa-checklist.md`, Phase 1). Pending his
+  live eyeball (Claude is auth-blocked from the running app): the pin-card
+  reconciliation + the photo reorder. Build units still queued: the pin-facts
+  editor **UI** (four fields + refresh button on the workbench, using
+  `applyOwnerFactEdit`), then the **Loose-Ends surface design doc** (roadmap §3).
 
 ## Session handoff — 2026-07-18 (Spine & Share direction set; two Phase-1 riders BUILT)
 
