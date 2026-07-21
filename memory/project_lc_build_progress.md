@@ -61,6 +61,14 @@ Three units shipped, all pushed, proofs where there's pure logic:
   keyboard-accessible reorder** (drag is pointer-only) + the carousel/slideshow
   presentation itself. Andy can QA this one **live** (not auth-blocked). QA
   `docs/qa/2026-07-20-photo-ordering-qa-checklist.md`.
+- **Legend swatch fix** (`93be8de`): the Legend's Second residence & Vacation
+  icons rendered as tiny black rectangles — the swatch applied the per-type
+  MODIFIER class without the base `globe-pin` (unlike the on-globe markers), and
+  those two modifiers inherit size + background from the base. Now
+  `globe-pin ${modifier}`; a doc comment on `pinTypeClass` tells consumers to
+  always prepend the base. **Class-of-bug: a modifier-only CSS class applied
+  without its base collapses to its box-shadow.** From Andy finalizing the
+  2026-07-18 pin-search QA.
 - **Andy confirmed pin-facts defaults:** all four facts editable
   (residence_type / residence_detail / household_composition / move_reason);
   a user-triggered "refresh facts from the recollection" button + the queued
