@@ -67,6 +67,10 @@ const isSequencedPrimary = (p: Pin) => p.type_code === SPINE_CODE && p.sort_orde
 const LINES_IN_VIEW_MIN_ZOOM = 3
 
 // Per-type pin CSS modifier (base .globe-pin = primary residence).
+// The per-type MODIFIER class (with a leading space), e.g. ' globe-pin--second'.
+// ALWAYS prepend the base 'globe-pin': modifiers like --second / --vacation only
+// override colour/shadow and inherit size + background from the base, so applied
+// alone they collapse to a bare box-shadow (Andy's legend finding 2026-07-20).
 function pinTypeClass(typeCode: string | null): string {
   switch (typeCode) {
     case 'worked_at': return ' globe-pin--workplace'
@@ -1450,7 +1454,10 @@ export default function GlobeView() {
                       }
                     >
                       <span className="relative inline-flex h-3.5 w-3.5 items-center justify-center">
-                        <span className={`${pinTypeClass(t.code)} !cursor-default`} style={{ position: 'static' }} />
+                        {/* Base 'globe-pin' + the type modifier, exactly as the
+                            on-globe markers build it — the modifier alone drops
+                            size/background for --second/--vacation (2026-07-20). */}
+                        <span className={`globe-pin ${pinTypeClass(t.code)} !cursor-default`} style={{ position: 'static' }} />
                       </span>
                       <span>{t.label}</span>
                       <span className={'ml-auto text-[10px] ' + (on ? 'text-[var(--ember-soft)]' : 'text-[var(--ink-dim)]/50')}>
