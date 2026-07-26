@@ -4,6 +4,67 @@ description: What's been built so far in the Claude Code implementation of Life 
 type: project
 ---
 
+## Session handoff — 2026-07-26 (pin-facts editor UI — the 07-10 design closed)
+
+Andy resumed QA at the 2026-07-19 "start a trip from here" checklist this
+evening; the build side finished the pin-facts editor.
+
+- **QA checklists caught up** (`81ade7b`): Andy's live check-offs since
+  07-18 recorded against the original checklists — globe pin search
+  COMPLETE (all §1–§8), unsequenced residences §5–§6, UI-checklist §4
+  spine remnants **and all of §5 photos/gallery** (done ahead of its
+  Phase-5 slot). Master Phase 1 now has three checklists left:
+  trip-from-here (in progress), context-card, pin-card reconciliation —
+  plus the data chores (Phillips Exeter merge, Leola alias, ~5 stubs).
+- **Pin-facts editor UI BUILT** (`59a6be2`; closes
+  `docs/plans/2026-07-10-pin-facts-editor-enhancement.md`, whose data
+  layer shipped 07-20): `components/globe/PinFactsEditor.tsx` on the edit
+  panel — two selects + two text fields, **immediate per-field saves**,
+  each edited field marked "● yours" and sticky against re-extraction,
+  plus **↻ Refresh from recollection** (POSTs, emitting the same
+  `globe/pin.saved` a text save emits, so stub resolution rides along).
+  Homes only via a newly exported `isHomeType` (anchor-options), so the
+  anchor picker and the facts editor share ONE definition of home-ness.
+  New route `app/api/globe/residence/[id]/facts` — deliberately NOT
+  folded into the pin PATCH, which takes the full field set every save
+  (folding in would make an untouched fact indistinguishable from a
+  cleared one and mark all four owner-edited on every save, freezing out
+  extraction entirely). Proof `verify-sticky-facts.mjs` **26/26** (was
+  16/16). **VISUAL PENDING Andy's eyeball** — QA
+  `docs/qa/2026-07-26-pin-facts-editor-qa-checklist.md` (§3 is the one
+  that matters: the sticky invariant proven live).
+- **Two GET defects fixed en route**, both live the moment editing ships:
+  `facts` was gated on `globe_extraction` existing (so an owner's edit on
+  a never-extracted pin would save and render as nothing), and
+  `residence_detail` was never returned at all — the route read facts
+  inline and had already drifted from the proven `readCurrentFacts`.
+  **Class-of-bug: a route that re-reads a persisted shape by hand drifts
+  from the proven reader — read through the reader.**
+- **`mergeFactsIntoMetadata` is now the ONE writer** of the persisted
+  fact shape (top-level `residence_type`/`move_reason` + the
+  `globe_extraction` mirror + `facts_owner_edited`); `runGlobeExtraction`
+  calls it too, and it's MERGE-only in both directions so an owner edit
+  preserves the extraction audit trail (mentioned_people, confidence,
+  extracted_at). **Class-of-bug: two writers of one persisted shape
+  drift — extract the writer, don't re-derive the shape** (the storage
+  sibling of 07-20's PinConnections rule for two renderers).
+- **`lib/globe/fact-vocabulary.ts` is the ONE vocabulary** — the model's
+  tool enum and the editor's selects both read it. **Class-of-bug: a
+  controlled vocabulary duplicated between the model's schema and the
+  owner's picker drifts into values one side can emit and the other
+  can't.**
+- **KB updated in the same change** (standing rule): "The facts read from
+  a home's recollection" section in `kb-recollections-and-jots.md` +
+  README index row.
+- **Deferred, flagged to Andy:** no "un-stick" control (a fact, once
+  owner-edited, can't be handed back to extraction); the detail-card and
+  Journey chips still de-underscore raw codes ("family care") while the
+  editor shows curated labels ("Caring for family") — one line to unify,
+  Andy's call which wording wins; refresh waits a fixed ~3.5s for the
+  async re-read rather than tracking progress.
+- **NEXT:** the **Loose-Ends surface design doc** (roadmap §3) —
+  design-first, Journey-doc pattern, Andy's agreement before any code.
+
 ## Session handoff — 2026-07-20 (context-card fix + pin-card reconciliation + sticky facts data layer)
 
 Andy QA'd live while this session built; he checked off **unsequenced

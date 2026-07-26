@@ -1,7 +1,10 @@
 # Enhancement — owner-editable pin facts (with sticky owner values)
 
-*Status: AGREED with Andy 2026-07-10, not yet scheduled. Small build (~an
-hour with proof) — a natural rider on any future globe/journey session.*
+*Status: **BUILT** — data layer 2026-07-20 (`3679df6`), UI 2026-07-26
+(`59a6be2`). QA: `docs/qa/2026-07-26-pin-facts-editor-qa-checklist.md`
+(Phase 1); Andy's live walk pending. Deferred from the shape below: an
+"un-stick" control (no way to hand a fact back to extraction once
+edited), and unifying the chip wording with the editor's curated labels.*
 
 ## Problem (two live sightings, 2026-07-09/10)
 

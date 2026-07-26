@@ -53,5 +53,5 @@ sections touching capture UX.
 | [Pin types & the anchor question](kb-globe-pin-types.md) | The eight "kind of place" choices; what "which home were you living in then?" really asks; standalone; the Log |
 | [The residential spine](kb-residential-spine.md) | Your sequence of homes; "Decide later — not yet placed"; placing, demoting, reordering |
 | [Trips & travel](kb-trips.md) | Destination-first capture; starting from a home; framing; one-way trips; stops and routes; trips vs. moves |
-| [Recollections, jots & write-ups](kb-recollections-and-jots.md) | Where a memory attaches (pin / trip / stop / person); jots as a working list; the ✍ write-up; recollections vs. context |
+| [Recollections, jots & write-ups](kb-recollections-and-jots.md) | Where a memory attaches (pin / trip / stop / person); jots as a working list; the ✍ write-up; recollections vs. context; the facts read from a home's recollection and how to correct them |
 | [Finding your way around](kb-navigating.md) | Searching your own pins; why the map changes at close zoom; the line language; Journey ↔ globe ↔ memories |

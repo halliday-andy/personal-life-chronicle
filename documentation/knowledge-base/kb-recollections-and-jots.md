@@ -66,6 +66,33 @@ context on the right entity (you approve before anything saves). Tell it
 a memory and it becomes a recollection. Mixed submissions get split, each
 part to its proper home.
 
+## The facts read from a home's recollection
+
+When you write about a home, the chronicle reads a few plain facts out of
+your words and shows them as small chips on the pin and on your Journey:
+**the kind of place**, **why you moved**, **who lived there with you**,
+and **the place itself** ("a small third-floor walk-up"). They are what
+lets your Journey say *why* one home became the next, instead of just
+listing addresses.
+
+Reading isn't always right — a name gets misspelled, a reason lands on
+"not sure." So the facts are **yours to correct**, in the pin's Edit
+panel under **Facts**:
+
+- **Edit any of the four directly.** Changes save as you make them; there
+  is no separate Save for facts.
+- **A fact you set is marked "● yours" and stays yours.** The chronicle
+  will never overwrite it when it re-reads your recollection later. Your
+  word is final on anything you have touched.
+- **↻ Refresh from recollection** re-reads your text and refills only the
+  facts you *haven't* set yourself. Use it after rewriting a recollection
+  — say you corrected a name — to pull the new wording through.
+- **Leaving a fact blank is a choice too.** Cleared counts as set: the
+  chip disappears and stays gone.
+
+Facts are only asked of places you *lived*. A workplace or a vacation pin
+has a recollection and photos, but no "why you moved."
+
 ## Fixing things afterward
 
 - **Edit a saved recollection** from your memories page — the earlier
@@ -73,3 +100,5 @@ part to its proper home.
 - **Wrong or missing people/places on a memory?** The memory's entity
   links are editable — unlink the wrong one, type-ahead the right one.
   The prose never has to change to fix the connections.
+- **A fact chip that's wrong?** Correct it in the pin's Edit panel — see
+  the facts section above.

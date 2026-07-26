@@ -39,8 +39,9 @@ Canonical sequence: [`docs/qa/2026-07-17-master-qa-sequence.md`](../qa/2026-07-1
 objectives (spine correctness → loose-ends machinery → context/collection
 substrate → trips → polish), each phase one sitting, findings feeding a
 same-week remediation pass. The
-[pin-facts editor](2026-07-10-pin-facts-editor-enhancement.md) rides the
-first globe-region remediation, as does **globe pin search** (agreed
+[pin-facts editor](2026-07-10-pin-facts-editor-enhancement.md) rode the
+first globe-region remediation as planned (data layer 2026-07-20, UI
+2026-07-26 — **BUILT**), as did **globe pin search** (agreed
 2026-07-18, the first Phase-1 finding: the Find-Location box gains a
 "Your pins" results group — ALL pin types, Andy's call — that flies to
 and selects the matched pin; search-as-navigation in one merged dropdown,
