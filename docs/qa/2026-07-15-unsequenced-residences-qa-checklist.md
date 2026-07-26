@@ -42,16 +42,16 @@ option in both the creation modal and the edit panel.
 
 ## 5. Trip origin before the spine (R22 / AE5)
 
-- [ ] Frame any trip; in the origin select choose **＋ Pin a new origin
+- [x] Frame any trip; in the origin select choose **＋ Pin a new origin
       on the globe…** → the framing panel closes and a banner asks for
       the origin's location.
-- [ ] Search or click a spot; the modal opens with Primary residence
+- [x] Search or click a spot; the modal opens with Primary residence
       preselected and the sequence dropdown already on **Decide later**.
       Save → notice confirms the origin is set; the trip is framed; the
       new home is unplaced; the spine untouched.
-- [ ] Cancel path: ✕ on the banner returns the globe to normal.
+- [x] Cancel path: ✕ on the banner returns the globe to normal.
 
 ## 6. Data proof
 
-- [ ] `node scripts/verify-trips-travel.mjs` and
+- [x] `node scripts/verify-trips-travel.mjs` and
       `node scripts/verify-journey-tree.mjs` both pass.

@@ -32,17 +32,17 @@ For each, use search box → drag the pin → **Add this place** → pick the **
 - [x] Click a pin → **detail card** shows a **colored type chip + label**, the *when* phrase, the recollection (scrollable), any **fact chips**, and a photo area.
 - [x] Click **Edit** → the right panel has a **Type** dropdown (with description) and, for markers, an **anchor** selector.
 - [x] **Re-type a vacation → Primary residence** → it joins the spine (gets sequence position, gains the glow). Re-type it **back** → returns to a dashed marker.
-- [ ] **Re-type a Primary that has markers anchored to it → Second residence** → those markers' **tethers disappear** (they orphan to standalone). *(This is the anchor-safety fix.)*
+- [x] **Re-type a Primary that has markers anchored to it → Second residence** → those markers' **tethers disappear** (they orphan to standalone). *(This is the anchor-safety fix.)*
 - [x] On a **primary** pin only, the panel shows **↑ Earlier / ↓ Later** reorder; markers don't.
-- [ ] Drag a selected pin to relocate; **Save** → it stays; you land back on the refreshed detail card with a "Saved" toast.
+- [x] Drag a selected pin to relocate; **Save** → it stays; you land back on the refreshed detail card with a "Saved" toast.
 
 ## 5. Photos (HEIC + multi-photo gallery) — do this in Chrome
 - [x] On a pin detail card, **Add a photo** using a **.HEIC** file from your iPhone → it uploads **and displays** (no broken image, no "Photo action failed"). *(Server now converts HEIC→JPEG.)*
-- [ ] Open **Edit** → the gallery: **+ Add photo** several times; each appears.
-- [ ] Hover a non-primary thumbnail → **★ primary** to promote it; the card's main photo updates.
-- [ ] Hover → **✕ remove** one; it disappears, and if you removed the primary another is promoted.
-- [ ] Back on the detail card, a **+N badge** shows on the photo when the gallery has more than one.
-- [ ] **Double-click** any photo (detail-card image or a gallery thumbnail) → it opens **full-size**; close with the **✕**, a backdrop click, or **Escape**.
+- [x] Open **Edit** → the gallery: **+ Add photo** several times; each appears.
+- [x] Hover a non-primary thumbnail → **★ primary** to promote it; the card's main photo updates.
+- [x] Hover → **✕ remove** one; it disappears, and if you removed the primary another is promoted.
+- [x] Back on the detail card, a **+N badge** shows on the photo when the gallery has more than one.
+- [x] **Double-click** any photo (detail-card image or a gallery thumbnail) → it opens **full-size**; close with the **✕**, a backdrop click, or **Escape**.
 
 ## 6. Recollections & Review
 - [x] **/memories** lists your recollections in full text (Lockbourne shows the long aviation-story memory).
