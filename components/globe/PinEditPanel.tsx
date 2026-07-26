@@ -474,7 +474,11 @@ export default function PinEditPanel({
           gallery, not staged behind Save. */}
       {!loadError && !loading && facts && isHomeType(typeCode) && (
         <PinFactsEditor
-          key={pin.relationship_id}
+          // Keys are namespaced by ROLE, not just the pin id: these siblings
+          // both reset on a pin change, and a bare relationship_id on both
+          // collides — React then duplicates or omits them (2026-07-26: the
+          // facts block rendered 19 times).
+          key={`facts-${pin.relationship_id}`}
           relationshipId={pin.relationship_id}
           facts={facts}
           ownerEdited={factsOwnerEdited}
@@ -594,7 +598,7 @@ export default function PinEditPanel({
           full jots hopper above stays separate. */}
       {!loadError && (
         <PinConnections
-          key={pin.relationship_id}
+          key={`connections-${pin.relationship_id}`}
           entityId={pin.place_entity_id}
           placeName={pin.name}
           linked={linked}
