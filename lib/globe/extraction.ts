@@ -18,7 +18,8 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { DEFAULT_AGENT_MODEL, getAnthropicClient } from '@/lib/agents/shared/anthropic'
-import { readCurrentFacts, readOwnerEditedFields, resolveStickyFacts } from './sticky-facts'
+import { mergeFactsIntoMetadata, readCurrentFacts, readOwnerEditedFields, resolveStickyFacts } from './sticky-facts'
+import { MOVE_REASONS, RESIDENCE_TYPES } from './fact-vocabulary'
 
 export interface GlobeExtraction {
   residence_type: string | null
@@ -44,7 +45,7 @@ const EXTRACTION_TOOL: Anthropic.Tool = {
     properties: {
       residence_type: {
         type: ['string', 'null'],
-        enum: ['apartment', 'house', 'dormitory', 'military_base', 'rental', 'family_home', 'other', null],
+        enum: [...RESIDENCE_TYPES, null],
       },
       residence_detail: {
         type: ['string', 'null'],
@@ -56,16 +57,9 @@ const EXTRACTION_TOOL: Anthropic.Tool = {
       },
       move_reason: {
         type: ['string', 'null'],
-        // 'relationship' + 'seasonal_work' added 2026-07-09 (Andy's Alp Hof
-        // Lodge QA): moving in with a partner short of marriage, and a
-        // season's work, are real reasons the old vocabulary forced to
-        // 'unknown' — which the Journey deliberately renders as silence.
-        enum: [
-          'career_relocation', 'military_posting', 'marriage', 'relationship',
-          'divorce_separation', 'education', 'family_care', 'financial',
-          'retirement', 'health', 'displacement', 'adventure', 'seasonal_work',
-          'unknown', null,
-        ],
+        // Vocabulary lives in lib/globe/fact-vocabulary.ts — the owner's facts
+        // editor offers the same list, so the two can't drift.
+        enum: [...MOVE_REASONS, null],
       },
       mentioned_people: {
         type: 'array',
@@ -189,22 +183,22 @@ export async function runGlobeExtraction(
     },
     ownerEdited: readOwnerEditedFields(currentMeta),
   })
-  const mergedMetadata = {
-    ...currentMeta,
-    residence_type: sticky.residence_type,
-    move_reason: sticky.move_reason,
-    globe_extraction: {
-      ...extraction,
-      // Owner-edited facts win over the fresh extraction in the payload too.
-      residence_type: sticky.residence_type,
-      residence_detail: sticky.residence_detail,
-      household_composition: sticky.household_composition,
-      move_reason: sticky.move_reason,
-      memory_id: memoryId,
-      model: DEFAULT_AGENT_MODEL,
-      extracted_at: new Date().toISOString(),
+  // Record the run (full payload + provenance), then let the shared writer lay
+  // the four facts over it — owner-edited fields win in the payload too. The
+  // owner's facts editor calls the same writer, so both produce one shape.
+  const mergedMetadata = mergeFactsIntoMetadata({
+    metadata: {
+      ...currentMeta,
+      globe_extraction: {
+        ...extraction,
+        memory_id: memoryId,
+        model: DEFAULT_AGENT_MODEL,
+        extracted_at: new Date().toISOString(),
+      },
     },
-  }
+    facts: sticky,
+    ownerEdited: readOwnerEditedFields(currentMeta),
+  })
   const { error: updErr } = await admin
     .from('relationships')
     .update({ metadata: mergedMetadata })

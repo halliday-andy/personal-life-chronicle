@@ -13,11 +13,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { preprocessPinImage } from '@/lib/globe/image-preprocess'
 import { PIN_TYPES, pinTypeMeta, SPINE_CODE } from '@/lib/globe/pin-types'
-import { anchorCandidates, isUnplacedHome } from '@/lib/globe/anchor-options'
+import { anchorCandidates, isHomeType, isUnplacedHome } from '@/lib/globe/anchor-options'
 import { spineSlotOptions } from '@/lib/globe/reorder'
 import PhotoLightbox from './PhotoLightbox'
 import PinHopper from './PinHopper'
 import PinConnections, { type LinkedRecollection, type AnchoredPin, type ContextEntry } from './PinConnections'
+import PinFactsEditor, { type PinFactsValue } from './PinFactsEditor'
 import Markdown from '../Markdown'
 import { handleRichPaste } from '@/lib/richPaste'
 
@@ -135,6 +136,8 @@ export default function PinEditPanel({
   const [linked, setLinked] = useState<LinkedRecollection[]>([])
   const [context, setContext] = useState<ContextEntry[]>([])
   const [anchored, setAnchored] = useState<AnchoredPin[]>([])
+  const [facts, setFacts] = useState<PinFactsValue | null>(null)
+  const [factsOwnerEdited, setFactsOwnerEdited] = useState<string[]>([])
   const [galleryBusy, setGalleryBusy] = useState(false)
   const [galleryError, setGalleryError] = useState<string | null>(null)
   const [galleryNotice, setGalleryNotice] = useState<string | null>(null)
@@ -178,7 +181,7 @@ export default function PinEditPanel({
     setLoadError(false)
     fetch(`/api/globe/residence/${pin.relationship_id}`)
       .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
-      .then((d) => { if (active) { setBody(d.body ?? ''); setImages(d.images ?? []); setLinked(d.linked ?? []); setContext(d.context ?? []); setAnchored(d.anchored ?? []); setLoading(false) } })
+      .then((d) => { if (active) { setBody(d.body ?? ''); setImages(d.images ?? []); setLinked(d.linked ?? []); setContext(d.context ?? []); setAnchored(d.anchored ?? []); setFacts(d.facts ?? null); setFactsOwnerEdited(d.factsOwnerEdited ?? []); setLoading(false) } })
       .catch(() => { if (active) { setLoadError(true); setLoading(false) } })
     return () => { active = false }
   }, [pin.relationship_id, reloadKey])
@@ -460,6 +463,24 @@ export default function PinEditPanel({
             Retry
           </button>
         </div>
+      )}
+
+      {/* The four extracted facts, owner-editable (2026-07-10 design). Sits
+          under the recollection because that is what they are read FROM, and
+          what the refresh button re-reads. Homes only: the facts are
+          residence facts ("why you moved", "who lived there with you") and
+          read as nonsense on a workplace or a vacation — same home-family
+          definition the anchor picker uses. Saves immediately, like the
+          gallery, not staged behind Save. */}
+      {!loadError && !loading && facts && isHomeType(typeCode) && (
+        <PinFactsEditor
+          key={pin.relationship_id}
+          relationshipId={pin.relationship_id}
+          facts={facts}
+          ownerEdited={factsOwnerEdited}
+          hasRecollection={body.trim().length > 0}
+          onChange={(f, owned) => { setFacts(f); setFactsOwnerEdited(owned) }}
+        />
       )}
 
       {/* Photo gallery — many per pin, one primary (the globe photo).

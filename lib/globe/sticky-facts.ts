@@ -72,6 +72,40 @@ export function resolveStickyFacts(args: {
 }
 
 /**
+ * Write the resolved facts back into a relationship's metadata, producing the
+ * canonical persisted shape: residence_type + move_reason at the top level
+ * (the period-summary SQL reads them there), all four mirrored under
+ * globe_extraction, and the owner-edited list alongside.
+ *
+ * MERGE-only in both directions — unrelated metadata keys and the extraction
+ * audit trail inside globe_extraction (mentioned_people, confidence,
+ * extracted_at…) are preserved untouched. Both writers of this shape call
+ * this: runGlobeExtraction and the owner's facts editor. Kept apart they
+ * drift, and a half-written shape means facts that save but never render.
+ */
+export function mergeFactsIntoMetadata(args: {
+  metadata: Record<string, unknown> | null | undefined
+  facts: StickyFacts
+  ownerEdited: readonly StickyFactField[]
+}): Record<string, unknown> & { globe_extraction: Record<string, unknown> } {
+  const current = (args.metadata ?? {}) as Record<string, unknown>
+  const extraction = (current.globe_extraction ?? {}) as Record<string, unknown>
+  return {
+    ...current,
+    residence_type: args.facts.residence_type,
+    move_reason: args.facts.move_reason,
+    facts_owner_edited: [...args.ownerEdited],
+    globe_extraction: {
+      ...extraction,
+      residence_type: args.facts.residence_type,
+      residence_detail: args.facts.residence_detail,
+      household_composition: args.facts.household_composition,
+      move_reason: args.facts.move_reason,
+    },
+  }
+}
+
+/**
  * Apply an owner edit: set the provided fields (null is a valid value — the
  * owner clearing a field) and union them into the owner-edited list, in
  * canonical order. Used by the facts editor's write path.

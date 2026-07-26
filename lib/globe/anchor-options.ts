@@ -29,6 +29,16 @@ export interface AnchorCandidate {
 
 const HOME_TYPES = new Set(['lived_at', 'owned_residence_at', 'lived_briefly_at'])
 
+/**
+ * Is this pin type a place the user LIVED? Primaries (placed or not), second
+ * residences, short-term stays — the same family that can anchor a marker.
+ * Home-ness is the TYPE, not the spine slot (2026-07-18). One definition, so
+ * the anchor picker and the residence-facts editor can't disagree about it.
+ */
+export function isHomeType(typeCode: string | null | undefined): boolean {
+  return HOME_TYPES.has(typeCode ?? '')
+}
+
 // Sequenced primaries lead (in spine order), then unplaced primaries,
 // then second residences, then short stays.
 function homeRank(p: AnchorCandidate): number {

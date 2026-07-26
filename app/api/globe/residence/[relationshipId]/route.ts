@@ -21,6 +21,7 @@ import { proximityHint } from '@/lib/globe/proximity'
 import { listPinImages, removeAllPinImages } from '@/lib/globe/pin-image'
 import { sendEventQuick } from '@/lib/inngest/send-quick'
 import { deriveContextTitle } from '@/lib/context/derive-title'
+import { readCurrentFacts, readOwnerEditedFields } from '@/lib/globe/sticky-facts'
 
 async function getUser() {
   const { data: { user } } = await createUserClient().auth.getUser()
@@ -238,19 +239,21 @@ export async function GET(_req: NextRequest, { params }: { params: { relationshi
   const images = await listPinImages(admin, user.id, rel.object_id)
   const image = images[0] ?? null
 
-  // AI-extracted facts (Slice 2 extraction job writes these; null until then).
+  // The four editable facts, read through the proven reader so this route and
+  // the extraction/edit writers agree on where each one lives. Read
+  // unconditionally: facts used to be gated on globe_extraction existing,
+  // which hid an owner's edits on a pin Claude never extracted (no
+  // recollection yet, or a skipped run). rough_temporal_range stays a
+  // read-only extraction artifact — the owner edits `when` instead.
   const meta = (rel.metadata ?? {}) as Record<string, unknown>
   const extraction = (meta.globe_extraction ?? null) as Record<string, unknown> | null
-  const facts = extraction
-    ? {
-        residence_type: (meta.residence_type as string | null) ?? null,
-        move_reason: (meta.move_reason as string | null) ?? null,
-        household_composition: (extraction.household_composition as string | null) ?? null,
-        rough_temporal_range: (extraction.rough_temporal_range as string | null) ?? null,
-      }
-    : null
+  const facts = {
+    ...readCurrentFacts(meta),
+    rough_temporal_range: (extraction?.rough_temporal_range as string | null) ?? null,
+  }
+  const factsOwnerEdited = readOwnerEditedFields(meta)
 
-  return NextResponse.json({ memoryId, body, isDraft, image, images, facts, linked, anchored, context })
+  return NextResponse.json({ memoryId, body, isDraft, image, images, facts, factsOwnerEdited, linked, anchored, context })
 }
 
 const PIN_TYPE_CODES = [

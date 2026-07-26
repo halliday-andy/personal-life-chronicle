@@ -27,7 +27,13 @@ import {
   readOwnerEditedFields,
   resolveStickyFacts,
   applyOwnerFactEdit,
+  mergeFactsIntoMetadata,
 } from '${projectRoot}/lib/globe/sticky-facts'
+import {
+  RESIDENCE_TYPES,
+  MOVE_REASONS,
+  factOptionLabel,
+} from '${projectRoot}/lib/globe/fact-vocabulary'
 
 let failures = 0
 const ok = (m: string) => console.log('  \\u2713 ' + m)
@@ -87,6 +93,72 @@ expect('owner edit unions the edited list (stable order)', edit1.ownerEdited, ['
 const edit2 = applyOwnerFactEdit({ current: edit1.facts, edits: { residence_type: 'apartment' }, ownerEdited: edit1.ownerEdited })
 expect('editing an already-edited field does not duplicate', edit2.ownerEdited, ['residence_type', 'household_composition'])
 expect('clearing a field to null is a valid owner edit', applyOwnerFactEdit({ current, edits: { move_reason: null }, ownerEdited: [] }).ownerEdited, ['move_reason'])
+
+// ── mergeFactsIntoMetadata: the ONE writer of the persisted fact shape ──
+// Facts live in two places at once: residence_type/move_reason at the metadata
+// top level (the period-summary SQL reads them there) and all four mirrored
+// under globe_extraction. runGlobeExtraction and the owner-edit path must
+// produce byte-identical shapes, so both call this.
+const auditMeta = {
+  is_self: false,
+  prior_anchor_residence_id: 'rel-123',
+  facts_owner_edited: ['residence_type'],
+  globe_extraction: {
+    residence_type: 'house',
+    residence_detail: 'small third-floor walk-up',
+    household_composition: 'parents and older brother Doug',
+    move_reason: 'military_posting',
+    mentioned_people: ['my father'],
+    mentioned_organisations: ['Lockbourne AFB'],
+    rough_temporal_range: 'right after the war',
+    confidence: 0.8,
+    memory_id: 'mem-1',
+    model: 'claude-x',
+    extracted_at: '2026-07-10T00:00:00.000Z',
+  },
+}
+const merged = mergeFactsIntoMetadata({
+  metadata: auditMeta,
+  facts: { residence_type: 'apartment', residence_detail: 'walk-up', household_composition: 'just me', move_reason: 'education' },
+  ownerEdited: ['residence_type', 'move_reason'],
+})
+expect('top-level residence_type written', merged.residence_type, 'apartment')
+expect('top-level move_reason written', merged.move_reason, 'education')
+expect('globe_extraction mirrors all four facts', {
+  residence_type: merged.globe_extraction.residence_type,
+  residence_detail: merged.globe_extraction.residence_detail,
+  household_composition: merged.globe_extraction.household_composition,
+  move_reason: merged.globe_extraction.move_reason,
+}, { residence_type: 'apartment', residence_detail: 'walk-up', household_composition: 'just me', move_reason: 'education' })
+expect('owner-edited list written', merged.facts_owner_edited, ['residence_type', 'move_reason'])
+// MERGE-only, in both directions: unrelated metadata AND the extraction audit
+// trail (who was mentioned, when it ran, how sure it was) must survive an edit.
+expect('unrelated metadata keys preserved', { is_self: merged.is_self, prior: merged.prior_anchor_residence_id }, { is_self: false, prior: 'rel-123' })
+expect('extraction audit trail preserved', {
+  people: merged.globe_extraction.mentioned_people,
+  orgs: merged.globe_extraction.mentioned_organisations,
+  range: merged.globe_extraction.rough_temporal_range,
+  confidence: merged.globe_extraction.confidence,
+  at: merged.globe_extraction.extracted_at,
+}, { people: ['my father'], orgs: ['Lockbourne AFB'], range: 'right after the war', confidence: 0.8, at: '2026-07-10T00:00:00.000Z' })
+// The never-extracted pin: an owner can edit facts on a pin Claude never ran
+// on. The shape must still come out whole, not half-written.
+const fromNothing = mergeFactsIntoMetadata({
+  metadata: null,
+  facts: { residence_type: null, residence_detail: null, household_composition: 'my parents', move_reason: null },
+  ownerEdited: ['household_composition'],
+})
+expect('no prior metadata → globe_extraction created', fromNothing.globe_extraction.household_composition, 'my parents')
+expect('no prior metadata → owner list created', fromNothing.facts_owner_edited, ['household_composition'])
+expect('nulls persist as null, not dropped', fromNothing.residence_type, null)
+
+// ── fact vocabulary: the UI selects and the model enum read ONE list ──
+expect('residence types are the extraction vocabulary', [...RESIDENCE_TYPES], ['apartment', 'house', 'dormitory', 'military_base', 'rental', 'family_home', 'other'])
+expect('move reasons include the 2026-07-09 additions', MOVE_REASONS.includes('relationship') && MOVE_REASONS.includes('seasonal_work'), true)
+expect('unknown is a selectable move reason', MOVE_REASONS.includes('unknown'), true)
+// Every code needs a human label — adding a code without one must be caught here.
+const unlabelled = [...RESIDENCE_TYPES, ...MOVE_REASONS].filter((c) => !factOptionLabel(c) || factOptionLabel(c) === c)
+expect('every vocabulary code has a human label', unlabelled, [])
 
 console.log(failures === 0 ? '\\nPASS' : '\\nFAIL (' + failures + ')')
 process.exit(failures === 0 ? 0 : 1)
