@@ -289,6 +289,24 @@ function StopCard({
   const phrase = transitionPhrase(nextMoveReason)
   return (
     <li id={`journey-pin-${node.relationship_id}`} className="flex gap-3 sm:gap-4">
+      {/* Stop ordinal (2026-07-26, Andy's ask): the globe's detail card reads
+          "· stop 8 of 14", and Journey computed the very same ordinal but hid
+          it in a hover title — so the two surfaces could not confirm each
+          other when you jumped between them. Its own quiet gutter beside the
+          rail, deliberately subordinate to the place name: this is
+          ORIENTATION, not identity. The number renumbers whenever a home is
+          inserted earlier, so the durable handle stays name + when-phrase.
+          No denominator here — unlike the globe, the whole arc is visible. */}
+      <div
+        className={
+          'w-4 shrink-0 text-right text-[11px] leading-none tabular-nums text-stone-400 ' +
+          (isOrigin ? 'mt-1' : 'mt-1.5')
+        }
+        aria-hidden
+      >
+        {index + 1}
+      </div>
+
       {/* Rail: marker + this stop's thread segment (J2). */}
       <div className="flex w-5 shrink-0 flex-col items-center" aria-hidden>
         {isOrigin ? (
@@ -327,6 +345,10 @@ function StopCard({
               className="block w-full rounded-xl px-4 py-4 text-left transition-colors hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
             >
               <span className="flex items-baseline gap-2">
+                {/* The rail and its ordinal are aria-hidden decoration, so the
+                    stop number would otherwise be sighted-only. Announced
+                    here instead, ahead of the name. */}
+                <span className="sr-only">Stop {index + 1}. </span>
                 <span className="min-w-0 flex-1 truncate text-lg font-semibold text-stone-900">
                   {node.name}
                 </span>

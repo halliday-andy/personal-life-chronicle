@@ -69,3 +69,22 @@ Every surface hands off to the others without losing your place:
 
 The address bar keeps up with where you are, so a link copied mid-journey
 drops someone (or future you) at the same spot.
+
+### Stop numbers
+
+Your homes are numbered along the thread, and both surfaces agree: a pin
+whose card reads **"stop 8 of 14"** on the globe is the stop marked **8**
+in the Journey, so you can tell at a glance that you're looking at the
+same place from two directions. The globe shows the total because you
+can't see the whole spine at once; the Journey doesn't, because you can.
+
+Two things worth knowing about the numbers:
+
+- **They shift, and that's normal.** Slot a home in earlier and
+  everything after it renumbers. The number tells you *where you are in
+  the arc*, not which home this is — so when you want to point at a
+  particular home, name it ("Coronet Peak, 1975"), don't number it.
+- **Homes you haven't placed have no number.** They're waiting for a
+  spot in the sequence, and the count doesn't include them — so the
+  total grows as you place them, and as you add homes you haven't
+  recorded yet. A rising number is the spine filling in.
