@@ -1,0 +1,24 @@
+-- Owner-ordered places within a chapter (2026-07-26).
+--
+-- A primary residence is an ERA, and the places anchored to it — short-term
+-- stays, second residences, vacations, workplaces, logs — are what happened
+-- inside it. Journey rendered them sorted alphabetically by type code and then
+-- by capture time, which reads as arbitrary (Andy's QA: his Dartmouth chapter
+-- wants to run Yokota → Mass Hall → Blois → Nauset Beach, the way the years
+-- actually went).
+--
+-- Chronological sorting is NOT available to us and deliberately so: when_text
+-- is free prose ("Summers 1970 and 1971", "1976-1977 Winter Season"), and
+-- invariant #5 keeps structured dates out of the capture path. So the ORDER IS
+-- THE OWNER'S ASSERTION — drag-and-drop, set once, never computed. Same model
+-- as entity_media.sort_order for the photo carousel (2026-07-20).
+--
+-- Deliberately a NEW column rather than reusing relationships.sort_order:
+-- sort_order is the SPINE slot, and NULL there is the "not yet placed"
+-- discriminator for unsequenced residences (trips U9). Overloading it would
+-- break that. anchor_sort_order orders a pin among its ANCHOR SIBLINGS only.
+--
+-- Additive + nullable, so it is SAFE (no migration-safety gate): existing rows
+-- keep NULL and fall back to the current type-then-created order, so nothing
+-- reshuffles until the owner drags something.
+ALTER TABLE relationships ADD COLUMN IF NOT EXISTS anchor_sort_order integer;
