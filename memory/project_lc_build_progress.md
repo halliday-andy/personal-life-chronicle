@@ -62,8 +62,49 @@ evening; the build side finished the pin-facts editor.
   editor shows curated labels ("Caring for family") — one line to unify,
   Andy's call which wording wins; refresh waits a fixed ~3.5s for the
   async re-read rather than tracking progress.
+- **BUG from Andy's live QA, fixed same session (`ee67828`): the Facts
+  block rendered NINETEEN times.** `PinFactsEditor` and `PinConnections`
+  are siblings in the same children list and BOTH used
+  `key={pin.relationship_id}` — React reconciles siblings by key, so the
+  collision made it duplicate them. React warns, but only at runtime in
+  dev. Fixed by namespacing both keys by role (`facts-${id}` /
+  `connections-${id}`). **Class-of-bug: when several sibling components
+  each reset on the same entity, keying them all off that entity's bare
+  id collides — namespace sibling keys by ROLE.** Guard:
+  `scripts/verify-jsx-sibling-keys.mjs` (TypeScript AST, 41 files),
+  proven red/green. **Second lesson worth keeping: the FIRST version of
+  that guard passed while the bug was present** — it only inspected
+  direct element children, and these two sit inside `{cond && <El/>}`
+  slots. Caught only by reintroducing the bug to test the test. *A guard
+  that has never failed on the bug it was written for is unproven.*
+- **Journey stop ordinals (`670ab15`)**, from Andy's question about
+  cross-surface navigation: the globe card reads "STOP 8 OF 14" but
+  Journey showed nothing — except it DID compute the same ordinal and
+  hid it in a hover `title` (invisible to touch, screen readers, and
+  scanning). Promoted to visible text in its own gutter left of the rail
+  (Andy's placement call), plus an `sr-only` "Stop N." in the heading
+  since the rail is aria-hidden. **Design calls: the ordinal is
+  ORIENTATION, not identity** — it renumbers on any earlier insertion,
+  so name + when-phrase stays the durable handle and the deterministic
+  links keep navigating by pin identity; **no denominator in Journey**
+  (whole arc visible) but **kept on the globe** (can't see the whole
+  spine; a rising total reads as accumulation, serving the undaunting
+  brief); unplaced/unanchored stay unnumbered. KB `kb-navigating.md`
+  updated same commit.
+- **Claude can now drive the running app** — the Chrome extension
+  connects once the **Claude side panel is open** in Chrome (installed +
+  site-permitted is NOT enough; a clean Chrome restart alone did not do
+  it). `list_connected_browsers` → `select_browser` → `tabs_context_mcp`.
+  The Journey page verifies cleanly; the **globe often fails to finish
+  its Mapbox init on repeated hard navigations** in the automated tab
+  (the API is healthy — ~950ms, all 37 pins), so globe visuals may still
+  need Andy's eye. Beware: typing into the search box APPENDS to any
+  existing query and a stray Places pick drops a draft pin (cancel it).
 - **NEXT:** the **Loose-Ends surface design doc** (roadmap §3) —
   design-first, Journey-doc pattern, Andy's agreement before any code.
+  Still unrun from the pin-facts checklist: §2 (editing sticks) and §3
+  (the sticky invariant under refresh) — both WRITE to Andy's real
+  chronicle, so they await his go-ahead on a throwaway or nominated pin.
 
 ## Session handoff — 2026-07-20 (context-card fix + pin-card reconciliation + sticky facts data layer)
 
