@@ -194,7 +194,10 @@ export default function PinFactsEditor({
         disabled={busy || refreshing}
         onChange={(e) => setDetail(e.target.value)}
         onBlur={() => save('residence_detail', detail.trim() || null)}
-        placeholder="a small third-floor walk-up"
+        // "e.g." prefix per the panel's convention: an empty fact field sits
+        // inches from real ones, and a bare plausible phrase reads as a
+        // RECORDED fact about the user's life at a glance (2026-07-26).
+        placeholder="e.g. a small third-floor walk-up"
         className={fieldCls}
       />
 
@@ -204,7 +207,7 @@ export default function PinFactsEditor({
         disabled={busy || refreshing}
         onChange={(e) => setHousehold(e.target.value)}
         onBlur={() => save('household_composition', household.trim() || null)}
-        placeholder="my parents and my brother Doug"
+        placeholder="e.g. my parents and my younger brother"
         className={fieldCls}
       />
 
