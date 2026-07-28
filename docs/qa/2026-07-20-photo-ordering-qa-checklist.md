@@ -13,35 +13,35 @@ acceptance.
 
 ## Add order (the original bug)
 
-- [ ] On a pin, add photos one at a time (say A, then B, then C). They land in
+- [x] On a pin, add photos one at a time (say A, then B, then C). They land in
   that order — **A, B, C appended at the END** — not reversed, not jammed in
   after the primary.
-- [ ] The **first-ever** photo becomes the primary (cover) automatically.
+- [x] The **first-ever** photo becomes the primary (cover) automatically.
 
 ## Drag to reorder (edit panel)
 
-- [ ] With ≥2 non-primary photos, the header shows **"· drag to reorder"** and
+- [x] With ≥2 non-primary photos, the header shows **"· drag to reorder"** and
   the carousel photos show a move cursor.
-- [ ] Drag a carousel photo onto another slot — the order updates immediately
+- [x] Drag a carousel photo onto another slot — the order updates immediately
   and **survives a reload** (persisted).
-- [ ] The **primary** (cover, ★ badge) is **not draggable** and stays first;
+- [x] The **primary** (cover, ★ badge) is **not draggable** and stays first;
   you can't drop a photo ahead of it.
 
 ## Primary ↔ carousel (the decoupling)
 
-- [ ] Promote a carousel photo (**★ primary** on hover) → it becomes the cover
+- [x] Promote a carousel photo (**★ primary** on hover) → it becomes the cover
   (globe/detail photo updates), and the **former primary drops to the END** of
   the carousel, draggable from there.
-- [ ] A photo can be promoted from anywhere in the carousel order.
-- [ ] Adding a new photo after reordering still **appends at the end**.
-- [ ] Remove the primary → the first carousel photo is promoted to cover.
+- [x] A photo can be promoted from anywhere in the carousel order.
+- [x] Adding a new photo after reordering still **appends at the end**.
+- [x] Remove the primary → the first carousel photo is promoted to cover.
 
 ## Notes / known limits
 
-- [ ] Legacy photos added before today have a null `sort_order` and sort
+- [x] Legacy photos added before today have a null `sort_order` and sort
   **after** positioned ones — expected; delete/reinstall the one pin with >2
   old photos to give them an order (Andy's call: no backfill).
-- [ ] Reorder is **pointer/mouse drag** only — keyboard-accessible reorder
+- [x] Reorder is **pointer/mouse drag** only — keyboard-accessible reorder
   (arrow controls) is a deferred a11y follow-up, noted in build-progress.
-- [ ] The carousel/slideshow *presentation* itself is deferred (this unit makes
+- [x] The carousel/slideshow *presentation* itself is deferred (this unit makes
   the sequence real + editable; the carousel is its later consumer).

@@ -78,7 +78,14 @@ export default function PinConnections({
 
   const chips = [
     linked.length > 0 && { key: 'recollections' as const, label: `${linked.length} recollection${linked.length === 1 ? '' : 's'}` },
-    context.length > 0 && { key: 'context' as const, label: `${context.length} context` },
+    // ALWAYS present, unlike the others (Andy's QA 2026-07-26): gating this
+    // chip on context.length > 0 meant the "＋ Add New Context" affordance
+    // lived inside a disclosure that only existed once context already did —
+    // so you could only add context to a pin that already had some. Ten of
+    // Andy's fourteen homes had no route to it at all.
+    // Class-of-bug: never hide the control that CREATES the first item behind
+    // the existence of an item.
+    { key: 'context' as const, label: context.length > 0 ? `${context.length} context` : '＋ context' },
     anchored.length > 0 && { key: 'related' as const, label: `${anchored.length} related pin${anchored.length === 1 ? '' : 's'}` },
     includeHopper && { key: 'hopper' as const, label: stubCount > 0 ? `✎ ${stubCount} to write` : '✎ jot' },
   ].filter(Boolean) as { key: Exclude<OpenChip, null>; label: string }[]
@@ -168,6 +175,11 @@ export default function PinConnections({
               ＋ Add New Context ↗
             </a>
           </div>
+          {context.length === 0 && (
+            <p className="mt-1.5 text-xs italic text-[var(--ink-dim)]">
+              No background about this place yet — research, history, anything that frames the memories.
+            </p>
+          )}
           <ul className="mt-1.5 max-h-40 space-y-1 overflow-y-auto">
             {context.map((c) => (
               <li key={c.id}>
