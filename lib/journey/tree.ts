@@ -16,6 +16,7 @@
  */
 
 import { SPINE_CODE } from '@/lib/globe/pin-types'
+import { byTypeThenCreated, orderChapterPlaces } from './chapter-order'
 
 export interface JourneyPin {
   relationship_id: string
@@ -25,6 +26,8 @@ export interface JourneyPin {
   sort_order: number | null
   type_code: string | null
   anchor_residence_id: string | null
+  /** The owner's position among its anchor siblings (drag order); null = never arranged. */
+  anchor_sort_order: number | null
   description: string | null
   /** Extraction's why-they-moved-here (J2 transition narration); null = render nothing. */
   move_reason: string | null
@@ -71,12 +74,6 @@ export interface JourneyTree {
   unanchored: JourneyNode[]
 }
 
-function byTypeThenCreated(a: JourneyNode, b: JourneyNode): number {
-  const t = (a.type_code ?? '').localeCompare(b.type_code ?? '')
-  if (t !== 0) return t
-  return a.created_at < b.created_at ? -1 : 1
-}
-
 export function buildJourneyTree(pins: JourneyPin[]): JourneyTree {
   const nodes = new Map<string, JourneyNode>()
   for (const p of pins) nodes.set(p.relationship_id, { ...p, children: [] })
@@ -106,7 +103,10 @@ export function buildJourneyTree(pins: JourneyPin[]): JourneyTree {
     return a.created_at < b.created_at ? -1 : 1
   })
 
-  for (const n of Array.from(nodes.values())) n.children.sort(byTypeThenCreated)
+  // A chapter's places follow the OWNER's drag order where one exists, and the
+  // legacy type-then-created order where it doesn't — so nothing reshuffles
+  // until something is dragged (lib/journey/chapter-order.ts).
+  for (const n of Array.from(nodes.values())) n.children = orderChapterPlaces(n.children)
   unanchored.sort(byTypeThenCreated)
   unplaced.sort(byTypeThenCreated)
 

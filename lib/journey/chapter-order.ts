@@ -28,7 +28,7 @@ export interface ChapterPlace {
  * arranged: type code alphabetically, then capture time. Preserving it matters
  * — it means an existing chronicle looks EXACTLY the same until the first drag.
  */
-function byTypeThenCreated(a: ChapterPlace, b: ChapterPlace): number {
+export function byTypeThenCreated(a: ChapterPlace, b: ChapterPlace): number {
   const t = (a.type_code ?? '').localeCompare(b.type_code ?? '')
   if (t !== 0) return t
   return a.created_at < b.created_at ? -1 : 1
