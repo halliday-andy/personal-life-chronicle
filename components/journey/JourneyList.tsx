@@ -40,14 +40,7 @@ interface StopDetail {
     household_composition: string | null
     rough_temporal_range: string | null
   } | null
-  linked: {
-    id: string
-    excerpt: string
-    occurred_at_fuzzy?: string | null
-    /** Where this recollection lives (its location pin) — null when native
-     *  to this stop. Grounds retrospective mentions (2026-07-09). */
-    home?: { relationship_id: string; name: string; when_text: string | null } | null
-  }[]
+  linked: LinkedRecollection[]
   anchored: {
     relationship_id: string
     name: string
@@ -57,6 +50,16 @@ interface StopDetail {
     linked_count?: number
   }[]
   context: { id: string; title: string; visibility: string }[]
+}
+
+/** A recollection that mentions this place — cited by excerpt, readable in full. */
+interface LinkedRecollection {
+  id: string
+  excerpt: string
+  occurred_at_fuzzy?: string | null
+  /** Where this recollection lives (its location pin) — null when native
+   *  to this stop. Grounds retrospective mentions (2026-07-09). */
+  home?: { relationship_id: string; name: string; when_text: string | null } | null
 }
 
 const label = (s: string) => s.replace(/_/g, ' ')
@@ -510,34 +513,12 @@ function StopDetailBody({
               then the excerpt indented beneath it (Andy's QA 2026-07-09). */}
           <ul className="mt-1.5 space-y-2.5">
             {detail.linked.map((r) => (
-              <li key={r.id} className="text-xs leading-relaxed">
-                {r.home ? (
-                  <Link
-                    href={`/journey?pin=${r.home.relationship_id}`}
-                    title={`Go to ${r.home.name} in the journey`}
-                    className="font-medium text-amber-700/90 hover:text-amber-800 hover:underline"
-                    onClick={(e) => {
-                      // Plain click: jump in place (a real navigation to the
-                      // page we're on scrolls to top and changes nothing —
-                      // 2026-07-10). Modified clicks keep native behavior.
-                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                      e.preventDefault()
-                      onGoToPin(r.home!.relationship_id)
-                    }}
-                  >
-                    {r.home.name}
-                    {r.home.when_text && <span className="font-normal text-stone-400"> · {r.home.when_text}</span>}
-                  </Link>
-                ) : r.occurred_at_fuzzy ? (
-                  <span className="font-medium text-stone-500">{r.occurred_at_fuzzy}</span>
-                ) : null}
-                <Link
-                  href={`/memories?entity=${node.place_entity_id}#${r.id}`}
-                  className="block border-l-2 border-stone-100 pl-3 text-stone-600 hover:border-stone-300 hover:text-stone-900"
-                >
-                  {r.excerpt}…
-                </Link>
-              </li>
+              <LinkedRecollectionRow
+                key={r.id}
+                r={r}
+                placeEntityId={node.place_entity_id}
+                onGoToPin={onGoToPin}
+              />
             ))}
           </ul>
         </div>
@@ -595,6 +576,140 @@ function StopDetailBody({
         </Link>
       </div>
     </div>
+  )
+}
+
+// ── A cited recollection, readable in place ───────────────────────
+
+/**
+ * One "recollection that mentions this place". The citation shows a 240-char
+ * excerpt; "… more" expands the full verbatim text INLINE (Andy's call,
+ * 2026-07-26).
+ *
+ * Why inline rather than a link out: Journey is the reading surface. Sending
+ * the reader to /memories to finish a sentence costs them their place in the
+ * chapter and lands them in a filtered list they have to navigate back from.
+ * The link out survives as a secondary action, for editing.
+ *
+ * The excerpt used to be a bare link with only a hover colour as its
+ * affordance — navigable content rendered as dead text, which is why Andy
+ * read it as unclickable (the same class as the 2026-07-20 context-card
+ * finding). The "… more" control is now explicit and reachable by keyboard.
+ */
+function LinkedRecollectionRow({
+  r,
+  placeEntityId,
+  onGoToPin,
+}: {
+  r: LinkedRecollection
+  placeEntityId: string
+  onGoToPin: (relationshipId: string) => void
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const [full, setFull] = useState<string | null>(null)
+  const [loadState, setLoadState] = useState<'idle' | 'loading' | 'error'>('idle')
+
+  async function toggle() {
+    if (expanded) {
+      setExpanded(false)
+      return
+    }
+    setExpanded(true)
+    // Fetched once per row, then cached — reopening is instant.
+    if (full !== null || loadState === 'loading') return
+    setLoadState('loading')
+    try {
+      const res = await fetch(`/api/memory/${r.id}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const d = await res.json()
+      setFull(typeof d.body === 'string' ? d.body : '')
+      setLoadState('idle')
+    } catch {
+      setLoadState('error')
+    }
+  }
+
+  const panelId = `journey-recollection-${r.id}`
+  return (
+    <li className="text-xs leading-relaxed">
+      {r.home ? (
+        <Link
+          href={`/journey?pin=${r.home.relationship_id}`}
+          title={`Go to ${r.home.name} in the journey`}
+          className="font-medium text-amber-700/90 hover:text-amber-800 hover:underline"
+          onClick={(e) => {
+            // Plain click: jump in place (a real navigation to the page we're
+            // on scrolls to top and changes nothing — 2026-07-10). Modified
+            // clicks keep native behavior.
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+            e.preventDefault()
+            onGoToPin(r.home!.relationship_id)
+          }}
+        >
+          {r.home.name}
+          {r.home.when_text && <span className="font-normal text-stone-400"> · {r.home.when_text}</span>}
+        </Link>
+      ) : r.occurred_at_fuzzy ? (
+        <span className="font-medium text-stone-500">{r.occurred_at_fuzzy}</span>
+      ) : null}
+
+      <div className="border-l-2 border-stone-100 pl-3 text-stone-600">
+        {expanded && full !== null ? (
+          <div id={panelId} className="journey-recollection-full">
+            <Markdown>{full}</Markdown>
+          </div>
+        ) : (
+          <p className="m-0">
+            {r.excerpt}
+            {loadState === 'loading' ? (
+              <span className="text-stone-400">… opening…</span>
+            ) : (
+              <>
+                …{' '}
+                <button
+                  type="button"
+                  onClick={toggle}
+                  aria-expanded={expanded}
+                  aria-controls={panelId}
+                  className="font-medium text-amber-700 hover:text-amber-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+                >
+                  more
+                </button>
+              </>
+            )}
+          </p>
+        )}
+
+        {loadState === 'error' && (
+          <p className="mt-1 text-[11px] text-rose-500">
+            Couldn’t open this one.{' '}
+            <button type="button" onClick={toggle} className="underline hover:text-rose-700">
+              Try again
+            </button>
+          </p>
+        )}
+
+        {expanded && full !== null && (
+          <p className="mt-1.5 flex flex-wrap gap-x-3 text-[11px]">
+            <button
+              type="button"
+              onClick={toggle}
+              aria-expanded
+              aria-controls={panelId}
+              className="font-medium text-amber-700 hover:text-amber-800 hover:underline"
+            >
+              Show less
+            </button>
+            <Link
+              href={`/memories?entity=${placeEntityId}#${r.id}`}
+              className="text-stone-400 hover:text-stone-700 hover:underline"
+            >
+              Open in memories ↗
+            </Link>
+          </p>
+        )}
+      </div>
+    </li>
   )
 }
 

@@ -54,6 +54,41 @@ async function authAndOwn(memoryId: string): Promise<
   return { ok: true, userId: user.id, memory: mem }
 }
 
+/**
+ * GET /api/memory/[id] — the recollection's full verbatim text.
+ *
+ * Journey cites recollections by a 240-character excerpt; "… more" expands one
+ * in place so a chapter can be READ without leaving the journey and losing
+ * your position (Andy's QA, 2026-07-26). Fetched on demand rather than
+ * inlined into every stop payload, so a place with twenty recollections
+ * doesn't pay for text nobody opened.
+ *
+ * content_raw is the CURRENT text: an owner edit writes the PRIOR wording to
+ * memory_revisions and overwrites content_raw (ownerEditMemory), so reading it
+ * needs no revision join — and the Raw Vault invariant is unaffected, this
+ * being a read.
+ */
+export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await authAndOwn(params.id)
+  if (!auth.ok) return auth.response
+
+  const admin = createAdminClient()
+  const { data, error } = await admin
+    .from('memories')
+    .select('id, content_raw, occurred_at_fuzzy, is_draft')
+    .eq('id', params.id)
+    .single()
+  if (error || !data) {
+    return NextResponse.json({ error: 'Memory not found', detail: error?.message }, { status: 404 })
+  }
+  return NextResponse.json({
+    id: data.id,
+    body: data.content_raw ?? '',
+    occurred_at_fuzzy: data.occurred_at_fuzzy ?? null,
+    is_draft: data.is_draft ?? false,
+  })
+}
+
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await authAndOwn(params.id)
   if (!auth.ok) return auth.response

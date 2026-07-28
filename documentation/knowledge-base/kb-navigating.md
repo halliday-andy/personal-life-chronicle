@@ -70,6 +70,16 @@ Every surface hands off to the others without losing your place:
 The address bar keeps up with where you are, so a link copied mid-journey
 drops someone (or future you) at the same spot.
 
+### Reading a cited recollection without leaving
+
+Under a stop, **"Recollections that mention this place"** lists every memory
+that names it — from any era, so a later memory that name-drops an
+earlier home appears here too. Each is shown as an opening excerpt
+ending in **… more**. Tap **more** and the full text opens right there,
+so you can read a chapter straight through without losing your place;
+**Show less** folds it back, and **Open in memories ↗** takes you to the
+recollection itself when you want to edit it.
+
 ### Stop numbers
 
 Your homes are numbered along the thread, and both surfaces agree: a pin
