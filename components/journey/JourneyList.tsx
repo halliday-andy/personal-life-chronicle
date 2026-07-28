@@ -85,6 +85,34 @@ export default function JourneyList({
   const [expandedId, setExpandedId] = useState<string | null>(() => owningStopId(stops, initialPin))
   const [details, setDetails] = useState<Record<string, StopDetail | 'loading' | 'error'>>({})
 
+  // Owner-dragged order of a stop's places, per stop. The server tree already
+  // arrives ordered (lib/journey/stop-order.ts); this holds the OPTIMISTIC
+  // sequence between a drop and the PATCH landing, so the row doesn't snap
+  // back while the request is in flight. Keyed by stop, so dragging in one
+  // stop can never disturb another.
+  const [placeOrder, setPlaceOrder] = useState<Record<string, string[]>>({})
+  const [orderError, setOrderError] = useState<string | null>(null)
+
+  async function reorderPlaces(stopId: string, ids: string[], previous: string[]) {
+    setPlaceOrder((o) => ({ ...o, [stopId]: ids }))
+    setOrderError(null)
+    try {
+      const res = await fetch(`/api/globe/residence/${stopId}/stop-order`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order: ids }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const d = await res.json()
+      // The server is the authority on which siblings exist — it appends any
+      // this client didn't know about rather than dropping them.
+      if (Array.isArray(d.order)) setPlaceOrder((o) => ({ ...o, [stopId]: d.order as string[] }))
+    } catch {
+      setPlaceOrder((o) => ({ ...o, [stopId]: previous })) // put it back
+      setOrderError('Couldn’t save that order — it’s been put back.')
+    }
+  }
+
   // Deep-link / in-page arrival: bring the target pin's row into view ONCE
   // — but only after the owning stop's detail panel has rendered. Scrolling
   // at mount aimed correctly and was then shoved away when the async detail
@@ -203,9 +231,14 @@ export default function JourneyList({
             detail={details[stop.relationship_id]}
             onToggle={() => toggle(stop.relationship_id)}
             onGoToPin={goToPin}
+            placeOrder={placeOrder[stop.relationship_id]}
+            onReorderPlaces={reorderPlaces}
           />
         ))}
       </ol>
+      {orderError && (
+        <p role="status" className="mt-2 text-center text-xs text-rose-600">{orderError}</p>
+      )}
 
       {unplaced.length > 0 && (
         <section className="mt-10">
@@ -280,6 +313,8 @@ function StopCard({
   detail,
   onToggle,
   onGoToPin,
+  placeOrder,
+  onReorderPlaces,
 }: {
   node: JourneyNode
   index: number
@@ -290,8 +325,38 @@ function StopCard({
   detail: StopDetail | 'loading' | 'error' | undefined
   onToggle: () => void
   onGoToPin: (relationshipId: string) => void
+  /** Optimistic order of this stop's places while a reorder is in flight. */
+  placeOrder?: string[]
+  onReorderPlaces: (stopId: string, ids: string[], previous: string[]) => void
 }) {
   const phrase = transitionPhrase(nextMoveReason)
+  const [dragId, setDragId] = useState<string | null>(null)
+
+  // The tree already arrives in the owner's order; placeOrder only overrides it
+  // between a drop and the server confirming. An id the override doesn't
+  // mention still renders — never drop a place because a stale order omitted it.
+  const places = placeOrder
+    ? [
+        ...placeOrder
+          .map((id) => node.children.find((c) => c.relationship_id === id))
+          .filter((c): c is JourneyNode => Boolean(c)),
+        ...node.children.filter((c) => !placeOrder.includes(c.relationship_id)),
+      ]
+    : node.children
+
+  function handleDrop(targetId: string) {
+    const dragged = dragId
+    setDragId(null)
+    if (!dragged || dragged === targetId) return
+    const ids = places.map((c) => c.relationship_id)
+    const from = ids.indexOf(dragged)
+    const to = ids.indexOf(targetId)
+    if (from < 0 || to < 0) return
+    const next = [...ids]
+    next.splice(from, 1)
+    next.splice(to, 0, dragged)
+    onReorderPlaces(node.relationship_id, next, ids)
+  }
   return (
     <li id={`journey-pin-${node.relationship_id}`} className="flex gap-3 sm:gap-4">
       {/* Stop ordinal (2026-07-26, Andy's ask): the globe's detail card reads
@@ -393,18 +458,41 @@ function StopCard({
             </div>
           )}
 
-          {node.children.length > 0 && (
+          {places.length > 0 && (
             <ul className="space-y-1.5 border-l border-stone-200 mx-4 mb-4 pl-4">
-              {node.children.map((c) => (
-                <ChildRow
+              {places.map((c) => (
+                <li
                   key={c.relationship_id}
-                  node={c}
-                  depth={1}
-                  // The roll-up covers the whole anchored SUBTREE — pass it
-                  // down so grandchildren (a Log on a workplace) gain their
-                  // excerpts too, not only direct children (2026-07-09).
-                  rollup={expanded && typeof detail === 'object' ? detail.anchored : undefined}
-                />
+                  // Drag to reorder the places at this stop (2026-07-26).
+                  // Chronological sorting isn't available — when_text is free
+                  // prose and invariant #5 keeps it that way — so the sequence
+                  // is the owner's assertion. Pointer-only for now; keyboard
+                  // reorder is deferred per the MVP accessibility policy
+                  // (memory/feedback_lc_accessibility_deferral.md).
+                  draggable={places.length > 1}
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('text/plain', c.relationship_id)
+                    e.dataTransfer.effectAllowed = 'move'
+                    setDragId(c.relationship_id)
+                  }}
+                  onDragEnd={() => setDragId(null)}
+                  onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' }}
+                  onDrop={(e) => { e.preventDefault(); handleDrop(c.relationship_id) }}
+                  className={
+                    (places.length > 1 ? 'cursor-grab ' : '') +
+                    (dragId === c.relationship_id ? 'opacity-40 ' : '') +
+                    'rounded transition-colors'
+                  }
+                >
+                  <ChildRow
+                    node={c}
+                    depth={1}
+                    // The roll-up covers the whole anchored SUBTREE — pass it
+                    // down so grandchildren (a Log on a workplace) gain their
+                    // excerpts too, not only direct children (2026-07-09).
+                    rollup={expanded && typeof detail === 'object' ? detail.anchored : undefined}
+                  />
+                </li>
               ))}
             </ul>
           )}
