@@ -22,6 +22,8 @@ import { listPinImages, removeAllPinImages } from '@/lib/globe/pin-image'
 import { sendEventQuick } from '@/lib/inngest/send-quick'
 import { deriveContextTitle } from '@/lib/context/derive-title'
 import { readCurrentFacts, readOwnerEditedFields } from '@/lib/globe/sticky-facts'
+import { orderRecollectionsBySpine, spineCoordinate, type SpinePin } from '@/lib/journey/recollection-order'
+import { SPINE_CODE } from '@/lib/globe/pin-types'
 
 async function getUser() {
   const { data: { user } } = await createUserClient().auth.getUser()
@@ -79,6 +81,8 @@ export async function GET(_req: NextRequest, { params }: { params: { relationshi
   // recollection whose home IS this stop gets home:null (native, no label).
   const linkedIds = (linkedRows ?? []).map((r) => r.id)
   const homeByMemory = new Map<string, { relationship_id: string; name: string; when_text: string | null }>()
+  // The home pin id for ORDERING — recorded even when it is this stop itself.
+  const homePinIdByMemory = new Map<string, string>()
   if (linkedIds.length > 0) {
     const { data: locLinks } = await admin
       .from('memory_entities')
@@ -111,23 +115,63 @@ export async function GET(_req: NextRequest, { params }: { params: { relationshi
         })
       }
       for (const l of (locLinks ?? []) as { memory_id: string; entity_id: string }[]) {
-        if (homeByMemory.has(l.memory_id)) continue
+        if (homePinIdByMemory.has(l.memory_id)) continue
         const pin = pinByPlace.get(l.entity_id)
-        // Native to this stop → no label (retrospective mentions stand out).
-        if (pin && pin.relationship_id !== params.relationshipId) homeByMemory.set(l.memory_id, pin)
+        if (!pin) continue
+        // The pin is recorded for ORDERING even when it is this stop itself;
+        // only the display label is suppressed for native recollections, so
+        // retrospective mentions stand out.
+        homePinIdByMemory.set(l.memory_id, pin.relationship_id)
+        if (pin.relationship_id !== params.relationshipId) homeByMemory.set(l.memory_id, pin)
       }
     }
   }
 
-  const linked = (linkedRows ?? []).map((r) => ({
-    id: r.id,
-    excerpt: (r.content_raw ?? '').slice(0, 240),
-    // Full text so the card can expand in place (≤20 rows, cheap).
-    text: r.content_raw ?? '',
-    created_at: r.created_at,
-    occurred_at_fuzzy: r.occurred_at_fuzzy ?? null,
-    home: homeByMemory.get(r.id) ?? null,
-  }))
+  // Chronological-in-effect ordering without parsing any dates (Andy's QA,
+  // 2026-07-26): sort along the RESIDENTIAL SPINE, which invariant #5 already
+  // names the primary temporal scaffold. Every recollection's home pin
+  // resolves to a stop, and a marker also to its position inside that stop's
+  // chapter (the owner's drag order). Nothing is inferred from prose.
+  const { data: spineRows } = await admin
+    .from('relationships')
+    .select('id, sort_order, anchor_residence_id, anchor_sort_order, relationship_types!inner(code)')
+    .eq('user_id', user.id)
+    .in('relationship_types.code', PIN_TYPE_CODES as unknown as string[])
+  type SpineRow = {
+    id: string; sort_order: number | null; anchor_residence_id: string | null
+    anchor_sort_order: number | null; relationship_types: { code: string } | { code: string }[] | null
+  }
+  const spinePins = new Map<string, SpinePin>()
+  for (const p of (spineRows ?? []) as SpineRow[]) {
+    const rt = Array.isArray(p.relationship_types) ? p.relationship_types[0] : p.relationship_types
+    spinePins.set(p.id, {
+      relationship_id: p.id,
+      // A spine SLOT belongs to sequenced primaries only; every other type
+      // reaches the spine through its anchor.
+      sort_order: rt?.code === SPINE_CODE ? p.sort_order : null,
+      anchor_residence_id: p.anchor_residence_id,
+      anchor_sort_order: p.anchor_sort_order,
+    })
+  }
+  // A host with no coordinate of its own (an unplaced home, a standalone
+  // marker) still opens its own list: its natives lead, the rest follow by
+  // their spine position.
+  const hostCoordinate = spineCoordinate(spinePins, params.relationshipId) ?? { stop: -1, within: null }
+
+  const linked = orderRecollectionsBySpine(
+    (linkedRows ?? []).map((r) => ({
+      id: r.id,
+      excerpt: (r.content_raw ?? '').slice(0, 240),
+      // Full text so the card can expand in place (≤20 rows, cheap).
+      text: r.content_raw ?? '',
+      created_at: r.created_at,
+      occurred_at_fuzzy: r.occurred_at_fuzzy ?? null,
+      home: homeByMemory.get(r.id) ?? null,
+      home_pin_id: homePinIdByMemory.get(r.id) ?? null,
+    })),
+    spinePins,
+    hostCoordinate,
+  )
 
   // Recollection roll-up (Slice 3.6): pins anchored to THIS pin (Logs,
   // vacations, work trips…) surface as short descriptors that link to that

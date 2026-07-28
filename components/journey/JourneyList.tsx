@@ -56,6 +56,8 @@ interface StopDetail {
 interface LinkedRecollection {
   id: string
   excerpt: string
+  /** Full verbatim text, already in the stop payload — "… more" needs no fetch. */
+  text?: string
   occurred_at_fuzzy?: string | null
   /** Where this recollection lives (its location pin) — null when native
    *  to this stop. Grounds retrospective mentions (2026-07-09). */
@@ -606,30 +608,12 @@ function LinkedRecollectionRow({
   onGoToPin: (relationshipId: string) => void
 }) {
   const [expanded, setExpanded] = useState(false)
-  const [full, setFull] = useState<string | null>(null)
-  const [loadState, setLoadState] = useState<'idle' | 'loading' | 'error'>('idle')
-
-  async function toggle() {
-    if (expanded) {
-      setExpanded(false)
-      return
-    }
-    setExpanded(true)
-    // Fetched once per row, then cached — reopening is instant.
-    if (full !== null || loadState === 'loading') return
-    setLoadState('loading')
-    try {
-      const res = await fetch(`/api/memory/${r.id}`)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const d = await res.json()
-      setFull(typeof d.body === 'string' ? d.body : '')
-      setLoadState('idle')
-    } catch {
-      setLoadState('error')
-    }
-  }
-
+  // The stop payload already carries the full text (the pin detail card has
+  // expanded these in place since 338d2b3), so there is nothing to fetch and
+  // no loading state — expansion is instant.
+  const full = r.text ?? ''
   const panelId = `journey-recollection-${r.id}`
+  const toggle = () => setExpanded((v) => !v)
   return (
     <li className="text-xs leading-relaxed">
       {r.home ? (
@@ -654,42 +638,30 @@ function LinkedRecollectionRow({
       ) : null}
 
       <div className="border-l-2 border-stone-100 pl-3 text-stone-600">
-        {expanded && full !== null ? (
+        {expanded ? (
           <div id={panelId} className="journey-recollection-full">
             <Markdown>{full}</Markdown>
           </div>
         ) : (
           <p className="m-0">
             {r.excerpt}
-            {loadState === 'loading' ? (
-              <span className="text-stone-400">… opening…</span>
-            ) : (
-              <>
-                …{' '}
-                <button
-                  type="button"
-                  onClick={toggle}
-                  aria-expanded={expanded}
-                  aria-controls={panelId}
-                  className="font-medium text-amber-700 hover:text-amber-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
-                >
-                  more
-                </button>
-              </>
-            )}
-          </p>
-        )}
-
-        {loadState === 'error' && (
-          <p className="mt-1 text-[11px] text-rose-500">
-            Couldn’t open this one.{' '}
-            <button type="button" onClick={toggle} className="underline hover:text-rose-700">
-              Try again
+            {/* The excerpt used to be a bare link whose only affordance was a
+                hover colour — invisible on touch, and the trailing "…" read as
+                "cut off" rather than "there's more" (Andy's QA). */}
+            …{' '}
+            <button
+              type="button"
+              onClick={toggle}
+              aria-expanded={expanded}
+              aria-controls={panelId}
+              className="font-medium text-amber-700 hover:text-amber-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+            >
+              more
             </button>
           </p>
         )}
 
-        {expanded && full !== null && (
+        {expanded && (
           <p className="mt-1.5 flex flex-wrap gap-x-3 text-[11px]">
             <button
               type="button"
