@@ -605,6 +605,8 @@ export default function PinEditPanel({
           context={context}
           anchored={anchored}
           onSelectAnchored={onSelectAnchored}
+          relationshipId={pin.relationship_id}
+          hostIsHome={isHomeType(typeCode)}
           variant="panel"
         />
       )}

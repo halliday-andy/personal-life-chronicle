@@ -38,6 +38,10 @@ export interface AnchoredPin {
   excerpt: string
   /** Recollections on this child beyond its overview excerpt (2026-07-09). */
   linked_count?: number
+  /** The pin's own era phrase — what makes the ordered list read as a sequence. */
+  when_text?: string | null
+  /** Direct places (anchored to the host) are draggable; descendants aren't. */
+  anchor_residence_id?: string | null
 }
 
 export interface ContextEntry {
@@ -49,7 +53,7 @@ export interface ContextEntry {
 // Which collection is expanded. Only one opens at a time so the read-view card
 // never grows tall enough to occlude its own pin — presence stays visible as
 // counts, content is opt-in (2026-06-26 reframe).
-type OpenChip = 'recollections' | 'context' | 'related' | 'hopper' | null
+type OpenChip = 'recollections' | 'context' | 'hopper' | null
 
 export default function PinConnections({
   entityId,
@@ -59,6 +63,8 @@ export default function PinConnections({
   anchored,
   onSelectAnchored,
   variant,
+  relationshipId,
+  hostIsHome = false,
 }: {
   entityId: string
   placeName: string
@@ -67,14 +73,63 @@ export default function PinConnections({
   anchored: AnchoredPin[]
   onSelectAnchored: (relationshipId: string) => void
   variant: 'card' | 'panel'
+  /** The host pin — the reorder endpoint's subject. */
+  relationshipId: string
+  /** Home types read as a "stop"; a workplace with Logs under it does not. */
+  hostIsHome?: boolean
 }) {
   const [openChip, setOpenChip] = useState<OpenChip>(null)
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [order, setOrder] = useState<string[] | null>(null)
+  const [orderError, setOrderError] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [stubCount, setStubCount] = useState(0)
 
   // The hopper joins the single-open chip set only on the read card; the edit
   // panel keeps its own full always-open hopper (see file header).
   const includeHopper = variant === 'card'
+
+  // Places arrive already ordered (orderAnchoredSubtree); `order` holds the
+  // optimistic sequence between a drop and the PATCH landing. A place the
+  // override doesn't mention still renders — never drop one on a stale order.
+  const places = order
+    ? [
+        ...order.map((id) => anchored.find((a) => a.relationship_id === id)).filter((a): a is AnchoredPin => Boolean(a)),
+        ...anchored.filter((a) => !order.includes(a.relationship_id)),
+      ]
+    : anchored
+  // Only DIRECT places reorder; descendants follow their parent (Andy's call
+  // 2026-07-26 — "grandchildren are likely to remain underneath their parents").
+  const directIds = places.filter((a) => a.anchor_residence_id === relationshipId).map((a) => a.relationship_id)
+  const canDrag = directIds.length > 1
+
+  async function handleDrop(targetId: string) {
+    const dragged = dragId
+    setDragId(null)
+    if (!dragged || dragged === targetId) return
+    if (!directIds.includes(dragged) || !directIds.includes(targetId)) return
+    const from = directIds.indexOf(dragged)
+    const to = directIds.indexOf(targetId)
+    const next = [...directIds]
+    next.splice(from, 1)
+    next.splice(to, 0, dragged)
+    const previous = order
+    setOrder(next)
+    setOrderError(null)
+    try {
+      const res = await fetch(`/api/globe/residence/${relationshipId}/stop-order`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order: next }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const d = await res.json()
+      if (Array.isArray(d.order)) setOrder(d.order as string[])
+    } catch {
+      setOrder(previous)
+      setOrderError('Couldn’t save that order — it’s been put back.')
+    }
+  }
 
   const chips = [
     linked.length > 0 && { key: 'recollections' as const, label: `${linked.length} recollection${linked.length === 1 ? '' : 's'}` },
@@ -86,7 +141,6 @@ export default function PinConnections({
     // Class-of-bug: never hide the control that CREATES the first item behind
     // the existence of an item.
     { key: 'context' as const, label: context.length > 0 ? `${context.length} context` : '＋ context' },
-    anchored.length > 0 && { key: 'related' as const, label: `${anchored.length} related pin${anchored.length === 1 ? '' : 's'}` },
     includeHopper && { key: 'hopper' as const, label: stubCount > 0 ? `✎ ${stubCount} to write` : '✎ jot' },
   ].filter(Boolean) as { key: Exclude<OpenChip, null>; label: string }[]
 
@@ -96,6 +150,62 @@ export default function PinConnections({
 
   return (
     <div className="mt-3 border-t border-[var(--glass-border)] pt-3">
+      {/* Places at this stop — ELEVATED above the chips (Andy's QA 2026-07-26).
+          This used to be a "N related pins" count chip at the very bottom of a
+          long card, in faint text, behind a click: a four-month stay inside a
+          twelve-month home read as an afterthought. It is now the stop's
+          content, in the owner's dragged order, each with its own era phrase
+          so the sequence reads as a progression. Pointer-only drag; keyboard
+          reorder deferred per the MVP accessibility policy. */}
+      {places.length > 0 && (
+        <div className="mb-3">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--ink-dim)]">
+            {hostIsHome ? 'Places at this stop' : 'Related places'}
+          </p>
+          <ul className="mt-1 space-y-0.5">
+            {places.map((a) => {
+              const draggable = canDrag && a.anchor_residence_id === relationshipId
+              const nested = a.anchor_residence_id !== relationshipId
+              return (
+                <li
+                  key={a.relationship_id}
+                  draggable={draggable}
+                  onDragStart={draggable ? (e) => {
+                    e.dataTransfer.setData('text/plain', a.relationship_id)
+                    e.dataTransfer.effectAllowed = 'move'
+                    setDragId(a.relationship_id)
+                  } : undefined}
+                  onDragEnd={draggable ? () => setDragId(null) : undefined}
+                  onDragOver={draggable ? (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' } : undefined}
+                  onDrop={draggable ? (e) => { e.preventDefault(); void handleDrop(a.relationship_id) } : undefined}
+                  className={
+                    (draggable ? 'cursor-grab ' : '') +
+                    (dragId === a.relationship_id ? 'opacity-40 ' : '') +
+                    (nested ? 'pl-3 ' : '')
+                  }
+                >
+                  <button
+                    onClick={() => onSelectAnchored(a.relationship_id)}
+                    title={`Open ${a.name}`}
+                    className="w-full rounded-lg px-1 py-0.5 text-left text-xs leading-relaxed text-[var(--ink)]/80 hover:bg-white/5 hover:text-[var(--ink)]"
+                  >
+                    <span className="mr-1.5 inline-block h-2 w-2 rounded-full align-middle" style={{ backgroundColor: pinTypeMeta(a.type_code).color }} />
+                    <span className="font-medium text-[var(--ink)]">{a.name}</span>
+                    <span className="text-[var(--ink-dim)]/70"> · {pinTypeMeta(a.type_code).label}</span>
+                    {a.when_text ? <span className="text-[var(--ember-soft)]"> · {a.when_text}</span> : null}
+                    {a.excerpt ? <span className="block pl-3.5 text-[var(--ink-dim)]">{a.excerpt}</span> : null}
+                    {(a.linked_count ?? 0) > 0 && (
+                      <span className="block pl-3.5 text-[var(--ember-soft)]">+{a.linked_count} more</span>
+                    )}
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+          {orderError && <p className="mt-1 text-[11px] text-rose-300">{orderError}</p>}
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-1.5">
         {chips.map((c) => {
           const open = openChip === c.key
@@ -214,28 +324,6 @@ export default function PinConnections({
         />
       )}
 
-      {openChip === 'related' && anchored.length > 0 && (
-        <div className="mt-2">
-          <ul className="max-h-40 space-y-1 overflow-y-auto">
-            {anchored.map((a) => (
-              <li key={a.relationship_id}>
-                <button
-                  onClick={() => onSelectAnchored(a.relationship_id)}
-                  title={`Open ${a.name}`}
-                  className="w-full rounded-lg px-1 py-0.5 text-left text-xs leading-relaxed text-[var(--ink)]/80 hover:bg-white/5 hover:text-[var(--ink)]"
-                >
-                  <span className="mr-1.5 inline-block h-2 w-2 rounded-full align-middle" style={{ backgroundColor: pinTypeMeta(a.type_code).color }} />
-                  <span className="font-medium text-[var(--ink)]">{a.name}</span>
-                  {a.excerpt ? <span className="text-[var(--ink-dim)]"> — {a.excerpt}</span> : null}
-                  {(a.linked_count ?? 0) > 0 && (
-                    <span className="text-[var(--ember-soft)]"> · +{a.linked_count} more</span>
-                  )}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </div>
   )
 }

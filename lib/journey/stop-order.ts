@@ -64,6 +64,49 @@ export function moveStopPlace(ids: readonly string[], movedId: string, toIndex: 
   return next
 }
 
+export interface AnchoredRow extends StopPlace {
+  anchor_residence_id: string | null
+}
+
+/**
+ * Flatten a pin's anchored SUBTREE into the order it should read in on the
+ * globe card — which shows one flat list where Journey shows a nested rail.
+ *
+ * Nesting still carries meaning even when it isn't drawn: a Log on a workplace
+ * belongs beside that workplace, not adrift among the stop's other places. So
+ * the direct places lead in the owner's order, and each is immediately
+ * followed by its own descendants, depth-first.
+ *
+ * Nothing is ever dropped: a row whose parent is absent from the payload, or
+ * caught in an anchor cycle, still renders (trailing) rather than vanishing.
+ */
+export function orderAnchoredSubtree<T extends AnchoredRow>(rows: readonly T[], hostId: string): T[] {
+  const childrenOf = new Map<string, T[]>()
+  for (const r of rows) {
+    const key = r.anchor_residence_id ?? ''
+    const list = childrenOf.get(key) ?? []
+    list.push(r)
+    childrenOf.set(key, list)
+  }
+
+  const out: T[] = []
+  const seen = new Set<string>()
+  const walk = (parentId: string) => {
+    for (const child of orderStopPlaces(childrenOf.get(parentId) ?? [])) {
+      if (seen.has(child.relationship_id)) continue // cycle guard
+      seen.add(child.relationship_id)
+      out.push(child)
+      walk(child.relationship_id)
+    }
+  }
+  walk(hostId)
+
+  // Anything unreachable from the host — an orphan, or a cycle island — still
+  // belongs to the owner and must be shown.
+  for (const r of rows) if (!seen.has(r.relationship_id)) out.push(r)
+  return out
+}
+
 /**
  * Explicit positions for a whole sibling list. The entire stop is written
  * on the first drag, so an ordered stop never carries a half-positioned

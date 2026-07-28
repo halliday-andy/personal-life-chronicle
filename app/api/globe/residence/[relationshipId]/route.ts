@@ -23,6 +23,7 @@ import { sendEventQuick } from '@/lib/inngest/send-quick'
 import { deriveContextTitle } from '@/lib/context/derive-title'
 import { readCurrentFacts, readOwnerEditedFields } from '@/lib/globe/sticky-facts'
 import { orderRecollectionsBySpine, spineCoordinate, type SpinePin } from '@/lib/journey/recollection-order'
+import { orderAnchoredSubtree } from '@/lib/journey/stop-order'
 import { SPINE_CODE } from '@/lib/globe/pin-types'
 
 async function getUser() {
@@ -183,21 +184,31 @@ export async function GET(_req: NextRequest, { params }: { params: { relationshi
   // query left the grandchildren without excerpts in the Journey. Walk
   // level by level with a visited guard (cycles are theoretically
   // repairable states — never loop on them).
-  const anchoredRels: { id: string; object_id: string; type_id: string }[] = []
+  const anchoredRels: {
+    id: string; object_id: string; type_id: string
+    anchor_residence_id: string | null; anchor_sort_order: number | null
+    when_text: string | null; created_at: string
+  }[] = []
   {
     const visited = new Set<string>([params.relationshipId])
     let frontier = [params.relationshipId]
     while (frontier.length > 0) {
       const { data: level } = await admin
         .from('relationships')
-        .select('id, object_id, type_id, anchor_residence_id')
+        .select('id, object_id, type_id, anchor_residence_id, anchor_sort_order, metadata, created_at')
         .in('anchor_residence_id', frontier)
         .eq('user_id', user.id)
       const next: string[] = []
       for (const r of level ?? []) {
         if (visited.has(r.id)) continue
         visited.add(r.id)
-        anchoredRels.push({ id: r.id, object_id: r.object_id, type_id: r.type_id })
+        anchoredRels.push({
+          id: r.id, object_id: r.object_id, type_id: r.type_id,
+          anchor_residence_id: r.anchor_residence_id ?? null,
+          anchor_sort_order: (r as { anchor_sort_order?: number | null }).anchor_sort_order ?? null,
+          when_text: ((r as { metadata?: Record<string, unknown> | null }).metadata?.when_text as string | undefined) ?? null,
+          created_at: (r as { created_at?: string }).created_at ?? '',
+        })
         next.push(r.id)
       }
       frontier = next
@@ -206,6 +217,11 @@ export async function GET(_req: NextRequest, { params }: { params: { relationshi
   let anchored: {
     relationship_id: string; name: string; type_code: string | null; excerpt: string
     place_entity_id: string; linked_count: number
+    /** The pin's verbatim era phrase — what makes an ordered list mean anything. */
+    when_text: string | null
+    /** Carried so the card can order the subtree and drag its direct places. */
+    anchor_residence_id: string | null; anchor_sort_order: number | null
+    created_at: string
   }[] = []
   if (anchoredRels && anchoredRels.length > 0) {
     const objIds = anchoredRels.map((r) => r.object_id)
@@ -259,8 +275,16 @@ export async function GET(_req: NextRequest, { params }: { params: { relationshi
         excerpt: excerptByEntity.get(r.object_id) ?? '',
         place_entity_id: r.object_id,
         linked_count,
+        when_text: r.when_text,
+        anchor_residence_id: r.anchor_residence_id,
+        anchor_sort_order: r.anchor_sort_order,
+        created_at: r.created_at,
       }
     })
+    // Owner's order: direct places first, each trailed by its descendants
+    // (2026-07-26). Nesting isn't drawn on the card, but it still means
+    // something — a Log belongs beside the workplace it hangs from.
+    anchored = orderAnchoredSubtree(anchored, params.relationshipId)
   }
 
   // Context notes on this place entity (Slice 6.5). Titles are derived

@@ -11,6 +11,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { preprocessPinImage } from '@/lib/globe/image-preprocess'
+import { isHomeType } from '@/lib/globe/anchor-options'
 import { pinTypeMeta } from '@/lib/globe/pin-types'
 import PhotoLightbox from './PhotoLightbox'
 import PinConnections, { type LinkedRecollection, type AnchoredPin, type ContextEntry } from './PinConnections'
@@ -372,6 +373,8 @@ export default function PinDetailCard({
             linked={linked}
             context={context}
             anchored={anchored}
+            relationshipId={pin.relationship_id}
+            hostIsHome={isHomeType(pin.type_code)}
             onSelectAnchored={onSelectAnchored}
             variant="card"
           />

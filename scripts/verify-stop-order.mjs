@@ -27,7 +27,7 @@ import { fileURLToPath } from 'node:url'
 const projectRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 const runnerSrc = `
-import { orderStopPlaces, moveStopPlace, assignStopPositions } from '${projectRoot}/lib/journey/stop-order'
+import { orderStopPlaces, moveStopPlace, assignStopPositions, orderAnchoredSubtree } from '${projectRoot}/lib/journey/stop-order'
 
 let failures = 0
 const ok = (m: string) => console.log('  \\u2713 ' + m)
@@ -100,6 +100,48 @@ expect('positions are assigned 0..n-1 in list order', assignStopPositions(['x', 
   { relationship_id: 'z', anchor_sort_order: 2 },
 ])
 expect('assigning over an empty stop yields nothing', assignStopPositions([]), [])
+
+// ── orderAnchoredSubtree: the globe card's flat subtree, in owner order ──
+// The card shows a stop's places as one flat list (unlike Journey's nested
+// rail), but nesting still MEANS something: a Log on a workplace belongs with
+// that workplace. So direct places lead in the owner's order, and each is
+// immediately followed by its own descendants.
+const row = (id: string, anchor: string | null, pos: number | null, type = 'logged_at', created = '2026-01-01') =>
+  ({ relationship_id: id, anchor_residence_id: anchor, anchor_sort_order: pos, type_code: type, created_at: created })
+const flat = (xs: { relationship_id: string }[]) => xs.map((x) => x.relationship_id)
+
+const subtree = [
+  row('hotel', 'skischool', 0),          // grandchild, under the workplace
+  row('skischool', 'HOST', 1, 'worked_at'),
+  row('stay', 'HOST', 0, 'lived_briefly_at'),
+  row('ramada', 'skischool', 1),         // second grandchild
+]
+expect(
+  'direct places in owner order, each trailed by its descendants',
+  flat(orderAnchoredSubtree(subtree, 'HOST')),
+  ['stay', 'skischool', 'hotel', 'ramada'],
+)
+expect('an empty subtree is fine', orderAnchoredSubtree([], 'HOST'), [])
+// Never lose a row: an orphan whose parent isn't in the payload still renders.
+expect(
+  'a row whose parent is missing still appears (trailing)',
+  flat(orderAnchoredSubtree([row('orphan', 'gone', 0), row('direct', 'HOST', 0)], 'HOST')),
+  ['direct', 'orphan'],
+)
+expect(
+  'every row survives, cycles included',
+  orderAnchoredSubtree([row('a', 'b', 0), row('b', 'a', 0), row('c', 'HOST', 0)], 'HOST').length,
+  3,
+)
+// Unpositioned direct places fall back to the legacy order, as everywhere else.
+expect(
+  'unpositioned direct places keep the legacy order',
+  flat(orderAnchoredSubtree(
+    [row('vac', 'HOST', null, 'vacationed_at', '2026-01-01'), row('log', 'HOST', null, 'logged_at', '2026-01-02')],
+    'HOST',
+  )),
+  ['log', 'vac'],
+)
 
 console.log(failures === 0 ? '\\nPASS' : '\\nFAIL (' + failures + ')')
 process.exit(failures === 0 ? 0 : 1)
