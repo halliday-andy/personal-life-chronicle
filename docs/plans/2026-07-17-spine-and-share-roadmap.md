@@ -173,6 +173,17 @@ it to someone.
   capture-order listings all accumulate pressure. Not scheduled — but any
   new feature adding another per-feature time workaround should trigger the
   "is it time?" conversation.
+- **Keyboard accessibility — deferred, not dropped** (Andy's call 2026-07-26,
+  `memory/feedback_lc_accessibility_deferral.md`). The MVP is for testing, so
+  dedicated keyboard work waits; free-with-the-build semantics (real buttons,
+  `aria-expanded`, `sr-only` where a visual-only cue carries meaning) still ship
+  in every unit, and the accessible path gets built inline whenever a feature
+  makes it cheap. Running list of what's owed:
+  - pin photo carousel reorder — drag is pointer-only (2026-07-20)
+  - chapter "places within this chapter" reorder — drag is pointer-only (2026-07-26)
+
+  Natural revisit point: Track B, the first surface other people touch.
+
 - **Vertical Moments** — parked until Andy supplies examples (unchanged).
 - **Steps 9, 14, 15** — topic strand spec, search agent (privacy filter
   BEFORE pgvector similarity), review-inbox generalization: sequenced after
