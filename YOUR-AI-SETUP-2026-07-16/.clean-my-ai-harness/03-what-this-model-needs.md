@@ -1,0 +1,31 @@
+# What This Model Needs
+
+Edition: Claude  
+Product surface: claude&#45;code (USER&#95;REPORTED)  
+Model and settings: USER&#95;REPORTED (USER&#95;REPORTED)  
+Profile date: 2026&#45;07&#45;16
+
+## Keep shared
+
+- Outcome: A cleaned&#45;up but functionally identical harness&#58; the same protections &#40;dual&#45;write, migration approval gate, origin backup, architectural invariants&#41; stay enforced, stale handoff prompts stop competing with the current one, and the dual&#45;write rule has one clear home instead of three overlapping copies.
+- Context: This is a mature, actively&#45;developed Claude Code project &#40;Life Chronicle&#41; with real production listeners, a large and growing build&#45;progress log, and a documented history of two prior harness failures &#40;memory&#45;mirror drift, silent backup failure&#41; that already produced working fixes &#40;dual&#45;write protocol, push hook, Stop&#45;hook warning&#41;. The reviewer cannot infer whether early&#45;planning&#45;v2/ or the post&#45;slice7 handoff prompt are still wanted without asking Andy.
+- Authority: This run was read&#45;only end to end&#58; no file was moved, edited, or deleted. Every RETIRE/ONE&#95;HOME/PROBATION item above requires Andy's explicit approval, translated into a numbered chat reply, before any change is made; KEEP items require no action.
+- Acceptance: Before any approved change is applied&#58; verify the reviewed map and file hashes still match &#40;nothing changed underneath since this scan&#41;, and after applying, verify that dual&#45;write, migration&#45;approval, and origin&#45;backup protections are still intact and that rejected/untouched files are byte&#45;identical to their current state.
+
+## Change for this surface or model
+
+| Recommendation | Status and evidence | Why it applies here | What would disprove it |
+|---|---|---|---|
+| Archive &#40;don't delete&#41; the three superseded handoff prompts and add a one&#45;line 'superseded by' pointer to any that stay in docs/plans/. | SUPPORTED; VERIFIED; Two of the three superseded files self&#45;declare supersession in their own first paragraph &#40;'Supersedes docs/plans/...'&#41;; the third is the file that both later prompts point back to as their common starting point. | Claude Code project&#45;file discovery is directory&#45;browsing/grep based, not a router with declared triggers — there is nothing that automatically prefers the newest handoff prompt, so a stale one sitting in the same folder as the current one is a real risk of an agent &#40;or Andy&#41; picking the wrong starting point. | If Andy confirms these are kept intentionally as a dated history trail he already knows to read newest&#45;first, no action is needed. |
+| Consolidate the dual&#45;write protocol's three descriptions &#40;CLAUDE.md, memory/README.md, memory/feedback&#95;lc&#95;memory&#95;dual&#95;write.md&#41; into one canonical instruction with the other two trimmed to pointers. | SUPPORTED; VERIFIED; All three files were read in full during this review and describe the same 'write to both auto&#45;memory and the workspace mirror' rule in overlapping prose. | Claude Code has no schema or validator that would catch a future edit landing in only one of the three copies; the risk is purely human/agent&#45;editing drift, the same failure mode that originally motivated the protocol. | If a future session shows the three files being kept in sync reliably over several protocol edits, the duplication is low&#45;risk and this recommendation weakens to PROBATION. |
+
+## What I Could Not See
+
+- **hidden&#45;product&#45;controls (INACCESSIBLE):** Hidden system instructions, product routing, account memory, and unexported settings were not visible.
+- **runtime&#45;trace (INACCESSIBLE):** No trace showed which controls were eligible, shown, consulted, acted through, checked, or accepted for a real job.
+- **behavioral&#45;effect (NOT&#95;APPLICABLE):** Static presence and text signals do not prove that a control helps or harms the work.
+- **excluded&#45;paths (INACCESSIBLE):** Some paths were deliberately excluded for privacy, safety, traversal, or relevance limits.
+- **Unused/stub Inngest agent functions and one build&#45;tool config file (VERIFIED):** planner&#45;agent.ts, search&#45;agent.ts, timeline&#45;agent.ts, and all three synthesis&#45;agent.ts functions are verified stubs &#40;each just logs 'stub invoked' and returns a status string, per direct file read&#41; not yet wired to real logic; tailwind.config.ts is ordinary build tooling with no instructional content. Reviewing these individually would not change any recommendation, and the Quick Check bound &#40;50 reviewed controls&#41; was reached by the other 50 controls, which include every file with actual authority, routing, or standing&#45;context signal. Recommend a Maintainer Audit only if Andy wants these formally logged.
+- **Runtime activation and load order for every control (INACCESSIBLE):** This is a static file inventory. No run trace or product receipt was available, so for every file above 'KEEP' means 'this file's content is sound and its stated job is clear' — it does not mean 'this file was proven to load into a real Claude Code session.' CLAUDE.md's own auto&#45;load behavior is the one exception with reasonably strong inference &#40;Claude Code's documented project&#45;file convention&#41;, everything else's actual consultation is unverified.
+- **documentation/early&#45;planning&#45;v2/ sibling files (INACCESSIBLE):** Only cef&#45;schema.json from this folder appeared in the scanner's 55&#45;control inventory; four sibling files in the same folder &#40;README&#95;Import&#95;Validation.txt, Revised&#95;PRD&#95;v2.md, handoff&#45;checklist.md, lovable&#45;build&#45;spec.v2.md&#41; were not surfaced by the bundled scanner under Quick Check's default file&#45;type rules. Their freshness status is therefore unassessed.
+- **Hidden Claude Code product state (INACCESSIBLE):** Global &#40;non&#45;project&#41; skills, MCP server configuration, and any account&#45;level settings were out of scope for this project&#45;rooted scan, per the audit protocol's rule to map only the selected workspace root and its inherited configuration.

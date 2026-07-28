@@ -14,8 +14,8 @@
  * Instead we use the scaffold invariant #5 already provides: the residential
  * spine IS the primary temporal structure. Every recollection has a home pin;
  * every home pin resolves to a spine stop, and a marker also carries a
- * position inside that stop's chapter (anchor_sort_order — the owner's drag
- * order, lib/journey/chapter-order.ts). So the ordering is entirely derived
+ * position inside that stop (anchor_sort_order — the owner's drag
+ * order, lib/journey/stop-order.ts). So the ordering is entirely derived
  * from sequence the OWNER asserted, with nothing inferred.
  *
  * KNOWN LIMIT (a decision, not a defect — see the proof): a recollection filed
@@ -35,17 +35,17 @@ export interface SpinePin {
   anchor_sort_order: number | null
 }
 
-/** Where a pin sits in the scaffold: which stop, and where inside its chapter. */
+/** Where a pin sits in the scaffold: which stop, and where among that stop's places. */
 export interface SpineCoordinate {
   stop: number
-  /** null for the stop itself; the chapter position for a marker beneath it. */
+  /** null for the stop itself; the position among that stop's places, for a marker beneath it. */
   within: number | null
 }
 
 /**
  * Resolve a pin to its spine coordinate by walking up its anchor chain to a
  * sequenced primary. A marker several levels deep (a Log on a workplace)
- * inherits the chapter position of the TOPMOST marker in its chain, so
+ * inherits the position of the TOPMOST marker in its chain, so
  * grandchildren stay grouped with the parent they hang from.
  *
  * Returns null when the chain reaches an unanchored pin, an unplaced home, or
@@ -61,7 +61,7 @@ export function spineCoordinate(
   if (current.sort_order !== null) return { stop: current.sort_order, within: null }
 
   const seen = new Set<string>([pinId])
-  // The chapter position belongs to the highest marker in the chain — the one
+  // The position belongs to the highest marker in the chain — the one
   // anchored directly to the stop — so a Log follows its workplace.
   let topMarker = current
   while (current.anchor_residence_id) {
@@ -87,8 +87,8 @@ export interface OrderableRecollection {
 
 /**
  * Order cited recollections along the spine. Resolvable ones lead — by stop,
- * then by chapter position (the stop's own recollections opening its chapter),
- * then oldest-first so a chapter reads in the order it was told. Anything
+ * then by position among that stop's places (the stop's own recollections
+ * leading), then oldest-first so a stop reads in the order it was told. Anything
  * unresolvable trails rather than vanishing or jumping the queue.
  */
 export function orderRecollectionsBySpine<T extends OrderableRecollection>(
@@ -96,8 +96,8 @@ export function orderRecollectionsBySpine<T extends OrderableRecollection>(
   pins: ReadonlyMap<string, SpinePin>,
   hostCoordinate: SpineCoordinate,
 ): T[] {
-  // `within: null` sorts ahead of any numbered chapter position, so a stop's
-  // own recollections open its chapter before the markers inside it.
+  // `within: null` sorts ahead of any numbered position, so a stop's own
+  // recollections lead, before the markers anchored to it.
   const WITHIN_FIRST = -1
   const key = (r: T): SpineCoordinate | null =>
     r.home_pin_id === null ? hostCoordinate : spineCoordinate(pins, r.home_pin_id)

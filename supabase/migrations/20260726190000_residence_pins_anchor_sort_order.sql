@@ -1,6 +1,6 @@
 -- Carry anchor_sort_order through get_residence_pins (2026-07-26).
 --
--- The Journey tree orders a chapter's places by the owner's drag order
+-- The Journey tree orders a stop's places by the owner's drag order
 -- (relationships.anchor_sort_order, added 20260726180000). The tree is built
 -- from get_residence_pins, so the column has to come through the RPC.
 --

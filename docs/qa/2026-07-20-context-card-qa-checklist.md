@@ -24,11 +24,11 @@ Andy chose **navigate-with-strong-affordance**. Fix in `PinDetailCard.tsx`
 - [x] Each row **reads as clickable**: leading ember dot (or 🔒 if private),
   prominent title, trailing **↗**. Clicking a row **opens the place page**
   (`/entities/…`) — same destination as before, now obviously so.
-- [ ] **"＋ Add New Context ↗"** is a small, secondary link at the
+- [x] **"＋ Add New Context ↗"** is a small, secondary link at the
   **top-right** of the panel (mirrors "View all in Recollections →").
   *(Renamed from "＋ Add on place page ↗" by the pin-card reconciliation
   later the same day — this line was stale until 2026-07-26.)*
-- [ ] A **private** context note shows the 🔒 and still opens the place page.
+- [x] A **private** context note shows the 🔒 and still opens the place page.
 
 ### Zero-state — the chip exists before the context does (fixed 2026-07-26)
 

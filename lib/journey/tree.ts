@@ -16,7 +16,7 @@
  */
 
 import { SPINE_CODE } from '@/lib/globe/pin-types'
-import { byTypeThenCreated, orderChapterPlaces } from './chapter-order'
+import { byTypeThenCreated, orderStopPlaces } from './stop-order'
 
 export interface JourneyPin {
   relationship_id: string
@@ -65,7 +65,7 @@ export interface JourneyNode extends JourneyPin {
 }
 
 export interface JourneyTree {
-  /** SEQUENCED primary residences in spine order — the chapters. */
+  /** SEQUENCED primary residences in spine order — the stops. */
   stops: JourneyNode[]
   /** Unsequenced primaries (U9, KTD10): homes awaiting their spot on
    *  the thread — never rendered as spine stops. */
@@ -103,10 +103,10 @@ export function buildJourneyTree(pins: JourneyPin[]): JourneyTree {
     return a.created_at < b.created_at ? -1 : 1
   })
 
-  // A chapter's places follow the OWNER's drag order where one exists, and the
+  // A stop's places follow the OWNER's drag order where one exists, and the
   // legacy type-then-created order where it doesn't — so nothing reshuffles
-  // until something is dragged (lib/journey/chapter-order.ts).
-  for (const n of Array.from(nodes.values())) n.children = orderChapterPlaces(n.children)
+  // until something is dragged (lib/journey/stop-order.ts).
+  for (const n of Array.from(nodes.values())) n.children = orderStopPlaces(n.children)
   unanchored.sort(byTypeThenCreated)
   unplaced.sort(byTypeThenCreated)
 

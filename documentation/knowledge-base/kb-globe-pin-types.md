@@ -37,8 +37,8 @@ Most non-home pins ask you to pick a home. This question is about
 to afterward, and not a judgment about the place itself. Picking a home:
 
 - draws a dashed line tying the place to that home on the globe,
-- files the place (and its memories) under that home's chapter of your
-  life, so browsing the home surfaces them.
+- files the place (and its memories) under that home's stop on your
+  journey, so browsing the home surfaces them.
 
 The list offers every **home** you've pinned: your primary residences —
 including ones marked "not yet placed" in your sequence — plus second
@@ -56,8 +56,8 @@ vacation, not to a home.
 ## Common cases
 
 **"I was between homes when this happened."** Pick the home you'd just
-left — the era question reads naturally as "which chapter was this part
-of," and the chapter you were leaving is usually the honest answer. (For
+left — the era question reads naturally as "which home was this part of,"
+and the home you were leaving is usually the honest answer. (For
 a journey between homes, consider framing it as a Trip — see
 [Trips & travel](kb-trips.md).)
 

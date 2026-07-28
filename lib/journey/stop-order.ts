@@ -1,5 +1,5 @@
 /**
- * chapter-order — the owner's ordering of the places within a chapter.
+ * stop-order — the owner's ordering of the places at a stop.
  *
  * A primary residence is an era, and the pins anchored to it (short-term
  * stays, second residences, vacations, workplaces, logs) are what happened
@@ -13,10 +13,10 @@
  * is the OWNER'S ASSERTION — dragged once, stored, never computed. Same model
  * as the pin photo carousel (lib/globe/pin-image-order.ts, 2026-07-20).
  *
- * Pure — no I/O, no React. Proof: scripts/verify-chapter-order.mjs.
+ * Pure — no I/O, no React. Proof: scripts/verify-stop-order.mjs.
  */
 
-export interface ChapterPlace {
+export interface StopPlace {
   relationship_id: string
   type_code: string | null
   created_at: string
@@ -28,19 +28,19 @@ export interface ChapterPlace {
  * arranged: type code alphabetically, then capture time. Preserving it matters
  * — it means an existing chronicle looks EXACTLY the same until the first drag.
  */
-export function byTypeThenCreated(a: ChapterPlace, b: ChapterPlace): number {
+export function byTypeThenCreated(a: StopPlace, b: StopPlace): number {
   const t = (a.type_code ?? '').localeCompare(b.type_code ?? '')
   if (t !== 0) return t
   return a.created_at < b.created_at ? -1 : 1
 }
 
 /**
- * Order a chapter's places: those the owner has positioned lead, in their
+ * Order a stop's places: those the owner has positioned lead, in their
  * asserted order; everything else trails in the legacy order. A place added
  * after an ordering exists therefore appears at the END rather than silently
  * inserting itself into a sequence the owner arranged.
  */
-export function orderChapterPlaces<T extends ChapterPlace>(places: readonly T[]): T[] {
+export function orderStopPlaces<T extends StopPlace>(places: readonly T[]): T[] {
   const positioned = places.filter((p) => p.anchor_sort_order !== null)
   const unpositioned = places.filter((p) => p.anchor_sort_order === null)
   positioned.sort((a, b) => (a.anchor_sort_order as number) - (b.anchor_sort_order as number))
@@ -54,7 +54,7 @@ export function orderChapterPlaces<T extends ChapterPlace>(places: readonly T[])
  * always preserved — a drag must never lose something the owner put in their
  * chronicle.
  */
-export function moveChapterPlace(ids: readonly string[], movedId: string, toIndex: number): string[] {
+export function moveStopPlace(ids: readonly string[], movedId: string, toIndex: number): string[] {
   const from = ids.indexOf(movedId)
   if (from < 0) return [...ids]
   const next = [...ids]
@@ -65,12 +65,12 @@ export function moveChapterPlace(ids: readonly string[], movedId: string, toInde
 }
 
 /**
- * Explicit positions for a whole sibling list. The entire chapter is written
- * on the first drag, so an ordered chapter never carries a half-positioned
+ * Explicit positions for a whole sibling list. The entire stop is written
+ * on the first drag, so an ordered stop never carries a half-positioned
  * mix — otherwise an untouched place would keep jumping the queue by falling
  * into the unpositioned tail with a different sort.
  */
-export function assignChapterPositions(
+export function assignStopPositions(
   ids: readonly string[],
 ): { relationship_id: string; anchor_sort_order: number }[] {
   return ids.map((relationship_id, i) => ({ relationship_id, anchor_sort_order: i }))

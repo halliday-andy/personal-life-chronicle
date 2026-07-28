@@ -1,5 +1,5 @@
 /**
- * Owner-asserted order of the places within a chapter.
+ * Owner-asserted order of the places at a stop.
  *
  *   PATCH — persist the order of the pins anchored to this one. Body:
  *           `{ order: string[] }`, the anchor-sibling relationship ids in the
@@ -12,14 +12,14 @@
  * convention in the assertion of time ranges, I'd prefer this be
  * drag-and-drop orderable." Same model as the photo carousel.
  *
- * The WHOLE sibling list is written on every reorder, so a chapter never
- * carries a half-positioned mix (see assignChapterPositions).
+ * The WHOLE sibling list is written on every reorder, so a stop never
+ * carries a half-positioned mix (see assignStopPositions).
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createUserClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { assignChapterPositions } from '@/lib/journey/chapter-order'
+import { assignStopPositions } from '@/lib/journey/stop-order'
 
 export async function PATCH(request: NextRequest, { params }: { params: { relationshipId: string } }) {
   const { data: { user } } = await createUserClient().auth.getUser()
@@ -36,15 +36,15 @@ export async function PATCH(request: NextRequest, { params }: { params: { relati
 
   const admin = createAdminClient()
 
-  // Ownership of the chapter itself.
+  // Ownership of the stop itself.
   const { data: host } = await admin
     .from('relationships').select('id, user_id').eq('id', params.relationshipId).maybeSingle()
   if (!host || host.user_id !== user.id) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
-  // Only pins actually anchored to THIS chapter may be positioned by it — a
-  // reorder must never be able to reach into another chapter, and an id the
+  // Only pins actually anchored to THIS stop may be positioned by it — a
+  // reorder must never be able to reach into another stop, and an id the
   // client no longer has (a pin deleted or re-anchored in another tab) is
   // dropped rather than written blindly.
   const { data: siblings } = await admin
@@ -61,7 +61,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { relati
     return NextResponse.json({ error: 'No anchored pins to order' }, { status: 400 })
   }
 
-  const positions = assignChapterPositions(filtered)
+  const positions = assignStopPositions(filtered)
   const results = await Promise.all(
     positions.map((p) =>
       admin

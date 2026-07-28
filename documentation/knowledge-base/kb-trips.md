@@ -50,7 +50,7 @@ The pin form asks the first; the framing step asks the second. They
 sound alike but mean different things:
 
 - The **anchor** ties the destination *place* to an era of your life
-  ("this belongs to the chalet chapter").
+  ("this belongs to the chalet years").
 - The **origin** is where this particular *journey* began.
 
 They usually have the same answer — and when you start a trip from a

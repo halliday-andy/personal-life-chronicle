@@ -1,0 +1,125 @@
+{
+  "schema_version": "1.0",
+  "scan_id": "scan-ed0dba69509f1815d9ea69866f975650",
+  "generated_at": "2026-07-17T04:50:56+00:00",
+  "target": {
+    "label": "Personal-Life-Chronicle",
+    "absolute_path_emitted": false
+  },
+  "reported_runtime": {
+    "surface": {
+      "value": "claude-code",
+      "evidence_state": "USER_REPORTED"
+    },
+    "model": {
+      "value": "USER_REPORTED",
+      "evidence_state": "USER_REPORTED"
+    }
+  },
+  "limits": {
+    "max_files": 5000,
+    "max_traversed_files": 100000,
+    "max_file_bytes": 1000000,
+    "max_total_bytes": 25000000,
+    "max_depth": 16,
+    "include_documents": false
+  },
+  "safety": {
+    "audited_text_treatment": "UNTRUSTED_DATA",
+    "target_writes": false,
+    "network_access": false,
+    "symlink_traversal": false,
+    "content_excerpts_emitted": false,
+    "secret_paths_recorded": false
+  },
+  "evidence_states_supported": [
+    "VERIFIED",
+    "USER_REPORTED",
+    "INFERRED",
+    "INACCESSIBLE",
+    "NOT_APPLICABLE"
+  ],
+  "coverage": [
+    {
+      "area": "visible local instruction and control files",
+      "evidence_state": "VERIFIED",
+      "detail": "Files matching the bounded scanner rules were inventoried without executing their contents."
+    },
+    {
+      "area": "selected surface and model labels",
+      "evidence_state": "USER_REPORTED",
+      "detail": "The caller identified the surface as 'claude-code' and the model as 'USER_REPORTED'; the scanner did not verify either runtime value."
+    },
+    {
+      "area": "control kind, apparent job, and static signals",
+      "evidence_state": "INFERRED",
+      "detail": "Path metadata and bounded text signals suggest intent; semantic review is required before a cleanup recommendation."
+    },
+    {
+      "area": "runtime activation and load order",
+      "evidence_state": "INACCESSIBLE",
+      "detail": "Actual availability, eligibility, loading, and consultation require a product trace or run receipt that the static scanner does not have."
+    },
+    {
+      "area": "hidden product instructions, routing, memory, and account settings",
+      "evidence_state": "INACCESSIBLE",
+      "detail": "The local scanner cannot inspect controls the product surface does not expose as files or supplied exports."
+    },
+    {
+      "area": "behavioral value and model performance",
+      "evidence_state": "NOT_APPLICABLE",
+      "detail": "This is a static inventory, not a behavioral evaluation or model comparison."
+    }
+  ],
+  "counts": {
+    "visible_controls": 55,
+    "inspected_bytes": 320758,
+    "file_errors": 0,
+    "excluded": 5
+  },
+  "exclusion_counts": {
+    "excluded-directory": 3,
+    "secret-path": 2
+  },
+  "exclusion_samples": [
+    {
+      "path": ".git",
+      "reason": "excluded directory"
+    },
+    {
+      "path": ".next",
+      "reason": "excluded directory"
+    },
+    {
+      "path": "node_modules",
+      "reason": "excluded directory"
+    }
+  ],
+  "file_errors": [],
+  "blind_spots": [
+    {
+      "id": "hidden-product-controls",
+      "evidence_state": "INACCESSIBLE",
+      "detail": "Hidden system instructions, product routing, account memory, and unexported settings were not visible."
+    },
+    {
+      "id": "runtime-trace",
+      "evidence_state": "INACCESSIBLE",
+      "detail": "No trace showed which controls were eligible, shown, consulted, acted through, checked, or accepted for a real job."
+    },
+    {
+      "id": "behavioral-effect",
+      "evidence_state": "NOT_APPLICABLE",
+      "detail": "Static presence and text signals do not prove that a control helps or harms the work."
+    },
+    {
+      "id": "excluded-paths",
+      "evidence_state": "INACCESSIBLE",
+      "detail": "Some paths were deliberately excluded for privacy, safety, traversal, or relevance limits.",
+      "counts": {
+        "excluded-directory": 3,
+        "secret-path": 2
+      }
+    }
+  ]
+}

@@ -130,8 +130,8 @@ export async function GET(_req: NextRequest, { params }: { params: { relationshi
   // Chronological-in-effect ordering without parsing any dates (Andy's QA,
   // 2026-07-26): sort along the RESIDENTIAL SPINE, which invariant #5 already
   // names the primary temporal scaffold. Every recollection's home pin
-  // resolves to a stop, and a marker also to its position inside that stop's
-  // chapter (the owner's drag order). Nothing is inferred from prose.
+  // resolves to a stop, and a marker also to its position among that stop's
+  // places (the owner's drag order). Nothing is inferred from prose.
   const { data: spineRows } = await admin
     .from('relationships')
     .select('id, sort_order, anchor_residence_id, anchor_sort_order, relationship_types!inner(code)')

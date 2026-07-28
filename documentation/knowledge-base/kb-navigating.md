@@ -76,7 +76,7 @@ Under a stop, **"Recollections that mention this place"** lists every memory
 that names it — from any era, so a later memory that name-drops an
 earlier home appears here too. Each is shown as an opening excerpt
 ending in **… more**. Tap **more** and the full text opens right there,
-so you can read a chapter straight through without losing your place;
+so you can read a stop straight through without losing your place;
 **Show less** folds it back, and **Open in memories ↗** takes you to the
 recollection itself when you want to edit it.
 

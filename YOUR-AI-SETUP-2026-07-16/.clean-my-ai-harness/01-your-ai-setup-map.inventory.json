@@ -1,0 +1,2848 @@
+{
+  "schema_version": "1.0",
+  "scan_id": "scan-ed0dba69509f1815d9ea69866f975650",
+  "generated_at": "2026-07-17T04:50:56+00:00",
+  "title": "Visible AI harness map",
+  "target": {
+    "label": "Personal-Life-Chronicle",
+    "absolute_path_emitted": false
+  },
+  "reported_runtime": {
+    "surface": {
+      "value": "claude-code",
+      "evidence_state": "USER_REPORTED"
+    },
+    "model": {
+      "value": "USER_REPORTED",
+      "evidence_state": "USER_REPORTED"
+    }
+  },
+  "safety": {
+    "audited_text_treatment": "UNTRUSTED_DATA",
+    "target_writes": false,
+    "network_access": false,
+    "symlink_traversal": false,
+    "content_excerpts_emitted": false,
+    "secret_paths_recorded": false
+  },
+  "coverage": [
+    {
+      "area": "visible local instruction and control files",
+      "evidence_state": "VERIFIED",
+      "detail": "Files matching the bounded scanner rules were inventoried without executing their contents."
+    },
+    {
+      "area": "selected surface and model labels",
+      "evidence_state": "USER_REPORTED",
+      "detail": "The caller identified the surface as 'claude-code' and the model as 'USER_REPORTED'; the scanner did not verify either runtime value."
+    },
+    {
+      "area": "control kind, apparent job, and static signals",
+      "evidence_state": "INFERRED",
+      "detail": "Path metadata and bounded text signals suggest intent; semantic review is required before a cleanup recommendation."
+    },
+    {
+      "area": "runtime activation and load order",
+      "evidence_state": "INACCESSIBLE",
+      "detail": "Actual availability, eligibility, loading, and consultation require a product trace or run receipt that the static scanner does not have."
+    },
+    {
+      "area": "hidden product instructions, routing, memory, and account settings",
+      "evidence_state": "INACCESSIBLE",
+      "detail": "The local scanner cannot inspect controls the product surface does not expose as files or supplied exports."
+    },
+    {
+      "area": "behavioral value and model performance",
+      "evidence_state": "NOT_APPLICABLE",
+      "detail": "This is a static inventory, not a behavioral evaluation or model comparison."
+    }
+  ],
+  "counts": {
+    "visible_controls": 55,
+    "inspected_bytes": 320758,
+    "file_errors": 0,
+    "excluded": 5
+  },
+  "setup_map": {
+    "status": "STATIC_VISIBLE_INVENTORY",
+    "summary": {
+      "visible_controls": 55,
+      "inspected_bytes": 320758,
+      "undecided_controls": 55
+    },
+    "controls": [
+      {
+        "id": "control-f27ac6f39d89",
+        "path": ".claude/settings.json",
+        "kind": "configuration",
+        "bytes": 1406,
+        "lines": 42,
+        "sha256": "cccc07cf3e453bdcef851b9af5af96a278a9a15ebf81008a7745ad052a01fdc8",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Product or runtime configuration",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "SYSTEM_CONFIGURATION",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 1,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 3,
+          "version_sensitive": 0
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-fca16cae5b0e",
+        "path": ".claude/settings.local.json",
+        "kind": "configuration",
+        "bytes": 160,
+        "lines": 9,
+        "sha256": "bf97d67d0c3f26b15c9204dddb97de59794164acba45471e020323e5cf76012a",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Product or runtime configuration",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "SYSTEM_CONFIGURATION",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 1,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 1,
+          "version_sensitive": 0
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-6ebdb617a810",
+        "path": "CLAUDE.md",
+        "kind": "project-instructions",
+        "bytes": 7683,
+        "lines": 106,
+        "sha256": "f04eebf597e300fdf3432ef4bbc8489412fab546d6daf8771451042b462f7f2f",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Standing project rules and context",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 4,
+          "verification_or_acceptance": 5,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 5,
+          "version_sensitive": 10
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-8e1ce2f55aa9",
+        "path": "docs/plans/2026-06-22-claude-code-handoff-prompt.md",
+        "kind": "prompt",
+        "bytes": 5298,
+        "lines": 47,
+        "sha256": "c44775e8f8c4e994c9bf95ab4ce44d1044b23544731692e41eba218cede90e28",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Task or reusable prompt context",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 1,
+          "verification_or_acceptance": 5,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 1,
+          "version_sensitive": 9
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-1b1741e57086",
+        "path": "docs/plans/2026-07-04-claude-code-handoff-prompt.md",
+        "kind": "prompt",
+        "bytes": 3449,
+        "lines": 38,
+        "sha256": "10b7359c6ea6d18accbfc8ba21c433dac51564f3703e1a33d367a4702317c6aa",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Task or reusable prompt context",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 1,
+          "verification_or_acceptance": 4,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 12
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-3a57df54afc2",
+        "path": "docs/plans/2026-07-07-claude-code-handoff-prompt-post-slice7.md",
+        "kind": "prompt",
+        "bytes": 8978,
+        "lines": 74,
+        "sha256": "4d9b84fe7619d1ff537b3566d9eadaca510e0b7a70dc0d294b3220872700e107",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Task or reusable prompt context",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 11,
+          "routing_or_activation": 1,
+          "eager_loading": 0,
+          "external_action": 5,
+          "version_sensitive": 29
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-5faa674ef3e4",
+        "path": "docs/plans/2026-07-07-claude-code-handoff-prompt.md",
+        "kind": "prompt",
+        "bytes": 5758,
+        "lines": 59,
+        "sha256": "7ac584deeb47208ab6558d8ae4eda7fc1bf95926c7c73b07e89936d9ce832a50",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Task or reusable prompt context",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 6,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 3,
+          "version_sensitive": 23
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-a9b57f2a2c05",
+        "path": "documentation/early-planning-v2/cef-schema.json",
+        "kind": "configuration",
+        "bytes": 8272,
+        "lines": 424,
+        "sha256": "e5f2d4f1dad4dd80d4c206edc3df6d7fcd65e5bb214e9621657ea2efc5570735",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Product or runtime configuration",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "SYSTEM_CONFIGURATION",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 4,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 1
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-1be789a630f9",
+        "path": "lib/agents/entity/tool.ts",
+        "kind": "instruction-or-reference",
+        "bytes": 2023,
+        "lines": 53,
+        "sha256": "7b9ca2bd60a1cab02a32dc7f0fda766d40be59c5261aa49795dcb4949cc10de3",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Instruction or supporting reference",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 0,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 4
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-af70ad0f0ae7",
+        "path": "lib/agents/tagger/tool.ts",
+        "kind": "instruction-or-reference",
+        "bytes": 2098,
+        "lines": 61,
+        "sha256": "e2f25c38d8e259f3affc49f8e5c15c537d12214e8761bba02cec540a83c48cfc",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Instruction or supporting reference",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 0,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 5
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-151e04530716",
+        "path": "lib/inngest/agents/capture-agent.ts",
+        "kind": "instruction-or-reference",
+        "bytes": 1144,
+        "lines": 32,
+        "sha256": "bba80670263f8839dbcd16869245709ba640bebb8ff17af3fc00fca92cdddbb2",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Instruction or supporting reference",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 0,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 0
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-4f2c3eca0c0a",
+        "path": "lib/inngest/agents/entity-agent.ts",
+        "kind": "instruction-or-reference",
+        "bytes": 1873,
+        "lines": 52,
+        "sha256": "50673d5c89500ba3deeeb6b5834d367a80f690e5b40dfd9599c2ce3cdbe41d8a",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Instruction or supporting reference",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 0,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 1,
+          "version_sensitive": 0
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-10ddcd870eaa",
+        "path": "lib/inngest/agents/globe-extraction-agent.ts",
+        "kind": "instruction-or-reference",
+        "bytes": 1596,
+        "lines": 41,
+        "sha256": "51f281ef2af141a2b81d6544cef4dab10721922457cf7375022c719667233683",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Instruction or supporting reference",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 0,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 2
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-acc3e186749d",
+        "path": "lib/inngest/agents/planner-agent.ts",
+        "kind": "instruction-or-reference",
+        "bytes": 374,
+        "lines": 11,
+        "sha256": "1869cb7130634ec62a28b34c2232af25813a235dc73c50c4779001db9ea5eddb",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Instruction or supporting reference",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 0,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 0
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-87d536e01aa4",
+        "path": "lib/inngest/agents/search-agent.ts",
+        "kind": "instruction-or-reference",
+        "bytes": 395,
+        "lines": 11,
+        "sha256": "5786c79c476703789a76571645b1295f8251023e5eb2eff13a01b2fd23f1aea2",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Instruction or supporting reference",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 0,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 0
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-c5a884bc5f74",
+        "path": "lib/inngest/agents/synthesis-agent.ts",
+        "kind": "instruction-or-reference",
+        "bytes": 1217,
+        "lines": 31,
+        "sha256": "40d707decd3b760dbd51e2f50f3d72036f58dbbd9d6ea3df943ce4e9b7efc1d9",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Instruction or supporting reference",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 0,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 0
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-8060048bc2b6",
+        "path": "lib/inngest/agents/tagger-agent.ts",
+        "kind": "instruction-or-reference",
+        "bytes": 2218,
+        "lines": 57,
+        "sha256": "2f93791632ccfe47a2f4d964563630833c801b5678b45b40e3ca79567a21e4fe",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Instruction or supporting reference",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 0,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 1,
+          "version_sensitive": 1
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-3b85f17a9dff",
+        "path": "lib/inngest/agents/timeline-agent.ts",
+        "kind": "instruction-or-reference",
+        "bytes": 398,
+        "lines": 11,
+        "sha256": "7c7d054515c789a020cd176a4164d4b35ca813ac3f321ab308c4f0cd45702bf0",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Instruction or supporting reference",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 0,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 0
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-efb4f8a3459c",
+        "path": "memory/decision_phase0_reframing_2026-05-31.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 7479,
+        "lines": 83,
+        "sha256": "8ab940d919f59d5c4d350c979915f853d6419501c4252711389bc6aca2e56070",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 2,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 1,
+          "version_sensitive": 6
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-d0b5f52c7c35",
+        "path": "memory/decision_step7_image_storage_2026-06-04.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 5710,
+        "lines": 100,
+        "sha256": "da773297ca20ad8f2bb44965d332736be83297df358a2c5835c2055a6d8a5d28",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 8,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 10,
+          "version_sensitive": 1
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-68955fbb2216",
+        "path": "memory/decision_step7_prep_checklist_2026-06-04.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 7016,
+        "lines": 179,
+        "sha256": "7784fb9798eafff89f33b11f20ed2cf5e8e9e8b3f56f68c1f46b7fc2efae8b3f",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 1,
+          "verification_or_acceptance": 9,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 9,
+          "version_sensitive": 6
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-a08d8771136c",
+        "path": "memory/decision_step7_slice_phasing_2026-06-05.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 10023,
+        "lines": 56,
+        "sha256": "e5e7bbe88fa52b73e2e250f51f933115d428b89beb239e206fd5abf90706d6d1",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 5,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 7,
+          "version_sensitive": 19
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-80aa5dbb8ab9",
+        "path": "memory/feedback_folder_naming.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 1065,
+        "lines": 11,
+        "sha256": "ca14082885ff82b30cb2821c7d789835ac3fb5c6a3c008a1370d087eabea99b2",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 0,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 3
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-cb9a6a55b1d9",
+        "path": "memory/feedback_lc_memory_dual_write.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 2154,
+        "lines": 24,
+        "sha256": "338d0348f0b3d1a700d1639bd5d51aa59f058cbe6f311a00e2dbec3d830d55dc",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 1,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 2
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-b6dd74a08204",
+        "path": "memory/feedback_lc_no_build_during_dev.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 1757,
+        "lines": 18,
+        "sha256": "ac7ee1d056bc686d0dc6f03de518753162a221915c8c1b72da9b891fea83ec90",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 2,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 1
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-f48ea76e5e71",
+        "path": "memory/feedback_lc_origin_backup_autopush.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 2725,
+        "lines": 45,
+        "sha256": "583f83242aaa3bd29dc0af5ef351f1b85e15215967639f082811d9c2666c4f3f",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 2,
+          "verification_or_acceptance": 0,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 5,
+          "version_sensitive": 6
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-4262e43b396e",
+        "path": "memory/feedback_lc_silent_backup_and_sandbox.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 2463,
+        "lines": 41,
+        "sha256": "90b3d9e48eb37935924b4d2c85091dcfa5345d1d2578732513548babfd5acb7e",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 2,
+          "verification_or_acceptance": 1,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 7
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-d44572b9d54d",
+        "path": "memory/MEMORY.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 9212,
+        "lines": 52,
+        "sha256": "81da258322213e7c7adc510bee4164876dd513c7e9126096bd9cbb4dcf6e8b57",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 2,
+          "verification_or_acceptance": 5,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 4,
+          "version_sensitive": 37
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-7559fad77443",
+        "path": "memory/project_lc_access_cards.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 4807,
+        "lines": 49,
+        "sha256": "de722b5655798b433feb8bedd6e865c48cdfa50c662a762e4a77096d020133ba",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 3,
+          "verification_or_acceptance": 4,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 2
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-dc2bcf86bd6c",
+        "path": "memory/project_lc_architecture_split.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 2461,
+        "lines": 26,
+        "sha256": "88b22861e1960d43380ea0b3e6cbe55c3eacaf20ae1418eebd1069f9feb8aa2d",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 9,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 1,
+          "version_sensitive": 0
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-7cfd3afb77a4",
+        "path": "memory/project_lc_build_progress.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 82509,
+        "lines": 996,
+        "sha256": "075e1b2dfc3d432a603456ba085deec9abffcf5226afb1bab219eea9c01ccea5",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 3,
+          "verification_or_acceptance": 111,
+          "routing_or_activation": 8,
+          "eager_loading": 0,
+          "external_action": 49,
+          "version_sensitive": 105
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-38752874e624",
+        "path": "memory/project_lc_capture_assistant.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 6401,
+        "lines": 80,
+        "sha256": "d355b974327e0303262ee478a56c57832eee6ccc3deda0c6ec8bf18352a4be5f",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 1,
+          "verification_or_acceptance": 0,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 2,
+          "version_sensitive": 7
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-cb5f89abb194",
+        "path": "memory/project_lc_db_architecture.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 4323,
+        "lines": 29,
+        "sha256": "ae0faf0c2d7657dfe9d7f31d5a32d957d536096858c20719633ac3b9f8b6b144",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 6,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 4
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-242abb1685f1",
+        "path": "memory/project_lc_document_sources.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 1739,
+        "lines": 30,
+        "sha256": "c9d424d9331eb520ddf39d255a66a76d993d73f6aca3ff6bfb33a97f588c6672",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 1,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 6
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-530e2cfb3094",
+        "path": "memory/project_lc_dual_track_final_review.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 1414,
+        "lines": 14,
+        "sha256": "01dd8dd7bd39fbabd700eba4ad21a67c75317d501210845fc1550efbee0475d5",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 0,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 10
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-30ce804eaae6",
+        "path": "memory/project_lc_extraction_reliability.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 6877,
+        "lines": 73,
+        "sha256": "126e56e24310766a4db495869071e1e105155294c41ee8ca5177776999dc8543",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 1,
+          "verification_or_acceptance": 6,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 5,
+          "version_sensitive": 6
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-abbae7841697",
+        "path": "memory/project_lc_future_pin_types.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 2558,
+        "lines": 25,
+        "sha256": "264aab0701144b43683cf729d4c44630876217ef11a1e2aa6c3b8636a8da66c6",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 1,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 3
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-7425b0a92aab",
+        "path": "memory/project_lc_gap_review_april2026.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 3494,
+        "lines": 36,
+        "sha256": "5453345869653fcd110adb06792d3acf650c78d9334b9653c78539a2a3c7548e",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 4,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 1,
+          "version_sensitive": 1
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-0ac0b9616c78",
+        "path": "memory/project_lc_globe_entity_ux_brief.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 14528,
+        "lines": 52,
+        "sha256": "a07e994f23b6d99004996689a1eddb575d3068a82fc3d5d5110817333f988710",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 1,
+          "verification_or_acceptance": 20,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 29
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-7f350e007d13",
+        "path": "memory/project_lc_location_design.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 3502,
+        "lines": 31,
+        "sha256": "b5ebf268b002bcaa9f716f020dea9a159e57d0a9a2b69bb49214c154fc91cdb8",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 4,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 0
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-9168992dfc73",
+        "path": "memory/project_lc_ontology_bootstrap.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 12590,
+        "lines": 144,
+        "sha256": "f251317e4c8975b1b4213b296b70a52bd5e879c73c9e0c0b656fead5a912e67b",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 4,
+          "routing_or_activation": 1,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 8
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-c0efd18f742d",
+        "path": "memory/project_lc_prd_readiness.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 10400,
+        "lines": 128,
+        "sha256": "dc1f9d60def9542b7938ae221f4a6036cd708370db6527f797a6271371814ca3",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 3,
+          "verification_or_acceptance": 1,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 1,
+          "version_sensitive": 5
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-4fcf7575443d",
+        "path": "memory/project_lc_prd_status.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 4377,
+        "lines": 58,
+        "sha256": "a13c07822aaea241317acb0c244e446864837c0a871cd913e3daf3723918bc11",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 6,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 1,
+          "version_sensitive": 8
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-bd37ffb2b59b",
+        "path": "memory/project_lc_shareable_artifacts.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 3857,
+        "lines": 35,
+        "sha256": "1d51c35121c60d10f3e53f58ccd2e07829b47d66480ba2186d65c6362fa01f3d",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 3,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 0
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-4daa1b2c0964",
+        "path": "memory/project_lc_single_post_share.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 3855,
+        "lines": 48,
+        "sha256": "201fb7a9635d185e59cfd50fd227b5d2b0c468e698eadb0620488d74a9477c32",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 4,
+          "routing_or_activation": 1,
+          "eager_loading": 0,
+          "external_action": 3,
+          "version_sensitive": 0
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-5db946359af2",
+        "path": "memory/project_lc_stroll_feature.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 4345,
+        "lines": 66,
+        "sha256": "0c5409a6490ede7de07bdd82669289925a8d1dd14cba4d2c848ce7663eb2245d",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 2,
+          "verification_or_acceptance": 2,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 0
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-f1beb4126d49",
+        "path": "memory/project_lc_temporal_agent.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 6027,
+        "lines": 51,
+        "sha256": "2d1038e35ccce3af41c8a248ccbfe3ddf3e095c2eabf5350f2799a6c6b0fc0f9",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 1,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 1
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-4539c65580ac",
+        "path": "memory/README.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 2762,
+        "lines": 44,
+        "sha256": "a1ff920106922707b254388392b58fb7e513fe54399f0f64ad67ddccd72059c5",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 1,
+          "verification_or_acceptance": 2,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 4
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-645e01cc63d4",
+        "path": "memory/reference_lc_designer_skills.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 2973,
+        "lines": 25,
+        "sha256": "3846ced4fa8b339ae7c32669d746f2292736a6a9bd016b8587c65c7ed7b4ab19",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 0,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 1,
+          "version_sensitive": 23
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-0035b64f2aa0",
+        "path": "memory/reference_lc_dev_sequence.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 4070,
+        "lines": 45,
+        "sha256": "df8afe226a57667f933f48f1f9a42dda3d88030237e9da0275e79028b31b9a49",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 2,
+          "routing_or_activation": 2,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 6
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-6561c2233c96",
+        "path": "memory/reference_lc_migration_apply.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 2877,
+        "lines": 57,
+        "sha256": "ffa9c2e2125464cb9ad0d002fdb4271d9a5344e53bbd598a6c4dd7781f6bfd65",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 2,
+          "verification_or_acceptance": 3,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 2,
+          "version_sensitive": 4
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-893593719239",
+        "path": "memory/reference_lc_schema_files.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 5796,
+        "lines": 62,
+        "sha256": "81ce504c024cccf7d94aeda81685496b5b178b82c58ef3081aca7279bbdeac36",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 12,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 10
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-1da68b64d5e2",
+        "path": "memory/user_andy_profile.md",
+        "kind": "memory-or-standing-context",
+        "bytes": 2843,
+        "lines": 37,
+        "sha256": "b20cc5358c940e4a83912564ce9de847b73703f4c846d155ea1ba6571ba057db",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Saved context or preferences",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 3,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 1,
+          "version_sensitive": 8
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-63468a3ce4f2",
+        "path": "supabase/config.toml",
+        "kind": "configuration",
+        "bytes": 15034,
+        "lines": 408,
+        "sha256": "2e955a80e25efa25bb578396208e836c19d724bdf73585b7f0c6bcabcd29dad1",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Product or runtime configuration",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "SYSTEM_CONFIGURATION",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 7,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 24,
+          "version_sensitive": 2
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      },
+      {
+        "id": "control-655dc9e3d0aa",
+        "path": "tailwind.config.ts",
+        "kind": "instruction-or-reference",
+        "bytes": 395,
+        "lines": 19,
+        "sha256": "5153867d3940b5105155e0f023c6b9a914712caeef9410d93fa325225a58f9ed",
+        "content_inspection": "STATIC_TEXT_SIGNALS_ONLY",
+        "job": {
+          "value": "Instruction or supporting reference",
+          "evidence_state": "INFERRED"
+        },
+        "owner": {
+          "value": "UNKNOWN",
+          "evidence_state": "INACCESSIBLE"
+        },
+        "enforcement_type": {
+          "value": "WRITTEN_GUIDANCE",
+          "evidence_state": "INFERRED"
+        },
+        "evidence": [
+          {
+            "state": "VERIFIED",
+            "claim": "This target-relative file was read within the declared scan bounds."
+          },
+          {
+            "state": "INFERRED",
+            "claim": "Kind and signal counts were inferred from path metadata and static text matching; runtime use was not observed."
+          }
+        ],
+        "signals": {
+          "authority_or_permission": 0,
+          "verification_or_acceptance": 0,
+          "routing_or_activation": 0,
+          "eager_loading": 0,
+          "external_action": 0,
+          "version_sensitive": 0
+        },
+        "runtime": {
+          "availability": "UNKNOWN",
+          "activation": "UNKNOWN",
+          "load_timing": "UNKNOWN",
+          "consulted": "UNKNOWN"
+        },
+        "decision": {
+          "status": "UNDECIDED",
+          "reason": "A static inventory cannot establish whether this control should be kept, moved, combined, or retired."
+        }
+      }
+    ]
+  },
+  "run_map": {
+    "trace_status": "NOT_EXPOSED",
+    "trace_note": "No run trace was supplied. The setup map must not be treated as proof that a control shaped a job.",
+    "funnel": [
+      {
+        "stage": "Available",
+        "status": "NOT_EXPOSED",
+        "count": null,
+        "detail": "Requires a runtime trace or acceptance record."
+      },
+      {
+        "stage": "Eligible",
+        "status": "NOT_EXPOSED",
+        "count": null,
+        "detail": "Requires a runtime trace or acceptance record."
+      },
+      {
+        "stage": "Shown",
+        "status": "NOT_EXPOSED",
+        "count": null,
+        "detail": "Requires a runtime trace or acceptance record."
+      },
+      {
+        "stage": "Consulted",
+        "status": "NOT_EXPOSED",
+        "count": null,
+        "detail": "Requires a runtime trace or acceptance record."
+      },
+      {
+        "stage": "Acted through",
+        "status": "NOT_EXPOSED",
+        "count": null,
+        "detail": "Requires a runtime trace or acceptance record."
+      },
+      {
+        "stage": "Checked",
+        "status": "NOT_EXPOSED",
+        "count": null,
+        "detail": "Requires a runtime trace or acceptance record."
+      },
+      {
+        "stage": "Accepted",
+        "status": "NOT_EXPOSED",
+        "count": null,
+        "detail": "Requires a runtime trace or acceptance record."
+      }
+    ],
+    "controls_observed": []
+  },
+  "decisions": [],
+  "decision_note": "The scanner makes no keep, move, combine, or retire decision from static text alone.",
+  "blind_spots": [
+    {
+      "id": "hidden-product-controls",
+      "evidence_state": "INACCESSIBLE",
+      "detail": "Hidden system instructions, product routing, account memory, and unexported settings were not visible."
+    },
+    {
+      "id": "runtime-trace",
+      "evidence_state": "INACCESSIBLE",
+      "detail": "No trace showed which controls were eligible, shown, consulted, acted through, checked, or accepted for a real job."
+    },
+    {
+      "id": "behavioral-effect",
+      "evidence_state": "NOT_APPLICABLE",
+      "detail": "Static presence and text signals do not prove that a control helps or harms the work."
+    },
+    {
+      "id": "excluded-paths",
+      "evidence_state": "INACCESSIBLE",
+      "detail": "Some paths were deliberately excluded for privacy, safety, traversal, or relevance limits.",
+      "counts": {
+        "excluded-directory": 3,
+        "secret-path": 2
+      }
+    }
+  ]
+}

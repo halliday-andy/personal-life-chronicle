@@ -1,0 +1,108 @@
+{
+  "schema_version": "1.0",
+  "review_id": "HARNESS-92E08F9AD4-FECEB22390",
+  "scan_id": "scan-ed0dba69509f1815d9ea69866f975650",
+  "baseline": {
+    "scope_sha256": "feceb22390a486642cab8306609c98acab88f23602bd324b7ee9fdc8417b7137",
+    "map_sha256": "92e08f9ad4e1797cad310aaa39c784d6b247edd6a78eb386013989c9697ac0b2"
+  },
+  "permission_mode": "READ_ONLY_UNTIL_INDIVIDUAL_APPROVAL",
+  "changes": [
+    {
+      "change_id": "CHANGE-9B732EF019EEF404D9A65E5F2EBFC976",
+      "control_id": "control-fca16cae5b0e",
+      "source_path": ".claude/settings.local.json",
+      "source_sha256": "bf97d67d0c3f26b15c9204dddb97de59794164acba45471e020323e5cf76012a",
+      "proposal_sha256": "9b732ef019eef404d9a65e5f2ebfc9760fcfe4f04eb22d2f98458c3512a6ff68",
+      "proposed_change": "No change yet — confirm intent, then either keep as a personal/local override file (standard Claude Code convention, often gitignored) or fold its extra allowance into settings.json.",
+      "must_survive": "The distinct permission scopes each file grants must not be silently merged or narrowed without Andy's confirmation.",
+      "risk_if_wrong": "If it's actually stale/accidental and merged incorrectly, a needed local permission could disappear and Claude Code would start prompting for approval on a previously-silent command.",
+      "rollback": "Revert to current two-file state; no destructive action was taken.",
+      "decision": "PROPOSED"
+    },
+    {
+      "change_id": "CHANGE-3A1C389BE29B60F48B969A71B98880EE",
+      "control_id": "control-8e1ce2f55aa9",
+      "source_path": "docs/plans/2026-06-22-claude-code-handoff-prompt.md",
+      "source_sha256": "c44775e8f8c4e994c9bf95ab4ce44d1044b23544731692e41eba218cede90e28",
+      "proposal_sha256": "3a1c389be29b60f48b969a71b98880ee2231d01a10449fcec8c1c4f78ec5ea5d",
+      "proposed_change": "Move to a docs/plans/archive/ subfolder (or add a one-line 'superseded by' header) rather than deleting; do not remove file history.",
+      "must_survive": "The design decisions it captured (already preserved in memory/project_lc_globe_entity_ux_brief.md and the canonical roadmap doc) must not be lost.",
+      "risk_if_wrong": "Low: if wrong, the file is still present, just moved/labeled; no data loss.",
+      "rollback": "Move the file back to docs/plans/ root, or remove the superseded header.",
+      "decision": "PROPOSED"
+    },
+    {
+      "change_id": "CHANGE-C197F27F086770B736830FC0BCC73095",
+      "control_id": "control-1b1741e57086",
+      "source_path": "docs/plans/2026-07-04-claude-code-handoff-prompt.md",
+      "source_sha256": "10b7359c6ea6d18accbfc8ba21c433dac51564f3703e1a33d367a4702317c6aa",
+      "proposal_sha256": "c197f27f086770b736830fc0bcc730954b9c6e1d6b0f6b42845bb5ea5df6e45c",
+      "proposed_change": "Move to docs/plans/archive/ or add a 'superseded by 2026-07-07-...-post-slice7.md' header.",
+      "must_survive": "The reconciliation notes it made between docs and actual build state should be preserved in memory/project_lc_build_progress.md, which they appear to be.",
+      "risk_if_wrong": "Low: if wrong, the file remains available, just relocated.",
+      "rollback": "Move the file back to docs/plans/ root.",
+      "decision": "PROPOSED"
+    },
+    {
+      "change_id": "CHANGE-BE40899343B5C222CFFC793F4A2FAF3E",
+      "control_id": "control-5faa674ef3e4",
+      "source_path": "docs/plans/2026-07-07-claude-code-handoff-prompt.md",
+      "source_sha256": "7ac584deeb47208ab6558d8ae4eda7fc1bf95926c7c73b07e89936d9ce832a50",
+      "proposal_sha256": "be40899343b5c222cffc793f4a2faf3e43bdb8800de29945a0ea95e67526a67a",
+      "proposed_change": "Move to docs/plans/archive/ or add a 'superseded' header pointing to the post-slice7 file.",
+      "must_survive": "None of its content is uniquely load-bearing; Slice 7 completion is recorded in memory/project_lc_build_progress.md.",
+      "risk_if_wrong": "Low.",
+      "rollback": "Move the file back to docs/plans/ root.",
+      "decision": "PROPOSED"
+    },
+    {
+      "change_id": "CHANGE-9FCA83171BB0CEDB00D7259664128E90",
+      "control_id": "control-3a57df54afc2",
+      "source_path": "docs/plans/2026-07-07-claude-code-handoff-prompt-post-slice7.md",
+      "source_sha256": "4d9b84fe7619d1ff537b3566d9eadaca510e0b7a70dc0d294b3220872700e107",
+      "proposal_sha256": "9fca83171bb0cedb00d7259664128e9030249542eba110ae966012322abf7114",
+      "proposed_change": "No change yet — keep in place, but confirm with Andy whether a fresh handoff prompt reflecting the post-2026-07-15 state should be authored, since this one's 'propose the next unit' framing now points at options that are already built.",
+      "must_survive": "The still-accurate standing reminders inside it (dual-write, migration checkpoint, commit-autonomy/backup, tsc+lint gate) must be preserved if it's rewritten.",
+      "risk_if_wrong": "If a future session copy-pastes this prompt verbatim, it could re-propose already-shipped work (Slice 7, Trips & Travel) as 'the next unit.'",
+      "rollback": "No action taken; file unchanged.",
+      "decision": "PROPOSED"
+    },
+    {
+      "change_id": "CHANGE-B354A11904B524C31E49AFF4DCCE27B4",
+      "control_id": "control-a9b57f2a2c05",
+      "source_path": "documentation/early-planning-v2/cef-schema.json",
+      "source_sha256": "e5f2d4f1dad4dd80d4c206edc3df6d7fcd65e5bb214e9621657ea2efc5570735",
+      "proposal_sha256": "b354a11904b524c31e49aff4dcce27b4da3dcd27ac7dc24a71d2395b1da6540a",
+      "proposed_change": "No change yet — confirm with Andy whether 'early-planning-v2/' is a superseded planning bundle (in which case archive the whole folder) or a still-relevant forward-looking export-format spec (in which case index it in MEMORY.md so it isn't orphaned).",
+      "must_survive": "If this is in fact a live export-format spec, its content must not be discarded before Andy confirms.",
+      "risk_if_wrong": "If retired incorrectly, a planned data-export feature could lose its only schema reference.",
+      "rollback": "No action taken; file unchanged.",
+      "decision": "PROPOSED"
+    },
+    {
+      "change_id": "CHANGE-642AEDADF0B07EF28860E78D65DAA84F",
+      "control_id": "control-7cfd3afb77a4",
+      "source_path": "memory/project_lc_build_progress.md",
+      "source_sha256": "075e1b2dfc3d432a603456ba085deec9abffcf5226afb1bab219eea9c01ccea5",
+      "proposal_sha256": "642aedadf0b07ef28860e78d65daa84fda84d9ba2dcdeea9a9edaf60fd6056d8",
+      "proposed_change": "No change yet — recommend a bounded test: split older, closed session-handoff blocks into a dated archive file (e.g. project_lc_build_progress_archive_2026H1.md) while keeping only the current and immediately-prior handoff block in the main file, so the 'read first' file stays small as the project grows.",
+      "must_survive": "All existing session-handoff history must be preserved somewhere findable from MEMORY.md if archived.",
+      "risk_if_wrong": "If archived carelessly, a future session could miss a still-relevant lesson buried in an older block.",
+      "rollback": "No action taken; file unchanged.",
+      "decision": "PROPOSED"
+    },
+    {
+      "change_id": "CHANGE-B6316614C0D257302D8133522D40DA1E",
+      "control_id": "control-4539c65580ac",
+      "source_path": "memory/README.md",
+      "source_sha256": "a1ff920106922707b254388392b58fb7e513fe54399f0f64ad67ddccd72059c5",
+      "proposal_sha256": "b6316614c0d257302d8133522d40da1e02712c627b59d3dbd193bdb39f0d1820",
+      "proposed_change": "Trim this file to a short pointer ('see CLAUDE.md for the rule, feedback_lc_memory_dual_write.md for why it exists') instead of restating the full protocol text a third time; keep the verification steps (listing/diffing both folders) here since that's this file's unique, non-duplicated contribution.",
+      "must_survive": "The verification/diffing instructions unique to this file must be preserved even if the protocol restatement is trimmed.",
+      "risk_if_wrong": "If trimmed incorrectly, a human reading only this README could lose the explanation of why the mirror exists, since that context currently lives partly here and partly in the feedback file.",
+      "rollback": "Restore the full protocol text to this file; no data is deleted, only shortened.",
+      "decision": "PROPOSED"
+    }
+  ]
+}

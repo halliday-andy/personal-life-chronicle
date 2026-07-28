@@ -58,7 +58,7 @@ residence** anchored to it — that's exactly what the type is for.
 
 **"I moved back to a place I'd lived before."** Pin it again as a new
 primary residence for the second stint — same place on the map, its own
-stop in the sequence. Repeat eras are separate chapters.
+stop in the sequence. Repeat eras are separate stops.
 
 **"How exact does the location have to be?"** As exact as you like, and
 never final: select the pin → "Refine location" → drag → save. Only the

@@ -590,7 +590,7 @@ function StopDetailBody({
  *
  * Why inline rather than a link out: Journey is the reading surface. Sending
  * the reader to /memories to finish a sentence costs them their place in the
- * chapter and lands them in a filtered list they have to navigate back from.
+ * stop and lands them in a filtered list they have to navigate back from.
  * The link out survives as a secondary action, for editing.
  *
  * The excerpt used to be a bare link with only a hover colour as its
