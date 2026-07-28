@@ -48,4 +48,31 @@ originSessionId: focused-eloquent-thompson
 
 **World event anchors:** A reference list of historical events should be seeded as potential anchors for people who have no personal event available — elections, moon landings, cultural moments.
 
+**Andy's design input for the eventual conversation (2026-07-26):** explore
+**agent-promoted standardization of how a user refers to time ranges** in a
+recollection. Not a required format — the invariant that the user must never be
+made to phrase time for a parser's benefit stands — but the assistant nudging
+toward phrasings it can structure, so the resulting `when_text` /
+`occurred_at_fuzzy` carry more signal. Andy's stated purpose: "give more
+structure to the temporal agent in line with achieving correct ordering of
+recollections that mention the primary place." Weigh against the risk that a
+promoted convention hardens into a felt requirement and makes capture feel like
+data entry — the exact failure invariant #5 guards against.
+
+**Two triggers fired in one session (2026-07-26), both from Journey ordering.**
+The roadmap (§5) says any new feature adding a per-feature time workaround
+should trigger the "is it time?" conversation. Both were resolved WITHOUT a
+workaround, by using the spine as the scaffold it already is:
+1. Ordering the places within a chapter → owner drag-order
+   (`relationships.anchor_sort_order`, [[project_lc_build_progress]]).
+2. Ordering the recollections that mention a place → sort along the spine
+   (`lib/journey/recollection-order.ts`): home pin → stop, marker → its
+   anchor's stop plus its chapter position.
+**The residual that neither solves, and the concrete case to bring to the
+conversation:** a recollection filed on one pin but ABOUT an earlier time sorts
+at its host pin's position — Andy's high-school memory ("Summers 1970 and
+1971") filed on Dartmouth sorts inside the Dartmouth chapter. No structural
+signal knows a memory's content predates where it lives. That is precisely what
+structured time would buy, and the cheapest argument for it.
+
 **How to apply:** When designing Temporal Agent prompts or UI, prioritize relational questions over date questions. Build residential spine first. The constraint graph is the mechanism for progressive refinement. Never treat a fuzzy date as an error — it is valid temporal knowledge at a different precision level.
