@@ -100,11 +100,66 @@ evening; the build side finished the pin-facts editor.
   (the API is healthy — ~950ms, all 37 pins), so globe visuals may still
   need Andy's eye. Beware: typing into the search box APPENDS to any
   existing query and a stray Places pick drops a draft pin (cancel it).
+- **Journey reading fixes, from Andy's QA of his own Dartmouth stop:**
+  cited recollections were cut off at 240 chars and read as unnavigable
+  — they WERE links, but with only a hover colour as affordance. Now
+  **"… more" expands the full text INLINE** (`6d6cda5`), because Journey
+  is the reading surface and sending the reader to /memories costs them
+  their place. **Class-of-bug (2nd sighting): a truncated excerpt whose
+  continuation lives elsewhere needs an explicit continuation affordance,
+  never a hover state.** Also **spine-derived ordering** (`51972bb`): the
+  list was `created_at DESC` (capture order), now sorts by stop, then
+  position within the stop, then oldest-first — chronological in effect,
+  nothing parsed (`lib/journey/recollection-order.ts`, proof 14/14).
+  Known limit, pinned in the proof: a recollection filed on one pin but
+  ABOUT an earlier time sorts at its host pin.
+- **Context zero-state fix** (`bd0e9ce`): the context chip was gated on
+  `context.length > 0` and the add link lives inside it, so **ten of
+  fourteen homes had no route to adding context at all**. **Class-of-bug:
+  never hide the control that CREATES the first item behind the existence
+  of an item.** (Sibling of the 07-20 finding that "add" was too
+  prominent — demoting it into a disclosure that could be absent went one
+  step too far.) The checklist itself was also stale, still naming a
+  label the pin-card reconciliation had renamed hours later.
+- **STOP PLACES: elevated + owner-ordered, three pieces** (`70fdb4d` data
+  layer + 19-case proof, `adbdfd0` API + tree ordering, `4a4d853` Journey
+  drag, `2e69c03` globe card). From Andy's Mt. Snow Chalet finding: a
+  four-month short-term stay inside a twelve-month home was invisible
+  behind a faint "2 related pins" chip at the bottom of a long card. Now
+  its own block ABOVE the chips on both globe surfaces, each row with its
+  kind label and era phrase, in the owner's **drag order** — Andy's call:
+  "instead of forcing the user to follow a convention in the assertion of
+  time ranges, I'd prefer this be drag-and-drop orderable." Nesting kept;
+  grandchildren follow their parent and don't drag (his call). Two
+  migrations applied and verified, incl. a **gated `DROP FUNCTION`** on
+  `get_residence_pins` to add a return column (Andy approved).
+- **"chapter" → "stop" rename** (`aff4bd7`) + new memory
+  [[project_lc_thematic_chapters]]. "Chapter" is reserved for a future
+  user-defined PUBLICATION object spanning many stops and overlapping
+  others — Andy: "nearly the same thing as a shareable collection", so
+  roadmap §4 must decide if they are ONE object. The rename was bigger
+  than a refactor: **"chapter" was already user-facing in four KB
+  articles, three seeded 07-19**, teaching users the wrong word. All four
+  revised. `user_periods` stays dormant; the 2026-04-30 decision stands.
+- **Accessibility policy** ([[feedback_lc_accessibility_deferral]],
+  `cf9f9e5`): dedicated keyboard work defers toward MVP; free-with-the-
+  build semantics always ship; take the accessible path when a feature
+  makes it cheap; never skip silently. Debt list in roadmap §5.
+- **Claude can now drive the running app** — the Chrome extension
+  connects only while the **Claude side panel is OPEN** (any tab, any
+  window; the MCP uses its own tab group). `/journey` and `/memories`
+  verify cleanly; **the globe often fails its Mapbox init in the
+  automated tab**, so globe visuals stay Andy's. Trap: the globe search
+  box APPENDS to an existing query and a stray Places pick drops a draft
+  pin.
 - **NEXT:** the **Loose-Ends surface design doc** (roadmap §3) —
   design-first, Journey-doc pattern, Andy's agreement before any code.
-  Still unrun from the pin-facts checklist: §2 (editing sticks) and §3
-  (the sticky invariant under refresh) — both WRITE to Andy's real
-  chronicle, so they await his go-ahead on a throwaway or nominated pin.
+  Full handoff at `docs/plans/2026-07-27-handoff-prompt.md`.
+  **Five checklists await Andy's live pass** (trip-from-here = his resume
+  point, context-card, pin-card reconciliation, pin-facts, stop-places);
+  pin-facts §2/§3 write to his real chronicle so they need his go-ahead.
+  Deferred + named: grandchild reorder (endpoint ready, UI unwired),
+  keyboard reorder, the fact un-stick control, unifying fact-chip wording.
 
 ## Session handoff — 2026-07-20 (context-card fix + pin-card reconciliation + sticky facts data layer)
 
