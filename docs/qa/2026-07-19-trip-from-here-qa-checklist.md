@@ -47,12 +47,12 @@ master-sequence Phase 1 (rider batch).
 
 ## 4. Trip jots on the globe strip (added same day)
 
-- [ ] Select the Calgary destination pin → the trip's strip row has a
+- [x] Select the Calgary destination pin → the trip's strip row has a
       **✎ jots** chip (with a live count once jots exist).
-- [ ] Tap it → the trip's hopper opens inline in the strip: add a few
+- [x] Tap it → the trip's hopper opens inline in the strip: add a few
       highlight jots ("the night in Winnipeg", "the pass in a
       whiteout"). Multi-line paste still splits into separate jots.
-- [ ] The SAME jots appear on the trip's card in the **Travel Journal**
+- [x] The SAME jots appear on the trip's card in the **Travel Journal**
       (one hopper, two hosts' views) — with ✍ write available there.
 - [ ] Checking a jot off manually works from either surface — for when
       one big recollection covers several highlights.
@@ -251,7 +251,7 @@ is stated in the Travel Journal text but never on the globe.
 share the same origin:
 
 | Trip | `return_to_origin` | Expected |
-|---|---|---|
+| --- | --- | --- |
 | The epic solo road trip in the overloaded Fiat 128 → Wendy's shared apartment | **false** | solid outbound only |
 | *(untitled)* professional, Summer 1978 → Lehigh Oil Convenience Store | **true** | solid + dashed return, same line |
 
@@ -266,4 +266,36 @@ overlay. Not proposed as work — recorded so the option isn't rediscovered.
 
 *(The Grand Mayan trip has no origin, so it is a draft and draws nothing at
 rest — R6.)*
+
+### F8 — A trip's jots are invisible from its destination pin *(Andy; not a data bug)*
+
+Andy added a jot via the trip strip on **Lake Winnipesaukee**, confirmed it in
+the Travel Journal, then found the pin's detail card reporting **no jots**.
+
+**Storage is correct.** The jot is hosted by the TRIP entity:
+
+```
+body:      "The hope and anticipation of connection while driving out
+            and the return deflation."
+host_name: "The draw of attraction and a long road trip to test it"
+host_type: "trip"
+```
+
+`memory_stubs.host_entity_id` is the only linkage, and the pin card reads the
+**place** entity's hopper, so zero is the honest answer. §4's "one hopper, two
+hosts' views" means the trip strip and the Travel Journal are two views of the
+*trip's* hopper — neither is a place surface.
+
+**The gap is discoverability:** standing on the destination pin you cannot
+tell those jots exist, even though the trip strip is on screen at that moment.
+
+**Do NOT roll trip jots into the pin's count.** That conflates two hosts and
+makes "jots" mean the place's own jots on one pin and a mixture on another —
+breaking the symmetry the host-agnostic hopper and `merge_entities` rely on.
+
+**Resolved by the §3 redesign instead:** once `PinTrips` is a chip on the
+detail card, the trip appears on the pin's own surface and its jots arrive
+with it through the existing disclosure. Nothing hidden; hosts stay distinct.
+This is the **second** independent problem that move fixes — F1's occlusion
+was the first.
 
