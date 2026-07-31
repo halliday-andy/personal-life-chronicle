@@ -69,12 +69,13 @@ Two design docs written, no implementation. Andy began his Phase-1 QA walk.
   supplies one. Severe because capture is destination-FIRST: the one
   unchangeable field is the one chosen when the user knows least about the
   journey. Andy hit it remodelling his 1978 trip (`594fa9aa`) as chalet →
-  *stops* Wendy's apartment + Calgary → **SSV Day Lodge Room** (Sunshine
-  Village, Banff) as destination; blocked twice (no retarget function, and SSV
+  *stop* Wendy's apartment (which IS in Calgary — one pin, two names; not a
+  separate waypoint) → **SSV Day Lodge Room** (Sunshine Village, Banff) as
+  destination; blocked twice (no retarget function, and SSV
   Day Lodge Room is `lived_at` so the still-gated guard refuses it). That trip
   is ALREADY one-way with the right origin and zero stops — the destination is
-  its only wrong field and its only unchangeable one. **No Calgary pin exists
-  yet.** Note the chalet is spine `sort_order` 12 and SSV Day Lodge Room is 13
+  its only wrong field and its only unchangeable one. **Andy is in no rush to
+  repair the data** — the capability gap stands on its own. Note the chalet is spine `sort_order` 12 and SSV Day Lodge Room is 13
   — CONSECUTIVE, so this relocation lives in the interstice between them: a
   live instance of the Loose-Ends seam design's §3.5. **Do NOT delete-and-recreate** — `delete_trip` loses
   the title, framing and trip-entity jots, and `create_trip` runs the same

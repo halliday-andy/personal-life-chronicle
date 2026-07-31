@@ -168,9 +168,18 @@ Andy's goal (corrected 2026-07-30): take the existing trip *"The epic solo
 road trip in the overloaded Fiat 128"* (`594fa9aa`, Oct 1978), currently
 terminating at **Wendy's shared apartment**, and remodel it as:
 
-> **My Mt. Snow Chalet** → *stop:* **Wendy's shared apartment** → *stop:*
-> **Calgary** → **SSV Day Lodge Room** (Sunshine Village, Banff) as the
+> **My Mt. Snow Chalet** → *stop:* **Wendy's shared apartment** (which is in
+> Calgary) → **SSV Day Lodge Room** (Sunshine Village, Banff) as the
 > destination.
+
+**Calgary is not a separate waypoint** — it is where Wendy's apartment is, and
+the two names refer to the same pin. This is also why §3 above calls this "the
+chalet → Calgary drive": same journey, named by city rather than by pin. No
+Calgary pin is needed or wanted.
+
+**Not urgent (Andy, 2026-07-30):** he is in no rush to repair this trip. The
+capability gap below is a real finding on its own terms; the live-data fix can
+wait for whenever the work happens.
 
 There is no affordance for this, because there is no capability.
 
@@ -179,13 +188,11 @@ There is no affordance for this, because there is no capability.
 **zero `trip_stops`**. So origin and one-way-ness are already correct — the
 destination is the only wrong field, and it is the only unchangeable one.
 
-**Two prerequisites beyond the retarget itself:**
+**Prerequisite beyond the retarget itself:**
 
-- **No Calgary pin exists** (nothing matches calgary/banff in the pin set), so
-  it must be created before it can be an itinerary stop. §3 of this checklist
-  — the chalet → Calgary drive — is still unchecked; that test would create it.
 - **SSV Day Lodge Room is `lived_at`, spine `sort_order` 13**, i.e. a primary
-  residence, so it is refused as a destination by the same guard.
+  residence, so it is refused as a destination by the same guard. This is the
+  only true prerequisite.
 
 **Spine note worth keeping:** My Mt. Snow Chalet is `sort_order` **12** and
 SSV Day Lodge Room is **13** — consecutive stops. This relocation journey
