@@ -4,6 +4,48 @@ description: What's been built so far in the Claude Code implementation of Life 
 type: project
 ---
 
+## Session handoff — 2026-07-30 (design day + live QA findings; NO code shipped)
+
+Two design docs written, no implementation. Andy began his Phase-1 QA walk.
+
+- **Loose-Ends surface designed** — see [[project_lc_loose_ends_design]] and
+  `docs/plans/2026-07-30-loose-ends-surface-design.md`. Drafted, awaiting
+  Andy's review.
+- **Trip strip → pin card designed** —
+  `docs/plans/2026-07-30-trip-strip-into-pin-card-design.md`, from Andy's live
+  QA. Design only; three §4 questions open for him.
+- **CLASS-OF-BUG (new, rule 10): a control scoped to a selected object
+  belongs on that object's surface.** Rendered into global chrome — above all
+  next to a global control — proximity assigns it to the neighbour's
+  intention, and users hunt for it where the app's conventions say it lives.
+  *The tell: an action that reads `selectedId` but renders outside the
+  selected thing's card.* Earned from "Start a trip from here" living under
+  the search box: Andy searched the detail card and edit panel for it and
+  failed, while every other pin-scoped control (`PinFactsEditor`,
+  `PinConnections`, `PinHopper`) already sat on the pin's surfaces. **No
+  static guard proposed** — the check is "does this render inside the selected
+  object's subtree", a judgement about intent, not a shape a linter sees.
+- **The same misplacement was also a functional bug.** The strip (`z-30`,
+  `top-20`) paints over the search dropdown (`z-20`, `top-6`, expanding down),
+  hiding pin-search's "Your pins" group, which renders at the top of the
+  merged results. **Corollary worth keeping: a UX misplacement and a stacking
+  bug can be one root cause** — the control in the wrong lane was covering
+  that lane's output.
+- **Third silent-failure path in globe search.** `searchPins` matches the
+  WHOLE query as a substring (`name.includes(q)`), so `Mount Snow Chalet`
+  misses the pin actually named **"My Mt. Snow Chalet"** (`mount` ≠ `mt.`).
+  Indistinguishable from the occlusion above and from the known append trap —
+  all three render as nothing. **"No pins matched" must be said out loud.**
+- **Live-data finding, matters to Track A:** "Wendy's shared apartment" is
+  typed `vacationed_at`, not a residence, so it is **not on the spine** — a
+  workaround for the guard forbidding a primary residence as a trip
+  destination. The trip-terminus relaxation designed today is what lets it be
+  retyped correctly. Also confirmed: 14 sequenced stops, **4 residences with
+  `sort_order` NULL** (26th Street Santa Monica, Brookbend Drive Des Peres,
+  Peabody Terrace HBS, Canmore House).
+- Andy's call: **do not patch the occlusion blocker** — he can navigate around
+  it, and the redesign matters more than an intermediate fix.
+
 ## Session handoff — 2026-07-26 (pin-facts editor UI — the 07-10 design closed)
 
 Andy resumed QA at the 2026-07-19 "start a trip from here" checklist this

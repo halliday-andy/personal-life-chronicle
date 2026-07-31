@@ -66,3 +66,67 @@ master-sequence Phase 1 (rider batch).
       new button.
 - [ ] Marker pins (vacation/log/etc.) still show their "Frame it as a
       trip" / "Another trip here" strips — unchanged.
+
+---
+
+## Findings — Andy's live walk, 2026-07-30
+
+Three findings, all confirmed in code. **None fixed yet** — Andy's call was
+to record and design the proper fix rather than take an intermediate patch,
+since he can navigate around the blocker in the meantime.
+
+### F1 — The trip strip occludes the search dropdown *(blocker, confirmed)*
+
+Searching for a pin while a pin with trips is selected returns **nothing
+visible**, because the strip is painted over the results:
+
+| Element | Position | z-index |
+|---|---|---|
+| Search box **and dropdown** | `left-1/2 top-6` | **`z-20`** (`GlobeView.tsx:1401`) |
+| Selected-pin trip strips | `left-1/2 top-20` | **`z-30`** (`:1671`, `:1701`, `:1721`) |
+
+Same centre axis; the dropdown expands down into the `top-20` band and the
+strip sits above it. `pin-search`'s "Your pins" group renders at the **top**
+of the merged dropdown — exactly the occluded region. Reproduced with
+"Wendy's shared apartment" selected and "My Mt. Snow Chale" typed: Mapbox
+suggestions (Malaysia, Malta, Montana…) visible below, the matching pin
+hidden behind the trip panel.
+
+Fixed as a side effect by the redesign in
+[`../plans/2026-07-30-trip-strip-into-pin-card-design.md`](../plans/2026-07-30-trip-strip-into-pin-card-design.md);
+nothing will render in that band afterwards.
+
+### F2 — "Start a trip from here" is in the wrong surface *(design finding)*
+
+Andy hunted for it in the detail card and the edit panel and did not find
+it; it lives in globe chrome beneath the search box. Every other pin-scoped
+action (`PinFactsEditor`, `PinConnections`, `PinHopper`) already lives on the
+pin's own surfaces — this one control opted out of the convention.
+
+His reasoning, which generalizes: **search means *acquire a place I don't
+have*; pin actions mean *elaborate a place I do***. Proximity assigns a
+control to its neighbour's intention. See F1 — the placement problem and the
+occlusion bug have the same root cause.
+
+### F3 — Pin search fails silently on abbreviations *(matcher)*
+
+`searchPins` tests whether the **whole query** appears inside the name
+(`name.includes(q)`, `lib/globe/pin-search.ts:39`). There is no token-wise
+matching, so extra or differently-spelled words in the *query* kill the
+match while extra words in the *name* are harmless.
+
+Live case: the pin is **"My Mt. Snow Chalet"**; querying `Mount Snow Chalet`
+returns nothing, because `mount` ≠ `mt.`. This will recur with St./Saint,
+Rd./Road, and any name typed one way and recalled another.
+
+Token-wise matching would have found it — query `mount / snow / chalet`
+against name `my / mt. / snow / chalet` is 2 of 3.
+
+**Compounding issue:** this failure is indistinguishable from F1's occlusion
+*and* from the known append trap (typing appends to an existing query), all
+three presenting as "no results, no reason". **"No pins matched" should be
+stated explicitly** rather than rendering nothing.
+
+Reopens a corner of `2026-07-18-globe-pin-search-qa-checklist.md`, which was
+checked off complete: the behavior matches its spec, but the spec was too
+literal.
