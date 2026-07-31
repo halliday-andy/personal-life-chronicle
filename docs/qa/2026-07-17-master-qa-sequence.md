@@ -33,7 +33,7 @@ mechanics that placing, sequencing, and correcting it depend on.
 
 - [x] **Globe pin search** — [2026-07-18-globe-pin-search-qa-checklist.md](2026-07-18-globe-pin-search-qa-checklist.md). Built 2026-07-18 from this phase's first finding (navigating to a prior spine stop required manual globe flying or a detour through Journey): the search box now matches your own pins (all types) above external places.
 - [x] **Basemap regime (nocturne ↔ daylight)** — [2026-07-18-basemap-regime-qa-checklist.md](2026-07-18-basemap-regime-qa-checklist.md). Built 2026-07-18 from the Sunshine Village comparison: past reading zoom the dark basemap crosses to the detailed outdoors style (hysteresis + dissolve), back to nocturne on zoom-out.
-- [ ] **"Start a trip from here"** — [2026-07-19-trip-from-here-qa-checklist.md](2026-07-19-trip-from-here-qa-checklist.md). Built 2026-07-19 from the Mt. Snow Chalet question: home pins' trip strip arms an origin-first entry into the destination-first trip flow.
+- [x] **"Start a trip from here"** — [2026-07-19-trip-from-here-qa-checklist.md](2026-07-19-trip-from-here-qa-checklist.md). Built 2026-07-19 from the Mt. Snow Chalet question: home pins' trip strip arms an origin-first entry into the destination-first trip flow. **WALKED 2026-07-30 — nine findings (F1–F9), registered and sequenced in [`../plans/2026-07-30-phase1-remediation-plan.md`](../plans/2026-07-30-phase1-remediation-plan.md).** Includes an occlusion blocker, two new class-of-bug rules, and one capability gap (a trip's destination is immutable).
 - [ ] **Detail-card context panel** — [2026-07-20-context-card-qa-checklist.md](2026-07-20-context-card-qa-checklist.md). Remediation of the Lockbourne finding: the "N context" chip led with "add" over dead-looking note text, and derived titles leaked raw `##`. Now leads with the notes (navigate-with-strong-affordance) and strips leading heading hashes.
 - [ ] **Pin-card reconciliation (detail ↔ edit)** — [2026-07-20-pin-card-reconciliation-qa-checklist.md](2026-07-20-pin-card-reconciliation-qa-checklist.md). From the same session: shared `PinConnections` component both cards mount (edit panel is now the workbench — shows recollections/context/related pins); "N anchored" → "N related pin(s)"; "＋ Add New Context ↗" deep-links with the composer pre-opened. Design: `docs/plans/2026-07-20-pin-card-reconciliation-design.md`.
 - [ ] **Places at a stop — elevated + owner-ordered** — [2026-07-26-stop-places-order-qa-checklist.md](2026-07-26-stop-places-order-qa-checklist.md). Built 2026-07-26 from the Mt. Snow Chalet finding: a short-term stay inside a home was buried behind a faint "2 related pins" chip at the bottom of a long card. Now an elevated list on both globe surfaces and in Journey, in the owner's drag order (chronological sorting is not available — invariant #5).
@@ -90,3 +90,11 @@ has produced about a day of real fixes). The
 [pin-facts editor enhancement](../plans/2026-07-10-pin-facts-editor-enhancement.md)
 (agreed 2026-07-10) rides whichever remediation pass first touches the
 globe/journey code region — likely Phase 1's.
+
+**Open findings are registered in
+[`../plans/2026-07-30-phase1-remediation-plan.md`](../plans/2026-07-30-phase1-remediation-plan.md)**,
+not left in the checklists they came from — a finding that lives only in a
+walked checklist dies when that checklist is archived. Findings from the
+remaining Phase-1 checklists **append to that register's §1** rather than
+starting a new document. Sequencing agreed with Andy 2026-07-30: **the
+remediation pass ships as one unit BEFORE Loose-Ends L1.**
