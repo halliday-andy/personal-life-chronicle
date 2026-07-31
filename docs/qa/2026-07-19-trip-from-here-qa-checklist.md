@@ -54,17 +54,17 @@ master-sequence Phase 1 (rider batch).
       whiteout"). Multi-line paste still splits into separate jots.
 - [x] The SAME jots appear on the trip's card in the **Travel Journal**
       (one hopper, two hosts' views) — with ✍ write available there.
-- [ ] Checking a jot off manually works from either surface — for when
+- [x] Checking a jot off manually works from either surface — for when
       one big recollection covers several highlights.
-- [ ] The chip's count updates after adding/consuming; opening another
+- [x] The chip's count updates after adding/consuming; opening another
       trip's jots closes the first.
 
 ## 5. Strip regressions
 
-- [ ] A home with existing departures still shows "N trips originated
+- [x] A home with existing departures still shows "N trips originated
       here", the home-base chip, and "Travel Journal →" alongside the
       new button.
-- [ ] Marker pins (vacation/log/etc.) still show their "Frame it as a
+- [x] Marker pins (vacation/log/etc.) still show their "Frame it as a
       trip" / "Another trip here" strips — unchanged.
 
 ---
@@ -298,4 +298,39 @@ detail card, the trip appears on the pin's own surface and its jots arrive
 with it through the existing disclosure. Nothing hidden; hosts stay distinct.
 This is the **second** independent problem that move fixes — F1's occlusion
 was the first.
+
+### F9 — The framing panel cannot be dismissed, and its exit is mislabelled *(Andy)*
+
+Andy: the Edit-frame modal "cannot be dismissed. It can only be saved again."
+
+**There IS an exit — the label conceals it.** "Keep as a draft" calls
+`onDone(null)` (`TripFramePanel.tsx:186`), which closes the panel and calls
+nothing: no `frame_trip`, no demotion, no data change. It is a plain cancel
+under a misleading name.
+
+The name is honest in the flow it was written for — a freshly placed
+destination *is* a draft until framed, so the header comment's "a first-class
+exit, not a cancel" holds there. But the panel is **reused for "Edit frame" on
+an already-framed trip**, where the label reads as *"demote this trip back to
+draft"* — destructive-sounding. Avoiding it leaves only "Save the frame",
+which is exactly the trap Andy described.
+
+**Rule 11, third sighting tonight** (after the strip's rule 10 and F4's
+placement modal): a generic surface reused in a second mode must restate
+itself.
+
+Two defects:
+
+1. **No dismissal affordance whatsoever** — no `Escape` handler, no ✕, no
+   backdrop click. **`PinModal` has no `Escape` handler either**; both are
+   keyboard traps. Against `memory/feedback_lc_accessibility_deferral.md` this
+   is *owed, not deferred*: dedicated keyboard work waits, but Escape-to-close
+   on a modal is the cheapest accessible path there is.
+2. **The exit's label is wrong in the edit case.** Fresh draft → "Keep as a
+   draft". Already-framed trip → "Cancel" / "Close without saving".
+
+**Build caveat:** `onDone` also clears `tripFromHere` (`GlobeView.tsx:1608`),
+so dismissing consumes the armed origin — Escaping out while armed would
+require re-arming. Defensible, but make it a decision rather than a side
+effect found later.
 
