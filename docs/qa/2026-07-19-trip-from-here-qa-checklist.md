@@ -36,14 +36,14 @@ master-sequence Phase 1 (rider batch).
 
 - [x] The framing panel has a **"Returned to the origin (round trip)"**
       checkbox, checked by default. Uncheck it → a one-way note appears.
-- [ ] Frame the chalet → Calgary road trip one-way → the globe draws
+- [x] Frame the chalet → Calgary road trip one-way → the globe draws
       the **outbound arc only** — no dashed return arc.
-- [ ] The Travel Journal card shows origin → destination with **no
+- [x] The Travel Journal card shows origin → destination with **no
       "and back"** line for a one-way trip.
-- [ ] **Edit frame** on the one-way trip → the checkbox arrives
+- [x] **Edit frame** on the one-way trip → the checkbox arrives
       **unchecked** (remembers); re-check + save → the dashed return
       arc appears.
-- [ ] A round trip framed normally still draws its dashed return.
+- [x] A round trip framed normally still draws its dashed return.
 
 ## 4. Trip jots on the globe strip (added same day)
 
@@ -230,4 +230,40 @@ and its stops — losing the title, the framing, and any jots on the trip
 entity — and `create_trip` runs the same guard, so it would fail anyway.
 
 Design sketch in
-[`../plans/2026-07-30-trip-strip-into-pin-card-design.md`](../plans/2026-07-30-trip-strip-into-pin-card-design.md) §5.
+`../plans/2026-07-30-trip-strip-into-pin-card-design.md` §5.
+
+### F7 — Is a coincident dashed return legible at all? *(Andy; open question, not yet a defect)*
+
+Andy, 2026-07-30: with no stops on the trip, "the arcs that I can see now do
+not separate the outbound arc and the return dash line arc."
+
+**This is intended geometry, not a bug.** `pair()` builds
+`greatCirclePath(a, b)` (`GlobeView.tsx:257`), so for a stop-less round trip
+the return is the same great circle reversed — and the comment at `:250` says
+so explicitly: *"tagged by leg so the return renders **dashed over the solid
+outbound** ('and back')."*
+
+So the open question is not geometry but **legibility**: can a round trip be
+told from a one-way at a glance when the two legs coincide? If not, "and back"
+is stated in the Travel Journal text but never on the globe.
+
+**Testable today — no stops required.** All five trips are stop-less, and two
+share the same origin:
+
+| Trip | `return_to_origin` | Expected |
+|---|---|---|
+| The epic solo road trip in the overloaded Fiat 128 → Wendy's shared apartment | **false** | solid outbound only |
+| *(untitled)* professional, Summer 1978 → Lehigh Oil Convenience Store | **true** | solid + dashed return, same line |
+
+Both originate at **My Mt. Snow Chalet**, so selecting it draws them together.
+If they are indistinguishable, that resolves §3's "a round trip framed
+normally still draws its dashed return" as a **styling finding** rather than a
+pass.
+
+*If it needs fixing:* the conventional idiom is to bow the return arc opposite
+to the outbound so the pair forms a lens, rather than relying on a dash
+overlay. Not proposed as work — recorded so the option isn't rediscovered.
+
+*(The Grand Mayan trip has no origin, so it is a draft and draws nothing at
+rest — R6.)*
+
