@@ -113,7 +113,73 @@ slots.
   that discloses one at a time, so the collapsed cost is a chip; the expanded
   cost needs Andy's eye on a pin with several trips.
 
-## 4. Open for Andy
+## 4. The armed placement modal must state its mode
+
+*(F4/F5 — Andy's second finding, same workflow, different surface.)*
+
+Arming a trip and then picking a destination opens the **generic** pin
+placement modal. It is preset — Trip type, armed pin as anchor — but it never
+says **this pin is the trip's destination**. Its primary action reads
+**"Add this place"** (`PinModal.tsx:338`). The intent is inferable from
+studying the fields, which is exactly the work a dialog should be doing for
+the user.
+
+**The root cause is that the context is suppressed at the moment it is
+needed.** The armed banner renders `{tripFromHere && !modalOpen && …}`
+(`GlobeView.tsx:1639`), so the one cue explaining the placement is hidden as
+soon as the modal opens.
+
+### Class of bug (new — rule 11)
+
+> **A generic surface reused in a specific mode must state the mode in its own
+> title and primary action.** When the only cue lives in chrome outside the
+> surface — worse, chrome suppressed while the surface is open — the user must
+> reverse-engineer intent from secondary fields. **The tell:** a reused dialog
+> whose call to action is the generic verb while the app sits in an armed
+> state.
+
+**This is the third finding today from one root theme**, which is worth more
+than the three fixes: *state that an action depends on must travel with the
+action's surface, not sit beside it in chrome.* Chrome-borne context gets
+**occluded** (F1), **suppressed** (F4), and **looked for in the wrong place**
+(F2). Moving the strip onto the card (§3) and the mode into the modal (here)
+are the same correction applied twice.
+
+### The change
+
+When the modal opens with an armed origin **and** a trip type selected:
+
+- **Heading:** *"Where did the trip from **My Mt. Snow Chalet** go?"*
+- **Sub-line:** reuse the banner's existing language — *"Pin the place that
+  marked the turn toward home."*
+- **Primary action:** **"Set the destination"** (saving: *"Setting…"*), not
+  "Add this place".
+- **If the user changes the type away from a trip type**, the modal reverts to
+  its generic heading and "Add this place" — the mode is expressed only while
+  it is true. The checklist's §1 guarantee that the type stays changeable is
+  preserved.
+
+### F5 — disambiguate anchor from origin
+
+While armed, the anchor select reads *"Which home were you living in then?"*
+and is preset to the armed pin, so it presents as the trip's origin. It is
+not: `suggestTripOrigin` prefers `armedOriginId` over `anchorId`, so editing
+it here would silently not change the origin.
+
+Two candidate resolutions, Andy's call:
+
+1. **Label it in the armed case** — the anchor keeps its own prompt, plus a
+   line stating the origin is already set to the armed pin and is changed in
+   the framing step. Smallest, honest, adds a line of copy.
+2. **Make the modal's origin authoritative when armed** — show the origin
+   explicitly and let it be edited here, feeding the framing panel. Better
+   model, more wiring, and it moves trip-level state into a pin-level dialog.
+
+Recommendation: **(1)**. The framing panel is where trip-level fields belong;
+this modal is placing a pin. The bug is that it *reads* as if it owned the
+origin, and a label fixes the reading without moving ownership.
+
+## 5. Open for Andy
 
 1. **Does the whole strip move, or only the trigger?** This design moves all
    three variants, which is what the rule implies. Moving only "Start a trip
@@ -125,7 +191,7 @@ slots.
 3. **Sequencing.** This is Phase-1 remediation, independent of the Loose-Ends
    unit. It could ship before it, after it, or alongside L1.
 
-## 5. Cross-references
+## 6. Cross-references
 
 - Findings: [`../qa/2026-07-19-trip-from-here-qa-checklist.md`](../qa/2026-07-19-trip-from-here-qa-checklist.md) §Findings (F1–F3)
 - Shared-component precedent: [`2026-07-20-pin-card-reconciliation-design.md`](2026-07-20-pin-card-reconciliation-design.md)

@@ -43,6 +43,26 @@ Two design docs written, no implementation. Andy began his Phase-1 QA walk.
   retyped correctly. Also confirmed: 14 sequenced stops, **4 residences with
   `sort_order` NULL** (26th Street Santa Monica, Brookbend Drive Des Peres,
   Peabody Terrace HBS, Canmore House).
+- **CLASS-OF-BUG (new, rule 11): a generic surface reused in a specific mode
+  must state the mode in its OWN title and primary action.** When the only cue
+  lives in chrome outside the surface — worse, chrome *suppressed* while the
+  surface is open — the user reverse-engineers intent from secondary fields.
+  *The tell: a reused dialog whose CTA is the generic verb while the app sits
+  in an armed state.* Earned from "Start a trip from here": the placement
+  modal opens preset (Trip type, armed pin as anchor) but says only **"Add
+  this place"**, and the armed banner carrying the context renders
+  `{tripFromHere && !modalOpen && …}` — **suppressed exactly when needed.**
+- **The through-line of all four findings, worth more than the fixes:** *state
+  an action depends on must travel with the action's surface, not sit beside
+  it in chrome.* Chrome-borne context gets **occluded** (F1), **suppressed**
+  (F4), and **hunted for in the wrong place** (F2). One correction applied
+  twice: strip → card, mode → modal.
+- **F5 (latent, not user-reported):** for trip pin types the anchor prompt is
+  "Which home were you living in then?" and is preset to the armed pin, so it
+  READS as the trip origin. It isn't — `suggestTripOrigin` prefers
+  `armedOriginId` over `anchorId`, so editing it there silently would not
+  change the origin. Recommended fix is a clarifying label, not moving
+  trip-level state into a pin-level dialog.
 - Andy's call: **do not patch the occlusion blocker** — he can navigate around
   it, and the redesign matters more than an intermediate fix.
 

@@ -9,7 +9,7 @@ master-sequence Phase 1 (rider batch).
 
 ## 1. Arm and place
 
-- [ ] Select **My Mt. Snow Chalet** (or any primary residence, sequenced
+- [x] Select **My Mt. Snow Chalet** (or any primary residence, sequenced
       or not) → the trip strip under the search box shows **"Start a
       trip from here"** — even when no trips exist yet.
 - [ ] Click it → the card closes and a top banner appears: *"Trip from
@@ -81,7 +81,7 @@ Searching for a pin while a pin with trips is selected returns **nothing
 visible**, because the strip is painted over the results:
 
 | Element | Position | z-index |
-|---|---|---|
+| --- | --- | --- |
 | Search box **and dropdown** | `left-1/2 top-6` | **`z-20`** (`GlobeView.tsx:1401`) |
 | Selected-pin trip strips | `left-1/2 top-20` | **`z-30`** (`:1671`, `:1701`, `:1721`) |
 
@@ -93,7 +93,7 @@ suggestions (Malaysia, Malta, Montana…) visible below, the matching pin
 hidden behind the trip panel.
 
 Fixed as a side effect by the redesign in
-[`../plans/2026-07-30-trip-strip-into-pin-card-design.md`](../plans/2026-07-30-trip-strip-into-pin-card-design.md);
+`../plans/2026-07-30-trip-strip-into-pin-card-design.md`;
 nothing will render in that band afterwards.
 
 ### F2 — "Start a trip from here" is in the wrong surface *(design finding)*
@@ -130,3 +130,34 @@ stated explicitly** rather than rendering nothing.
 Reopens a corner of `2026-07-18-globe-pin-search-qa-checklist.md`, which was
 checked off complete: the behavior matches its spec, but the spec was too
 literal.
+
+### F4 — The armed placement modal doesn't say what it's asking for *(Andy, design finding)*
+
+Arming "Start a trip from here" and then picking a destination opens the
+**generic pin-placement modal**. It is preset to Trip (`defaultTypeCode`) and
+the armed pin is preset as the anchor (`defaultAnchorId`), but nothing in the
+dialog states that **this pin is the trip's destination**. Andy: the intent
+"can be discerned from studying the UI" — the question the modal appears to
+ask is *"how did I end up placing a new pin?"*, and its primary action reads
+**"Add this place"** (`PinModal.tsx:338`), not *set the destination*.
+
+**Root cause — the context is deliberately hidden at the moment it's needed.**
+The armed banner ("Trip from X — now pin where it went") renders
+`{tripFromHere && !modalOpen && …}` (`GlobeView.tsx:1639`), so it is
+suppressed as soon as the modal opens. The only cue explaining the placement
+disappears precisely when the user is asked to act on it.
+
+### F5 — Anchor and trip origin look like one field, and aren't *(found while checking F4)*
+
+For trip pin types `anchorPrompt` reads **"Which home were you living in
+then?"** (`lib/globe/pin-types.ts:32`, `:34`). That is the **anchor** — which
+home the pin hangs off in the spine. The **trip origin** is a different thing,
+set later in the framing panel.
+
+In the armed flow both are pre-set to the same pin, so they present as one
+field. But `suggestTripOrigin` prefers `armedOriginId` over `anchorId`, so
+**changing the anchor in the modal would not change the trip's origin** — the
+edit silently fails to do the thing it looks like it does.
+
+Not user-reported; latent. Worth resolving in the same pass as F4, since both
+are about the armed modal saying what it means.
