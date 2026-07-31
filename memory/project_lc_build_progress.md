@@ -6,7 +6,15 @@ type: project
 
 ## Session handoff — 2026-07-30 (design day + live QA findings; NO code shipped)
 
-Two design docs written, no implementation. Andy began his Phase-1 QA walk.
+Three docs written, no implementation. Andy WALKED the trip-from-here
+checklist to completion — nine findings (F1–F9).
+
+- **START HERE next session: `docs/plans/2026-07-30-phase1-remediation-plan.md`**
+  — the finding register + build order R1–R7. **Sequencing agreed with Andy:
+  remediation ships as ONE pass BEFORE Loose-Ends L1.** Findings from the
+  four remaining Phase-1 checklists **append to its §1**, never to a new doc:
+  a finding that lives only in a walked checklist dies when that checklist is
+  archived. Evidence stays in the checklist; the DECISION lives in the plan.
 
 - **Loose-Ends surface designed** — see [[project_lc_loose_ends_design]] and
   `docs/plans/2026-07-30-loose-ends-surface-design.md`. Drafted, awaiting
