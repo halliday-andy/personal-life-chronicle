@@ -63,6 +63,22 @@ Two design docs written, no implementation. Andy began his Phase-1 QA walk.
   `armedOriginId` over `anchorId`, so editing it there silently would not
   change the origin. Recommended fix is a clarifying label, not moving
   trip-level state into a pin-level dialog.
+- **F6 (Andy; CAPABILITY GAP, blocking real work): a trip's destination is
+  IMMUTABLE.** `frame_trip` takes origin/title/when/year/subtype/
+  return_to_origin/clear_origin — **no destination** — and no sibling function
+  supplies one. Severe because capture is destination-FIRST: the one
+  unchangeable field is the one chosen when the user knows least about the
+  journey. Andy hit it trying to remodel his 1978 trip as chalet → Wendy's
+  apartment *as a stop* → Year 2 at Mt. Snow *as destination*; blocked twice
+  (no retarget function, and a primary residence is refused as destination by
+  the still-gated guard). **Do NOT delete-and-recreate** — `delete_trip` loses
+  the title, framing and trip-entity jots, and `create_trip` runs the same
+  guard so it would fail anyway. Fix sketched as a new additive RPC
+  `retarget_trip(..., p_demote_old_to_stop)`; retarget must land BEFORE
+  demoting the old destination to a stop (`add_trip_stop` refuses the current
+  destination), and it must never rename a user-titled trip.
+- **The gated trip-terminus relaxation now has TWO dependents** — the seam's
+  one-way trips and `retarget_trip`. Raises its priority.
 - Andy's call: **do not patch the occlusion blocker** — he can navigate around
   it, and the redesign matters more than an intermediate fix.
 

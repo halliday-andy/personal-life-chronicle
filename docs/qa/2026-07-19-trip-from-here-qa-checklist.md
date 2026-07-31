@@ -12,29 +12,29 @@ master-sequence Phase 1 (rider batch).
 - [x] Select **My Mt. Snow Chalet** (or any primary residence, sequenced
       or not) → the trip strip under the search box shows **"Start a
       trip from here"** — even when no trips exist yet.
-- [ ] Click it → the card closes and a top banner appears: *"Trip from
+- [x] Click it → the card closes and a top banner appears: *"Trip from
       My Mt. Snow Chalet — now pin where it went…"* with a ✕.
-- [ ] Search or click the globe for the destination → the pin modal
+- [x] Search or click the globe for the destination → the pin modal
       opens **already set to Trip** (subtype selectable; you can still
       change the type to something else).
-- [ ] Save → the framing panel's origin dropdown is **pre-set to the
+- [x] Save → the framing panel's origin dropdown is **pre-set to the
       chalet** (not its anchor, not Home Base). Save the frame → route
       arc draws chalet → destination.
 
 ## 2. The armed state behaves
 
-- [ ] The banner's ✕ cancels — the next pin placed is a normal pin,
+- [x] The banner's ✕ cancels — the next pin placed is a normal pin,
       modal defaults back to Primary residence.
-- [ ] Arming, then using **"Frame as trip"** on an EXISTING marker pin
+- [x] Arming, then using **"Frame as trip"** on an EXISTING marker pin
       instead → the framing panel also suggests the chalet as origin.
-- [ ] A trip that **already has an origin** (Edit frame on it while
+- [x] A trip that **already has an origin** (Edit frame on it while
       armed) keeps its own origin — armed never overwrites.
-- [ ] After one framing completes, the armed state is consumed — framing
+- [x] After one framing completes, the armed state is consumed — framing
       a second trip suggests anchor/Home Base as usual.
 
 ## 3. One-way trips (added same day — the chalet → Calgary drive)
 
-- [ ] The framing panel has a **"Returned to the origin (round trip)"**
+- [x] The framing panel has a **"Returned to the origin (round trip)"**
       checkbox, checked by default. Uncheck it → a one-way note appears.
 - [ ] Frame the chalet → Calgary road trip one-way → the globe draws
       the **outbound arc only** — no dashed return arc.
@@ -161,3 +161,43 @@ edit silently fails to do the thing it looks like it does.
 
 Not user-reported; latent. Worth resolving in the same pass as F4, since both
 are about the armed modal saying what it means.
+
+### F6 — A trip's destination cannot be changed, at any layer *(Andy; capability gap, blocking)*
+
+Andy's goal: take the existing trip *"The epic solo road trip in the
+overloaded Fiat 128"* (Oct 1978), currently terminating at **Wendy's shared
+apartment**, and remodel it as chalet → **Wendy's as an itinerary stop** →
+**Year 2 at Mt. Snow** as the destination. There is no affordance for this,
+because there is no capability.
+
+`frame_trip` (`20260715130000_trips_travel.sql:138`) accepts origin, title,
+when_text, year_hint, subtype, return_to_origin, clear_origin — **no
+destination**. No other function changes one; the full set is `validate_trip_pin
+/ create_trip / frame_trip / add_trip_stop / reorder_trip_stops /
+remove_trip_stop / delete_trip / get_trips`. **A trip's destination is
+immutable from creation.**
+
+This is severe *because* capture is destination-first (R5): the destination is
+the first thing chosen, when the user knows least about the journey's shape. A
+trip that turns out to have been a relocation, or whose real endpoint was
+further on, can never be corrected.
+
+**Blocked twice over in Andy's case:**
+
+1. No function repoints a destination.
+2. **Year 2 at Mt. Snow is a primary residence**, which `validate_trip_pin`
+   refuses as a destination — the guard whose relaxation is designed in
+   `../plans/2026-07-30-loose-ends-surface-design.md` §7, **approved in
+   principle, gated, unapplied**.
+
+**Ordering constraint for any fix:** `add_trip_stop` raises *"the destination
+is the turnaround, not an itinerary stop"* (`:204`), so the old destination
+cannot become a stop until it has stopped being the destination. Retarget
+first, demote second.
+
+**Do not delete-and-recreate as a workaround.** `delete_trip` drops the trip
+and its stops — losing the title, the framing, and any jots on the trip
+entity — and `create_trip` runs the same guard, so it would fail anyway.
+
+Design sketch in
+[`../plans/2026-07-30-trip-strip-into-pin-card-design.md`](../plans/2026-07-30-trip-strip-into-pin-card-design.md) §5.

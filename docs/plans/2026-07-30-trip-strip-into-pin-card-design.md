@@ -179,7 +179,60 @@ Recommendation: **(1)**. The framing panel is where trip-level fields belong;
 this modal is placing a pin. The bug is that it *reads* as if it owned the
 origin, and a label fixes the reading without moving ownership.
 
-## 5. Open for Andy
+## 5. Related capability gap — retargeting a trip's destination
+
+*(F6 — found in the same walk. Not UI polish: the capability is absent at
+every layer.)*
+
+`frame_trip` has no destination parameter and no sibling function supplies
+one, so **a trip's destination is immutable from creation**. Trips are
+captured destination-first, which means the single unchangeable field is the
+one chosen when the user knows least about the journey.
+
+### The shape of the fix
+
+A new RPC — **additive, therefore ungated** under `CLAUDE.md`'s migration
+policy (new RPCs are explicitly in the ungated list):
+
+```
+retarget_trip(p_user_id, p_trip_id,
+              p_new_destination_relationship_id,
+              p_demote_old_to_stop BOOLEAN DEFAULT true)
+```
+
+Behavior:
+
+1. `validate_trip_pin` the new destination — including the one-way relaxation
+   from the Loose-Ends design §7, without which a relocation still cannot
+   terminate at a home. **That gated migration is a hard dependency of this
+   feature**, which now has two callers rather than one.
+2. Repoint `destination_relationship_id`.
+3. If `p_demote_old_to_stop`, insert the previous destination as an itinerary
+   stop. **Order matters** — `add_trip_stop` raises *"the destination is the
+   turnaround, not an itinerary stop"* (`:204`), so the repoint must land
+   first. Leg: `outbound` for one-way trips; for round trips the design must
+   decide whether a demoted destination lands outbound or return (proposal:
+   outbound, since it preceded the new turnaround).
+4. **Never rename a user-titled trip.** `create_trip` derives the backing
+   entity's name from the destination; a retarget must leave an explicit title
+   alone. Only a trip still carrying its derived name should follow the new
+   destination.
+
+### Where it surfaces
+
+On the framing panel, beside the destination — which that panel currently
+states as fact ("The destination is saved") without offering any way to change
+it. This is rule 11's cousin: **a panel that names a field it cannot edit
+should say so, or offer the edit.** Andy went looking for exactly that
+affordance and found a sentence instead.
+
+### Scope note
+
+This is a data-model capability, not part of the strip/modal work in §§3–4.
+It is documented here because it emerged from the same walk and shares the
+gated guard as a dependency; it can ship independently and probably should.
+
+## 6. Open for Andy
 
 1. **Does the whole strip move, or only the trigger?** This design moves all
    three variants, which is what the rule implies. Moving only "Start a trip
@@ -190,8 +243,11 @@ origin, and a label fixes the reading without moving ownership.
    is less work now and recreates that exact problem later.
 3. **Sequencing.** This is Phase-1 remediation, independent of the Loose-Ends
    unit. It could ship before it, after it, or alongside L1.
+4. **Does `retarget_trip` (§5) ride this work or ship on its own?** It is a
+   data-model capability rather than UI, it shares the gated guard as a
+   dependency, and it is currently blocking a real remodel of your 1978 trip.
 
-## 6. Cross-references
+## 7. Cross-references
 
 - Findings: [`../qa/2026-07-19-trip-from-here-qa-checklist.md`](../qa/2026-07-19-trip-from-here-qa-checklist.md) §Findings (F1–F3)
 - Shared-component precedent: [`2026-07-20-pin-card-reconciliation-design.md`](2026-07-20-pin-card-reconciliation-design.md)
