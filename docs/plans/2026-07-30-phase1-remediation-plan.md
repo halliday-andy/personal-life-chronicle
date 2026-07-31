@@ -4,8 +4,10 @@
 **Author:** Claude Code (Opus 5), from Andy's live walk of the
 [trip-from-here checklist](../qa/2026-07-19-trip-from-here-qa-checklist.md).
 **Status:** **Sequencing agreed with Andy 2026-07-30 — remediation ships as ONE
-pass BEFORE Loose-Ends L1.** Design agreed for R1–R5; R6 carries a gated
-migration; R7 awaits Andy's eye. **No code written yet.**
+pass BEFORE Loose-Ends L1.** **All four open design questions resolved
+2026-07-30 (§4): R1–R5 are fully specified and unblocked.** R6's migration is
+approved as written and applies at R6; R7 needs only Andy's A/B glance.
+**No code written yet.**
 **Why this document exists:** findings were living only at the bottom of a QA
 checklist that is now walked and heading for archive. The evidence belongs in
 the checklist; the **decision** belongs here, so implementation needs no
@@ -45,18 +47,57 @@ deferred** — dedicated keyboard surfaces wait, but Escape-to-close on a modal
 is the cheapest accessible path available and the policy says to take it when
 a feature makes it cheap.
 
-**Caveat:** `onDone` also clears `tripFromHere` (`GlobeView.tsx:1608`), so
-dismissing consumes the armed origin. Decide this deliberately — don't let it
-be discovered later.
+**RESOLVED (Andy, 2026-07-30): preserve `tripFromHere` on dismissal; clear it
+only on a successful frame.** The armed pin is applied at *framing*, not at
+trip creation, so dismissing while also clearing it would strand a draft trip
+with no origin and no way to recover the intent. Dismissal means "not now",
+not "never". This is not hidden state: the banner reappears on `!modalOpen`
+and carries its own ✕.
 
-**Accept:** Escape closes both; no data written on dismiss; armed-origin
-behaviour is whatever was decided, and stated in the checklist.
+**Escape closes; it NEVER deletes.** Destructive actions require a deliberate
+click.
 
-### R2 — The exit says what it does *(F9b)*
-Fresh draft → "Keep as a draft" (unchanged). Already-framed trip → "Cancel" /
-"Close without saving".
-**Accept:** re-framing an existing trip never offers language implying
-demotion; neither path writes on exit.
+**Accept:** Escape closes both modals; no data written on dismiss; after
+dismissing, the banner is back and still armed; framing successfully still
+consumes the armed origin.
+
+### R2 — The exit set is right, and abandonment is possible *(F9b)*
+
+Relabelling one button is not enough — Andy asked how an incomplete "trip from
+here" is abandoned outright, and today that takes three steps across two
+surfaces.
+
+**Exits by trip state:**
+
+| Trip state | Exits |
+|---|---|
+| **Fresh draft** | **Discard this trip** · Keep as a draft · Save the frame |
+| **Already framed** | Cancel · Save the frame |
+
+- **Discard reuses the existing `unframeTrip` path** — delete the trip, keep
+  the pin — rather than growing a second deletion route (rule 6: check whether
+  the sibling surface already solved it). Copy states the outcome: *"The place
+  stays on your globe."*
+- **Discard is not offered for an already-framed trip.** That is Unframe,
+  which lives on the card after R4.
+- "Keep as a draft" survives only where it is true — a fresh draft.
+
+**The abandonment trap to fix or explain:**
+`trips.destination_relationship_id` is `ON DELETE RESTRICT`, so **the
+destination pin cannot be deleted while the trip exists.** A user tidying up
+in the intuitive order hits a bare database restriction. Either unframe-first
+is guided, or the error is caught and explained.
+
+**Where strays surface meanwhile:** a draft draws nothing on the globe at rest
+(R6) but the Travel Journal shows *"N trips still need framing"* plus per-card
+badges (`TravelJournal.tsx:168`, `:237`). Draft trips are also one of the six
+Loose-Ends inputs, so the unit that follows this pass sweeps them up.
+
+**Accept:** a fresh draft can be discarded from the framing panel in one
+click, keeping the pin; re-framing an existing trip never offers language
+implying demotion; Escape writes and deletes nothing; attempting to delete a
+pin that is still a trip destination produces an explanation rather than a
+raw error.
 
 ### R3 — Search that fails out loud *(F3)*
 Token-wise matching in `lib/globe/pin-search.ts`, plus an explicit **"No pins
@@ -82,7 +123,15 @@ count-chip row with single-open disclosure.
 
 Full design:
 [`2026-07-30-trip-strip-into-pin-card-design.md`](2026-07-30-trip-strip-into-pin-card-design.md)
-§3. **Andy's three open questions in §6 must be answered before build.**
+§3.
+
+**RESOLVED (Andy, 2026-07-30):**
+- **The WHOLE strip moves**, all three variants — not the trigger alone.
+  Trigger-only would fix F2 and leave F1's occlusion and F8's invisibility
+  alive; the band must empty for F1 to die by construction.
+- **Both card surfaces**, one component, same actions. Mounting `PinTrips` in
+  only one place would recreate the exact drift the pin-card reconciliation
+  doc was written to fix, in the same files.
 
 **Non-negotiable:** namespace the sibling key `trips-${relationshipId}`.
 `PinTrips` lands beside `PinFactsEditor` (`facts-…`) and `PinConnections`
@@ -110,7 +159,13 @@ Two parts:
    — terminus, not turnaround. Alters `validate_trip_pin` and `create_trip`;
    the signature change means `DROP FUNCTION` and a post-apply proof of
    **exactly one function, no orphan overload** (the 2026-07-26 trap).
-   **Show it to Andy and get approval before applying.**
+   **APPROVED as written (Andy, 2026-07-30) — to be applied AT R6, not before**,
+   so the schema and the code do not disagree while five findings are still
+   unbuilt. Two call-site changes, `validate_trip_pin` itself unchanged:
+   `create_trip` gains `p_return_to_origin` and validates with
+   `allow_spine := NOT p_return_to_origin`; **`frame_trip` re-validates**, so a
+   one-way trip terminating at a home cannot later be flipped back to a round
+   trip and become invalid.
 2. **`retarget_trip(...)` — new RPC, additive, ungated.** Repoint the
    destination, optionally demoting the old one to a stop. **Repoint before
    demoting** (`add_trip_stop` refuses the current destination); leg
@@ -131,8 +186,12 @@ comment says the return renders dashed over the solid outbound), so this is a
 legibility question only Andy's eye settles. The A/B test is on his globe
 today: two stop-less trips from **My Mt. Snow Chalet**, one one-way, one round
 trip.
-*If it needs work:* bow the return opposite the outbound so the pair reads as
-a lens, rather than relying on a dash overlay.
+**RESOLVED (Andy, 2026-07-30) — if the two are indistinguishable, do NOT fix
+the arc.** Bowing the return would draw a path that was never recorded,
+implying a different return route; for a stop-less round trip the return is
+*status*, not geometry. **Reserve the drawn return for trips that have actual
+return stops**, where it carries real information, and express round-trip-ness
+in text (the trip row and Travel Journal both have room).
 
 ## 3. What this pass does not include
 
@@ -142,13 +201,20 @@ a lens, rather than relying on a dash overlay.
 - The `/memories` full-text search of the Loose-Ends design §6.1 — R3 is the
   *pin* matcher only, and is **not** the Step-14 semantic search agent.
 
-## 4. Open before build
+## 4. Open before build — ALL RESOLVED 2026-07-30
 
-1. **§6 of the strip design** — whole strip or trigger only; detail card or
-   both surfaces; where R4 sequences.
-2. **R1's armed-origin question** — does dismissing consume `tripFromHere`?
-3. **R7** — Andy's verdict on the coincident return.
-4. **R6's gated migration** — shown for approval when R6 starts.
+1. ~~Whole strip or trigger only; one card surface or both~~ → **whole strip,
+   both surfaces, one component** (R4).
+2. ~~Does dismissing consume the armed origin?~~ → **no; preserved on
+   dismissal, cleared only on a successful frame**, and Escape never deletes
+   (R1). Abandonment gets a first-class **Discard** exit (R2).
+3. ~~The coincident dashed return~~ → **reserve the drawn return for trips
+   with real return stops**; never fabricate a bowed path (R7).
+4. ~~The gated migration~~ → **approved as written, applied at R6**, not
+   before.
+
+**Nothing blocks R1–R5.** R6 applies its migration at its turn; R7 needs only
+Andy's A/B glance to confirm whether the text treatment is needed at all.
 
 ## 5. Cross-references
 
