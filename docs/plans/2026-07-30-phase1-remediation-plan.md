@@ -31,7 +31,7 @@ change — the best ratio in the set.
 | **F9a** | No dismissal on `TripFramePanel` **or** `PinModal` — no Escape, ✕, or backdrop. Both are keyboard traps | Escape + ✕ + backdrop | **R1** |
 | **F9b** | The exit exists but is labelled "Keep as a draft", which reads as *demote* when re-framing an already-framed trip | contextual label (rule 11, 3rd sighting) | **R2** |
 | **F6** | A trip's destination is immutable at every layer — `frame_trip` has no destination parameter and no sibling supplies one | gated guard relaxation + new `retarget_trip` RPC | **R6** |
-| **F7** | A stop-less round trip's dashed return is coincident with the solid outbound — *is it legible?* | **open — needs Andy's eye** before any work | **R7** |
+| **F7** | A stop-less round trip's dashed return is coincident with the solid outbound — *is it legible?* | **decided:** never fabricate a bowed path; draw a return only where real return stops exist, express round-trip in text. Andy's A/B glance decides whether the text treatment is needed at all | **R7** |
 
 ## 2. Build order
 

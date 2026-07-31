@@ -15,6 +15,10 @@ checklist to completion — nine findings (F1–F9).
   four remaining Phase-1 checklists **append to its §1**, never to a new doc:
   a finding that lives only in a walked checklist dies when that checklist is
   archived. Evidence stays in the checklist; the DECISION lives in the plan.
+  **All four open design questions were resolved 2026-07-30 — R1–R5 are fully
+  specified and unblocked; R6's migration is approved as written and applies
+  at R6; R7 needs only Andy's A/B glance.** Build may start from the plan
+  without further design work.
 
 - **Loose-Ends surface designed** — see [[project_lc_loose_ends_design]] and
   `docs/plans/2026-07-30-loose-ends-surface-design.md`. Drafted, awaiting
