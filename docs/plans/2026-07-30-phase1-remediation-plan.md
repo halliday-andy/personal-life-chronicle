@@ -3,7 +3,11 @@
 **Date:** 2026-07-30
 **Author:** Claude Code (Opus 5), from Andy's live walk of the
 [trip-from-here checklist](../qa/2026-07-19-trip-from-here-qa-checklist.md).
-**Status:** **Sequencing agreed with Andy 2026-07-30 — remediation ships as ONE
+**Status:** **R1–R3 BUILT 2026-07-30** (`0be03e7`, `fb8ac78`, `52cf87e`) —
+QA checklist [`../qa/2026-07-30-remediation-r1-r3-qa-checklist.md`](../qa/2026-07-30-remediation-r1-r3-qa-checklist.md),
+Andy's live pass pending. **R4–R5 wait for the pin-card reconciliation walk**
+(that checklist covers the very surfaces R4 modifies). R6 carries the gated
+migration. **Sequencing agreed with Andy 2026-07-30 — remediation ships as ONE
 pass BEFORE Loose-Ends L1.** **All four open design questions resolved
 2026-07-30 (§4): R1–R5 are fully specified and unblocked.** R6's migration is
 approved as written and applies at R6; R7 needs only Andy's A/B glance.
@@ -38,7 +42,7 @@ change — the best ratio in the set.
 Cheap and independent first, then the structural move, then the data model.
 Each unit is one atomic commit, `tsc` + `next lint` gated, with a QA checklist.
 
-### R1 — Modal dismissal *(F9a)*
+### R1 — Modal dismissal *(F9a)* — **BUILT `0be03e7`**
 Escape handler, ✕, and backdrop dismiss on **`TripFramePanel` and `PinModal`**.
 Smallest unit in the set and it removes two keyboard traps.
 
@@ -61,7 +65,7 @@ click.
 dismissing, the banner is back and still armed; framing successfully still
 consumes the armed origin.
 
-### R2 — The exit set is right, and abandonment is possible *(F9b)*
+### R2 — The exit set is right, and abandonment is possible *(F9b)* — **BUILT `fb8ac78`**
 
 Relabelling one button is not enough — Andy asked how an incomplete "trip from
 here" is abandoned outright, and today that takes three steps across two
@@ -93,13 +97,13 @@ is guided, or the error is caught and explained.
 badges (`TravelJournal.tsx:168`, `:237`). Draft trips are also one of the six
 Loose-Ends inputs, so the unit that follows this pass sweeps them up.
 
-**Accept:** a fresh draft can be discarded from the framing panel in one
-click, keeping the pin; re-framing an existing trip never offers language
+**Accept:** a fresh draft can be discarded from the framing panel, keeping
+the pin; re-framing an existing trip never offers language
 implying demotion; Escape writes and deletes nothing; attempting to delete a
 pin that is still a trip destination produces an explanation rather than a
 raw error.
 
-### R3 — Search that fails out loud *(F3)*
+### R3 — Search that fails out loud *(F3)* — **BUILT `52cf87e`**
 Token-wise matching in `lib/globe/pin-search.ts`, plus an explicit **"No pins
 matched"** row in the merged dropdown.
 
@@ -220,6 +224,10 @@ in text (the trip row and Travel Journal both have room).
    with real return stops**; never fabricate a bowed path (R7).
 4. ~~The gated migration~~ → **approved as written, applied at R6**, not
    before.
+
+**One deviation to review:** R2's discard is **two-step**, not one-click —
+the panel is reachable for an existing draft carrying a title and jots, and
+Unframe already uses a two-step confirm for the same deletion. Andy's call.
 
 **Nothing blocks R1–R5.** R6 applies its migration at its turn. **R7 is
 closed as a pass and retired** — eight live findings across six units.

@@ -6,8 +6,19 @@ type: project
 
 ## Session handoff — 2026-07-30 (design day + live QA findings; NO code shipped)
 
-Three docs written, no implementation. Andy WALKED the trip-from-here
-checklist to completion — nine findings (F1–F9).
+Andy WALKED the trip-from-here checklist to completion — nine findings
+(F1–F9). Design docs written, then **R1–R3 BUILT and pushed** (the first
+code of the day; F7 closed as a pass on Andy's eye).
+
+**BUILT 2026-07-30:** `52cf87e` R3 pin search (token-wise matching +
+abbreviations + an explicit "none of your pins match"; proof extended 8 → 15
+and proven red/green), `0be03e7` R1 modal dismissal (new
+`lib/ui/use-escape-key.ts`; both globe modals were keyboard traps; dismissal
+now PRESERVES the armed origin, only a real frame consumes it), `fb8ac78` R2
+the framing panel's exit set (Discard/Keep/Save for drafts, Cancel/Save when
+framed). QA: `docs/qa/2026-07-30-remediation-r1-r3-qa-checklist.md`.
+**R4–R5 deliberately wait for the pin-card reconciliation walk** — that
+checklist covers the very surfaces R4 modifies.
 
 - **START HERE next session: `docs/plans/2026-07-30-phase1-remediation-plan.md`**
   — the finding register + build order R1–R7. **Sequencing agreed with Andy:
