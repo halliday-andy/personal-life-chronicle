@@ -31,7 +31,7 @@ change — the best ratio in the set.
 | **F9a** | No dismissal on `TripFramePanel` **or** `PinModal` — no Escape, ✕, or backdrop. Both are keyboard traps | Escape + ✕ + backdrop | **R1** |
 | **F9b** | The exit exists but is labelled "Keep as a draft", which reads as *demote* when re-framing an already-framed trip | contextual label (rule 11, 3rd sighting) | **R2** |
 | **F6** | A trip's destination is immutable at every layer — `frame_trip` has no destination parameter and no sibling supplies one | gated guard relaxation + new `retarget_trip` RPC | **R6** |
-| **F7** | A stop-less round trip's dashed return is coincident with the solid outbound — *is it legible?* | **decided:** never fabricate a bowed path; draw a return only where real return stops exist, express round-trip in text. Andy's A/B glance decides whether the text treatment is needed at all | **R7** |
+| **F7** | A stop-less round trip's dashed return is coincident with the solid outbound — *is it legible?* | **CLOSED — PASS (Andy, 2026-07-30).** The dash reads clearly over the solid outbound; the one-way arc to Wendy's apartment shows none. No work needed; **R7 retired** | — |
 
 ## 2. Build order
 
@@ -180,14 +180,22 @@ onto the spine.
 Wendy's apartment demoted to a stop; Wendy's apartment retyped from
 `vacationed_at` to a residence.
 
-### R7 — The dashed return *(F7)* — **BLOCKED on Andy**
+### R7 — The dashed return *(F7)* — **RETIRED, no work**
 Not scheduled. The geometry is intended (`pair()` builds a great circle; the
 comment says the return renders dashed over the solid outbound), so this is a
 legibility question only Andy's eye settles. The A/B test is on his globe
 today: two stop-less trips from **My Mt. Snow Chalet**, one one-way, one round
 trip.
-**RESOLVED (Andy, 2026-07-30) — if the two are indistinguishable, do NOT fix
-the arc.** Bowing the return would draw a path that was never recorded,
+**CLOSED AS A PASS (Andy, 2026-07-30).** He ran the A/B on his globe: round
+trips show a dashed line superimposed on the solid outbound; the one-way arc
+to Wendy's apartment shows no dash at all. The overlay is legible and the
+feature works as designed — **this unit is retired.**
+
+The reasoning below is kept because it governs any *future* change to trip
+route rendering:
+
+**If the two had been indistinguishable, the fix would NOT have been the
+arc.** Bowing the return would draw a path that was never recorded,
 implying a different return route; for a stop-less round trip the return is
 *status*, not geometry. **Reserve the drawn return for trips that have actual
 return stops**, where it carries real information, and express round-trip-ness
@@ -213,8 +221,8 @@ in text (the trip row and Travel Journal both have room).
 4. ~~The gated migration~~ → **approved as written, applied at R6**, not
    before.
 
-**Nothing blocks R1–R5.** R6 applies its migration at its turn; R7 needs only
-Andy's A/B glance to confirm whether the text treatment is needed at all.
+**Nothing blocks R1–R5.** R6 applies its migration at its turn. **R7 is
+closed as a pass and retired** — eight live findings across six units.
 
 ## 5. Cross-references
 

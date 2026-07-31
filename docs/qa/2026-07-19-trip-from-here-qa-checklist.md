@@ -232,7 +232,15 @@ entity — and `create_trip` runs the same guard, so it would fail anyway.
 Design sketch in
 `../plans/2026-07-30-trip-strip-into-pin-card-design.md` §5.
 
-### F7 — Is a coincident dashed return legible at all? *(Andy; open question, not yet a defect)*
+### F7 — Is a coincident dashed return legible at all? — **CLOSED, PASS** *(Andy, 2026-07-30)*
+
+**Resolved by observation, no work needed.** Andy ran the A/B: round-trip arcs
+show a dashed line superimposed on the solid outbound, and the one-way arc to
+Wendy's apartment shows no dash. The overlay is legible; the feature works as
+designed. §3's "a round trip framed normally still draws its dashed return"
+passes. The analysis below is retained for any future change to route
+rendering.
+
 
 Andy, 2026-07-30: with no stops on the trip, "the arcs that I can see now do
 not separate the outbound arc and the return dash line arc."
