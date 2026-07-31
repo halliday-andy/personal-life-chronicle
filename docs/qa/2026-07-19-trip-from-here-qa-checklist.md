@@ -164,11 +164,34 @@ are about the armed modal saying what it means.
 
 ### F6 — A trip's destination cannot be changed, at any layer *(Andy; capability gap, blocking)*
 
-Andy's goal: take the existing trip *"The epic solo road trip in the
-overloaded Fiat 128"* (Oct 1978), currently terminating at **Wendy's shared
-apartment**, and remodel it as chalet → **Wendy's as an itinerary stop** →
-**Year 2 at Mt. Snow** as the destination. There is no affordance for this,
-because there is no capability.
+Andy's goal (corrected 2026-07-30): take the existing trip *"The epic solo
+road trip in the overloaded Fiat 128"* (`594fa9aa`, Oct 1978), currently
+terminating at **Wendy's shared apartment**, and remodel it as:
+
+> **My Mt. Snow Chalet** → *stop:* **Wendy's shared apartment** → *stop:*
+> **Calgary** → **SSV Day Lodge Room** (Sunshine Village, Banff) as the
+> destination.
+
+There is no affordance for this, because there is no capability.
+
+**Live state of that trip:** origin already My Mt. Snow Chalet;
+`return_to_origin` already **false** (one-way); `subtype` `road_trip`;
+**zero `trip_stops`**. So origin and one-way-ness are already correct — the
+destination is the only wrong field, and it is the only unchangeable one.
+
+**Two prerequisites beyond the retarget itself:**
+
+- **No Calgary pin exists** (nothing matches calgary/banff in the pin set), so
+  it must be created before it can be an itinerary stop. §3 of this checklist
+  — the chalet → Calgary drive — is still unchecked; that test would create it.
+- **SSV Day Lodge Room is `lived_at`, spine `sort_order` 13**, i.e. a primary
+  residence, so it is refused as a destination by the same guard.
+
+**Spine note worth keeping:** My Mt. Snow Chalet is `sort_order` **12** and
+SSV Day Lodge Room is **13** — consecutive stops. This relocation journey
+therefore belongs in the interstice between them, which is a live instance of
+`../plans/2026-07-30-loose-ends-surface-design.md` §3.5 (trips in the seam),
+written from a general remark rather than from this case.
 
 `frame_trip` (`20260715130000_trips_travel.sql:138`) accepts origin, title,
 when_text, year_hint, subtype, return_to_origin, clear_origin — **no
@@ -185,7 +208,7 @@ further on, can never be corrected.
 **Blocked twice over in Andy's case:**
 
 1. No function repoints a destination.
-2. **Year 2 at Mt. Snow is a primary residence**, which `validate_trip_pin`
+2. **SSV Day Lodge Room is a primary residence**, which `validate_trip_pin`
    refuses as a destination — the guard whose relaxation is designed in
    `../plans/2026-07-30-loose-ends-surface-design.md` §7, **approved in
    principle, gated, unapplied**.
