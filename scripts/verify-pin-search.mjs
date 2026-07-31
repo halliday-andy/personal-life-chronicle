@@ -41,6 +41,10 @@ const pins = [
   pin('pe2', 'Peak House', 'lived_at', 1),
   pin('pe3', 'Peakston', 'lived_at', null), // unsequenced primary (U9)
   pin('wal', 'Wallace Monument', 'vacationed_at'),
+  // R3 fixtures (F3, 2026-07-30): the live miss was querying
+  // "Mount Snow Chalet" against a pin actually named "My Mt. Snow Chalet".
+  pin('cha', 'My Mt. Snow Chalet', 'lived_at', 3),
+  pin('stm', 'St. Marks Rd', 'lived_at', 4),
 ]
 
 const ids = (r: { relationship_id: string }[]) => r.map((p) => p.relationship_id)
@@ -83,6 +87,44 @@ else bad('default limit exceeded')
 // 6. No match
 if (searchPins(pins, 'xyzzy').length === 0) ok('no match returns empty, never throws')
 else bad('phantom results for xyzzy')
+
+// ── R3 / finding F3 (2026-07-30) — token-wise matching ──────────────────
+// The whole-query substring test silently missed any query carrying an extra
+// or differently-abbreviated word. Live case: "Mount Snow Chalet" vs the pin
+// "My Mt. Snow Chalet".
+
+// 7. The live miss
+if (ids(searchPins(pins, 'Mount Snow Chalet', 10)).includes('cha'))
+  ok('F3: "Mount Snow Chalet" finds "My Mt. Snow Chalet" (mount = mt.)')
+else bad('F3 REGRESSION: "Mount Snow Chalet" still misses "My Mt. Snow Chalet"')
+
+// 8. Token order is irrelevant — recall is not word order
+if (ids(searchPins(pins, 'chalet snow', 10)).includes('cha'))
+  ok('tokens match out of order')
+else bad('token order mattered')
+
+// 9. ALL query tokens must match — no loose fuzzy recall
+if (!ids(searchPins(pins, 'Mount Snow Castle', 10)).includes('cha'))
+  ok('an unmatched token rejects the pin (no fuzzy over-matching)')
+else bad('matched despite the token "castle" being absent')
+
+// 10. Prefix tokens, so incremental typing keeps working
+if (ids(searchPins(pins, 'Mt Snow Chal', 10)).includes('cha'))
+  ok('partial trailing token still matches (incremental typing)')
+else bad('prefix token failed')
+
+// 11. Abbreviations both directions
+if (ids(searchPins(pins, 'Saint Marks Road', 10)).includes('stm'))
+  ok('expanded query hits abbreviated name (saint/road)')
+else bad('"Saint Marks Road" missed "St. Marks Rd"')
+if (ids(searchPins(pins, 'St Marks Rd', 10)).includes('stm'))
+  ok('abbreviated query still hits')
+else bad('"St Marks Rd" missed')
+
+// 12. Token matching is the LAST resort — substring tiers still outrank it
+const snow = ids(searchPins(pins, 'snow chalet', 10))
+if (snow[0] === 'cha') ok('token match ranks behind the existing tiers, not ahead')
+else bad('token tier displaced a stronger match: ' + JSON.stringify(snow))
 
 console.log(failures === 0 ? '\\nPASS' : '\\nFAIL (' + failures + ')')
 process.exit(failures === 0 ? 0 : 1)

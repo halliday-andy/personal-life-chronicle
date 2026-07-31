@@ -218,7 +218,18 @@ export default function FindLocationBox({
           onMouseDown={(e) => e.preventDefault()} // keep input focus; click still fires
           className="absolute mt-2 max-h-[60vh] w-full overflow-y-auto rounded-xl border border-white/10 bg-[rgba(15,22,42,0.92)] py-1 shadow-[0_18px_60px_rgba(0,0,0,0.5)] backdrop-blur"
         >
-          {pinMatches.length > 0 && header('Your pins')}
+          {/* The pin group ALWAYS announces itself, empty or not (finding F3,
+              2026-07-30). A silent absence was indistinguishable from three
+              different failures — a matcher miss, the trip strip painting over
+              the results, and the query-append trap — all of which looked like
+              "nothing happened". Stating it also warns before a duplicate:
+              "none match" means you are about to create a new place. */}
+          {header('Your pins')}
+          {pinMatches.length === 0 && (
+            <p role="presentation" className="px-4 pb-1 pt-0.5 text-xs text-[#8fa0c4]">
+              None of your pins match — this would be a new place.
+            </p>
+          )}
           {pinMatches.map((pin, i) => {
             const meta = pinTypeMeta(pin.type_code)
             return (
