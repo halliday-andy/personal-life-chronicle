@@ -15,6 +15,7 @@ import { PIN_TYPES, pinTypeMeta, SPINE_CODE } from '@/lib/globe/pin-types'
 import { anchorCandidates, isUnplacedHome } from '@/lib/globe/anchor-options'
 import { TRIP_SUBTYPES, TRIP_SUBTYPE_LABELS, tripSubtypeDefaultPinCode, type TripSubtype } from '@/lib/globe/trip-types'
 import { handleRichPaste } from '@/lib/richPaste'
+import { useEscapeKey } from '@/lib/ui/use-escape-key'
 
 /** Virtual selector value — a Trip is framing around a pin, not a pin type. */
 const TRIP_OPTION = 'trip'
@@ -77,6 +78,10 @@ export default function PinModal({
    *  (Andy's chalet→Calgary confusion, 2026-07-19). */
   defaultAnchorId?: string
 }) {
+  // Escape closes, matching the backdrop's existing dismiss — and refuses
+  // while a save is in flight, for the same reason the backdrop does (F9a).
+  useEscapeKey(onCancel, !saving)
+
   const [name, setName] = useState(placeLabel === 'This place' ? '' : placeLabel)
   const [body, setBody] = useState('')
   const [whenText, setWhenText] = useState('')

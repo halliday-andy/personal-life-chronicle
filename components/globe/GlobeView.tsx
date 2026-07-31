@@ -1609,6 +1609,16 @@ export default function GlobeView() {
             if (notice) setNotice(notice)
             void loadTrips()
           }}
+          // Dismissal PRESERVES the armed origin (Andy, 2026-07-30 — R1).
+          // The armed pin is applied at framing, not at trip creation, so
+          // clearing it here would strand a draft trip with no origin and no
+          // route back to the intent. Dismissing means "not now", not
+          // "never" — and it is not hidden state: the banner re-renders the
+          // moment this closes, carrying its own ✕ to cancel deliberately.
+          onDismiss={() => {
+            setFraming(null)
+            void loadTrips()
+          }}
           onAddOrigin={() => {
             setOriginCapture({ tripId: framing.tripId, destinationName: framing.destinationName })
             setFraming(null)

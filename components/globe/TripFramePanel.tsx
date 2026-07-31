@@ -14,6 +14,7 @@
  */
 
 import { useState } from 'react'
+import { useEscapeKey } from '@/lib/ui/use-escape-key'
 
 export interface TripFramingContext {
   tripId: string
@@ -30,11 +31,20 @@ export default function TripFramePanel({
   ctx,
   pins,
   onDone,
+  onDismiss,
   onAddOrigin,
 }: {
   ctx: TripFramingContext
   pins: { relationship_id: string; name: string; type_code: string | null }[]
+  /** The frame SAVED. Distinct from onDismiss because a successful frame
+   *  consumes the armed "trip from here" origin and a dismissal must not
+   *  (F9a/R1) — the armed pin is applied here, not at trip creation, so
+   *  clearing it on dismiss would strand a draft with no way back to the
+   *  intent. */
   onDone: (notice: string | null) => void
+  /** Closed WITHOUT writing — Escape, ✕, backdrop, or "keep as a draft".
+   *  Never deletes; destruction takes a deliberate click. */
+  onDismiss: () => void
   /** The origin isn't on the globe yet (U9/AE5) — hand off to origin
    *  capture: the next pin placed becomes this trip's origin. */
   onAddOrigin?: () => void
@@ -48,6 +58,9 @@ export default function TripFramePanel({
   const [returnToOrigin, setReturnToOrigin] = useState<boolean>(ctx.returnToOrigin ?? true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Escape closes without writing, and refuses mid-save (F9a).
+  useEscapeKey(onDismiss, !saving)
 
   const suggested = pins.find((p) => p.relationship_id === ctx.suggestedOriginId)
   const others = pins.filter((p) => p.relationship_id !== ctx.suggestedOriginId)
@@ -86,8 +99,21 @@ export default function TripFramePanel({
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" aria-hidden />
+      <div
+        className="absolute inset-0 bg-black/50"
+        aria-hidden
+        onClick={saving ? undefined : onDismiss}
+      />
       <div className="glass relative z-10 w-full max-w-lg rounded-2xl p-6 text-[var(--ink)]">
+        <button
+          type="button"
+          onClick={onDismiss}
+          disabled={saving}
+          aria-label="Close without saving"
+          className="absolute right-4 top-4 rounded px-1.5 py-0.5 text-[var(--ink-dim)] hover:text-[var(--ink)] disabled:opacity-50"
+        >
+          ✕
+        </button>
         <p className="text-xs uppercase tracking-[0.18em] text-[var(--ink-dim)]">Frame the trip</p>
         <h2 className="nocturne-display mt-1 text-2xl font-medium leading-tight">
           {ctx.destinationName}
@@ -183,7 +209,7 @@ export default function TripFramePanel({
         <div className="mt-6 flex items-center justify-end gap-3">
           <button
             type="button"
-            onClick={() => onDone(null)}
+            onClick={onDismiss}
             disabled={saving}
             className="rounded-lg px-4 py-2 text-sm text-[var(--ink-dim)] hover:text-[var(--ink)] disabled:opacity-50"
           >
