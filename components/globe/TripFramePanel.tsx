@@ -25,6 +25,11 @@ export interface TripFramingContext {
   /** Current round-trip flag when re-framing an existing trip; omitted on
    *  a fresh trip (defaults true — KTD3's "returns to origin" default). */
   returnToOrigin?: boolean
+  /** Is this trip still a draft (no origin yet)? Decides the exit set — a
+   *  draft can be kept or discarded, a framed trip can only be cancelled.
+   *  Explicit rather than inferred from `returnToOrigin` being present,
+   *  because an implicit tell is a tell that eventually lies. */
+  isDraft: boolean
 }
 
 export default function TripFramePanel({
@@ -32,6 +37,7 @@ export default function TripFramePanel({
   pins,
   onDone,
   onDismiss,
+  onDiscard,
   onAddOrigin,
 }: {
   ctx: TripFramingContext
@@ -45,6 +51,10 @@ export default function TripFramePanel({
   /** Closed WITHOUT writing — Escape, ✕, backdrop, or "keep as a draft".
    *  Never deletes; destruction takes a deliberate click. */
   onDismiss: () => void
+  /** Abandon the trip outright (drafts only). Deletes the trip, keeps the
+   *  pin — `delete_trip` retains the trip entity whenever jots, context or
+   *  recollections still reference it, so nothing written is lost. */
+  onDiscard?: () => void
   /** The origin isn't on the globe yet (U9/AE5) — hand off to origin
    *  capture: the next pin placed becomes this trip's origin. */
   onAddOrigin?: () => void
@@ -58,6 +68,7 @@ export default function TripFramePanel({
   const [returnToOrigin, setReturnToOrigin] = useState<boolean>(ctx.returnToOrigin ?? true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [confirmDiscard, setConfirmDiscard] = useState(false)
 
   // Escape closes without writing, and refuses mid-save (F9a).
   useEscapeKey(onDismiss, !saving)
@@ -119,8 +130,9 @@ export default function TripFramePanel({
           {ctx.destinationName}
         </h2>
         <p className="mt-1 text-xs leading-relaxed text-[var(--ink-dim)]">
-          The destination is saved. Origin → destination is enough to complete the trip —
-          or keep it as a draft and come back later.
+          {ctx.isDraft
+            ? 'The destination is saved. Origin → destination is enough to complete the trip — or keep it as a draft and come back later.'
+            : 'Adjust anything here and save, or close without changing it.'}
         </p>
 
         <label className="mt-5 block text-sm text-[var(--ink-dim)]">Where did the trip start?</label>
@@ -206,14 +218,44 @@ export default function TripFramePanel({
           <p className="mt-3 rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-1.5 text-xs text-red-200">{error}</p>
         )}
 
-        <div className="mt-6 flex items-center justify-end gap-3">
+        <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
+          {/* Abandonment, drafts only (R2/F9b). A framed trip's equivalent is
+              Unframe, which lives with the trip itself — offering it here too
+              would be two routes to one deletion. Two-step confirm matches
+              Unframe's existing ceremony rather than inventing a lighter one
+              for the same action. */}
+          {ctx.isDraft && onDiscard && (
+            confirmDiscard ? (
+              <button
+                type="button"
+                onClick={onDiscard}
+                disabled={saving}
+                className="mr-auto rounded-lg border border-rose-400/50 px-3 py-2 text-sm text-rose-300 hover:bg-rose-500/10 disabled:opacity-50"
+              >
+                Really discard? The place stays on your globe.
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmDiscard(true)}
+                disabled={saving}
+                className="mr-auto rounded-lg px-3 py-2 text-sm text-[var(--ink-dim)] hover:text-rose-300 disabled:opacity-50"
+              >
+                Discard this trip
+              </button>
+            )
+          )}
           <button
             type="button"
             onClick={onDismiss}
             disabled={saving}
             className="rounded-lg px-4 py-2 text-sm text-[var(--ink-dim)] hover:text-[var(--ink)] disabled:opacity-50"
           >
-            Keep as a draft
+            {/* "Keep as a draft" is only true while it IS a draft. Re-framing
+                an existing trip, the same button read as "demote this back to
+                a draft" — a destructive-sounding label on the only exit, which
+                is why the panel appeared to have none (F9b, rule 11). */}
+            {ctx.isDraft ? 'Keep as a draft' : 'Cancel'}
           </button>
           <button
             type="button"

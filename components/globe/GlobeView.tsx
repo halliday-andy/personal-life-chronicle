@@ -1082,6 +1082,7 @@ export default function GlobeView() {
           homeBaseId,
         }),
         defaultWhen: selPin.when_text ?? '',
+        isDraft: true, // just created by create_trip — no origin yet
       })
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not frame the trip.')
@@ -1203,6 +1204,7 @@ export default function GlobeView() {
             homeBaseId,
           }),
           defaultWhen: data.whenText,
+          isDraft: true, // just created alongside the destination pin
         })
       }
     } catch (e) {
@@ -1619,6 +1621,18 @@ export default function GlobeView() {
             setFraming(null)
             void loadTrips()
           }}
+          // Discard ABANDONS the attempt, so unlike dismissal it also clears
+          // the armed origin — leaving the banner armed after an explicit
+          // abandonment would be surprising. Dismiss = pause, discard = stop.
+          // Reuses unframeTrip rather than a second deletion route: the pin
+          // and anything written against the trip survive (delete_trip keeps
+          // the trip entity while jots/context/recollections reference it).
+          onDiscard={() => {
+            const { tripId } = framing
+            setFraming(null)
+            setTripFromHere(null)
+            void unframeTrip(tripId)
+          }}
           onAddOrigin={() => {
             setOriginCapture({ tripId: framing.tripId, destinationName: framing.destinationName })
             setFraming(null)
@@ -1752,6 +1766,7 @@ export default function GlobeView() {
                       }),
                       defaultWhen: t.when_text ?? '',
                       returnToOrigin: t.return_to_origin,
+                      isDraft: t.is_draft,
                     })}
                     className="rounded-lg border border-[var(--glass-border)] px-2 py-0.5 hover:text-[var(--ember-soft)]"
                   >
