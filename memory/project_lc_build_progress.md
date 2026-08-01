@@ -20,6 +20,24 @@ framed). QA: `docs/qa/2026-07-30-remediation-r1-r3-qa-checklist.md`.
 **R4–R5 deliberately wait for the pin-card reconciliation walk** — that
 checklist covers the very surfaces R4 modifies.
 
+**Context-card walk added F10–F12.** `4c657d3` **R10 BUILT**: a `##Title` on
+line 1 lost to a proper heading inside pasted research, because
+`deriveContextTitle` required a space after the hashes and the loose-form
+fallback only ran when the note had NO heading anywhere — invisible until
+pasted material started bringing its own headings (proof 15 → 17, red/green;
+derived at read time so old notes self-correct). **F11 (R9, not built):** rich
+paste loses tables AND all bold — turndown has no table rule and no rule for
+PRESENTATIONAL emphasis (Gemini uses styled spans, not `<b>`), while
+`remark-gfm` is active on render. **F10 (R8):** Andy could not reproduce the
+context-chip symptom, but the detail card genuinely has no max-height and no
+internal scroll inside an `overflow-hidden` viewport — latent, kept on merit.
+
+**CLASS-OF-BUG (new, rule 12): test a converter against captured REAL input,
+not idealised markup.** A synthetic `<b>` fixture proved bold survived rich
+paste; Andy's actual source marks bold presentationally, and all of it was
+lost. *The tell: a fixture nobody copied from a real producer.* Sibling of the
+07-26 rule that a guard which has never failed on its own bug is unproven.
+
 - **START HERE next session: `docs/plans/2026-07-30-phase1-remediation-plan.md`**
   — the finding register + build order R1–R7. **Sequencing agreed with Andy:
   remediation ships as ONE pass BEFORE Loose-Ends L1.** Findings from the

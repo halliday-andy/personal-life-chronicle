@@ -35,6 +35,7 @@ change — the best ratio in the set.
 | **F9a** | No dismissal on `TripFramePanel` **or** `PinModal` — no Escape, ✕, or backdrop. Both are keyboard traps | Escape + ✕ + backdrop | **R1** |
 | **F9b** | The exit exists but is labelled "Keep as a draft", which reads as *demote* when re-framing an already-framed trip | contextual label (rule 11, 3rd sighting) | **R2** |
 | **F6** | A trip's destination is immutable at every layer — `frame_trip` has no destination parameter and no sibling supplies one | gated guard relaxation + new `retarget_trip` RPC | **R6** |
+| **F12** | A `##Title` typed on line 1 loses its title to a proper heading inside pasted research — `deriveContextTitle` required a space after the hashes, so the loose form fell to a fallback that only runs when the note has NO heading anywhere | accept both spellings in step 1; first heading wins | **R10 — BUILT `4c657d3`** |
 | **F10** | Opening the context chip reveals its content outside the visible area — "seemed to be no action". The detail card has **no `max-height` and no internal scroll** (`PinDetailCard.tsx:199`) inside an `h-screen overflow-hidden` container, so a tall card overflows unreachably | give the card a viewport-bounded max height + internal scroll, and scroll a newly opened disclosure into view | **R8** |
 | **F11** | Rich paste **loses tables AND all bold**. Verified against the stored note: headings, bullets and links survived, but the table became a vertical run of cells and there is not one `**` in the body. `turndown` has no `<table>` rule (and `turndown-plugin-gfm` is absent) and no rule for **presentational** emphasis — Gemini marks bold with styled spans, not `<b>`. Meanwhile `remark-gfm` IS active on the render side | `turndown-plugin-gfm` for tables + a custom rule mapping `font-weight:600–900` / `font-style:italic` onto strong/em | **R9** |
 | **F7** | A stop-less round trip's dashed return is coincident with the solid outbound — *is it legible?* | **CLOSED — PASS (Andy, 2026-07-30).** The dash reads clearly over the solid outbound; the one-way arc to Wendy's apartment shows none. No work needed; **R7 retired** | — |
@@ -207,7 +208,30 @@ implying a different return route; for a stop-less round trip the return is
 return stops**, where it carries real information, and express round-trip-ness
 in text (the trip row and Travel Journal both have room).
 
-### R8 — The detail card can be read to the end *(F10)* — **AWAITING ANDY'S SCREENSHOT**
+### R10 — The title you type wins *(F12)* — **BUILT `4c657d3`**
+
+Andy opened his Dartmouth note with `##Matriculating into an all-male college
+environment` and the card titled it *"The 'Strategic Self-Interest'
+Argument"* — a heading from the middle of the pasted Gemini article.
+
+`deriveContextTitle` step 1 scanned every line but **required a space after
+the hashes**. The loose form fell through to step 2, which only runs when the
+note contains no proper heading *anywhere*. Hand-typed notes have none — which
+is why the 2026-07-20 fix looked complete — but pasted research is full of
+them, so the author's own title lost to someone else's subheading.
+
+Both spellings are the same authorial act: step 1 now accepts either and the
+**first** heading wins. `(?!#)` keeps a hashes-only line from splitting into
+`##` plus a title of `#`.
+
+**No data migration:** the title is derived at read time, so existing notes
+correct themselves on next render.
+
+**Proof:** `verify-derive-context-title.mjs` 15 → 17, red/green. A guard case
+(a proper heading still wins when line 1 is prose) passed before and after, so
+the change is bounded to the reported defect.
+
+### R8 — The detail card can be read to the end *(F10)* — **NOT REPRODUCIBLE; latent defect stands**
 
 Andy, 2026-07-30 (context-card walk): clicking the context chip appeared to do
 nothing; the revealed one-line note and "＋ Add New Context ↗" had opened
@@ -221,11 +245,15 @@ Bottom-anchored, it grows upward until its top is clipped with no way to
 scroll to it. Any pin with recollection + facts + context + related pins can
 exceed the viewport.
 
-**Unresolved:** that geometry clips at the TOP, and the globe page should not
-scroll at all, which does not match Andy's description of content below the
-container needing a window scroll. He may have been on the place page after
-following "Add New Context ↗". **Screenshot requested before building** —
-fixing the wrong end of the card would look like a fix and change nothing.
+**Andy could not reproduce it (2026-07-30)** — possibly idiosyncratic to the
+Dartmouth card's particular height. The reported symptom is therefore
+UNCONFIRMED, and the geometry never matched it anyway (that clipping happens
+at the TOP, and the globe page cannot scroll).
+
+**But the latent defect is real and read directly from the code**, so R8 stays
+on the list on its own merit rather than as a fix for an unreproducible
+report. It will bite whenever a pin accumulates enough content — and it fails
+silently when it does, which is why it went unnoticed.
 
 **Fix regardless of which end:** bound the card to the viewport
 (`max-h-[calc(100vh-…)]` + `overflow-y-auto`) so it is always readable to the
