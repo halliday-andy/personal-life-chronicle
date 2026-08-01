@@ -22,6 +22,7 @@
 
 import type { ClipboardEvent } from 'react'
 import TurndownService from 'turndown'
+import { gfm } from 'turndown-plugin-gfm'
 
 const turndown = new TurndownService({
   headingStyle: 'atx',        // ## Heading — matches the note-title idiom
@@ -34,6 +35,51 @@ const turndown = new TurndownService({
 turndown.addRule('divBlock', {
   filter: 'div',
   replacement: (content) => (content.trim() ? `\n\n${content}\n\n` : ''),
+})
+
+// GFM: tables, strikethrough, task lists. Turndown's core has NO <table>
+// rule, so a pasted table used to collapse into a vertical run of orphaned
+// cell values (finding F11, 2026-07-30 — Andy's Ivy-League coeducation
+// table). The renderer has spoken GFM all along via remark-gfm; only the
+// converter was deaf to it.
+turndown.use(gfm)
+
+// ── Presentational emphasis ───────────────────────────────────────────
+// Turndown only understands SEMANTIC emphasis (<strong>, <em>, <b>, <i>).
+// Rendered sources frequently mark emphasis with style instead — Gemini
+// marks every bold run with a styled <span>, so Andy's Dartmouth note
+// arrived without a single ** in it while headings and bullets survived.
+//
+// Scoped to <span> deliberately: a filter matching any styled element
+// would wrap whole blocks (a <p> with a font-weight) in emphasis markers.
+const BOLD_WEIGHT = /^(bold|bolder|[6-9]00)$/i
+const ITALIC_STYLE = /^(italic|oblique)/i
+
+/** Read one declaration out of an inline style attribute. */
+function styleProp(node: Node, prop: string): string {
+  const style = (node as Element).getAttribute?.('style') ?? ''
+  const hit = new RegExp(`(?:^|;)\\s*${prop}\\s*:\\s*([^;]+)`, 'i').exec(style)
+  return hit ? hit[1].trim() : ''
+}
+
+const isPresentationallyBold = (n: Node) => BOLD_WEIGHT.test(styleProp(n, 'font-weight'))
+const isPresentationallyItalic = (n: Node) => ITALIC_STYLE.test(styleProp(n, 'font-style'))
+
+turndown.addRule('presentationalEmphasis', {
+  filter: (node) =>
+    node.nodeName === 'SPAN' && (isPresentationallyBold(node) || isPresentationallyItalic(node)),
+  replacement: (content, node) => {
+    const core = content.trim()
+    if (!core) return content
+    // Emphasis markers must hug the text — "** bold **" does not render —
+    // so surrounding whitespace is preserved outside the markers.
+    const lead = /^\s*/.exec(content)?.[0] ?? ''
+    const tail = /\s*$/.exec(content)?.[0] ?? ''
+    let out = core
+    if (isPresentationallyBold(node)) out = `**${out}**`
+    if (isPresentationallyItalic(node)) out = `*${out}*`
+    return lead + out + tail
+  },
 })
 
 /** Convert an HTML clipboard flavor to markdown, tidied for note bodies. */

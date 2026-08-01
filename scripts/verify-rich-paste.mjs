@@ -72,6 +72,49 @@ const trivial = '<span>just plain words</span>'
 !shouldUseHtmlFlavor(trivial, 'just plain words') ? ok('span-wrapped plain text falls back to default paste') : bad('trivial HTML wrongly intercepted')
 !shouldUseHtmlFlavor('', 'plain only') ? ok('no HTML flavor → default paste') : bad('empty HTML wrongly intercepted')
 
+// ── R9 / finding F11 (2026-07-30, Andy's Dartmouth paste) ──────────────
+// Two losses against his real Gemini source: the whole table, and EVERY
+// bold run. Bold survived the fixtures above because they use semantic
+// <strong>; the real source marks emphasis PRESENTATIONALLY. Rule 12:
+// test a converter against captured real input, not idealised markup.
+
+// 8. GFM tables survive as tables
+const table = htmlToMarkdown(
+  '<table><thead><tr><th>Institution</th><th>Transition</th></tr></thead>' +
+  '<tbody><tr><td>Dartmouth</td><td>1972</td></tr>' +
+  '<tr><td>Brown</td><td>1971</td></tr></tbody></table>',
+)
+if (table.includes('| Institution |') && table.includes('| Dartmouth |') && /\\|\\s*---/.test(table))
+  ok('table → GFM pipe table with a delimiter row')
+else bad('F11: table destroyed: ' + JSON.stringify(table))
+
+// 9. The table's cells must NOT become a vertical run of orphaned values
+if (!/Institution\\n\\nTransition/.test(table))
+  ok('table cells are not exploded into separate blocks')
+else bad('F11: cells exploded into blocks: ' + JSON.stringify(table))
+
+// 10. PRESENTATIONAL bold — the real-world form that lost everything
+const styledBold = htmlToMarkdown('<p><span style="font-weight:700">Zero-Sum Fear:</span> a practical fear.</p>')
+styledBold.includes('**Zero-Sum Fear:**')
+  ? ok('span[style=font-weight:700] → **bold**')
+  : bad('F11: presentational bold lost: ' + JSON.stringify(styledBold))
+const styledBoldWord = htmlToMarkdown('<p><span style="font-weight: bold">D-Plan</span> details.</p>')
+styledBoldWord.includes('**D-Plan**')
+  ? ok('span[style=font-weight:bold] → **bold**')
+  : bad('F11: keyword font-weight lost: ' + JSON.stringify(styledBoldWord))
+
+// 11. Presentational italic
+const styledItalic = htmlToMarkdown('<p><span style="font-style: italic">Keep the Damned Women Out</span></p>')
+styledItalic.includes('*Keep the Damned Women Out*')
+  ? ok('span[style=font-style:italic] → *italic*')
+  : bad('F11: presentational italic lost: ' + JSON.stringify(styledItalic))
+
+// 12. Normal weights are left alone — no bolding the whole document
+const normalWeight = htmlToMarkdown('<p><span style="font-weight:400">ordinary text</span> here.</p>')
+!normalWeight.includes('**')
+  ? ok('font-weight:400 is not treated as bold')
+  : bad('over-bolded normal text: ' + JSON.stringify(normalWeight))
+
 console.log(failures === 0 ? '\\nPASS' : '\\nFAIL (' + failures + ')')
 process.exit(failures === 0 ? 0 : 1)
 `
