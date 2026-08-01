@@ -529,12 +529,36 @@ export default function EntityView({ entity, notes: initialNotes, recollections 
 // placeholder, source inputs, and visibility control).
 function NoteFields({
   body, setBody, sourceLabel, setSourceLabel, sourceUrl, setSourceUrl, visibility, setVisibility,
+  autoFocus = false,
 }: {
   body: string; setBody: React.Dispatch<React.SetStateAction<string>>
   sourceLabel: string; setSourceLabel: (v: string) => void
   sourceUrl: string; setSourceUrl: (v: string) => void
   visibility: 'private' | 'shareable'; setVisibility: (v: 'private' | 'shareable') => void
+  /** Editing an EXISTING note: take focus and pull the editor into view.
+   *  Opening the editor replaces tall rendered markdown with a short box, so
+   *  the document collapses and a preserved scroll offset lands the user
+   *  somewhere unrelated — Andy's Dartmouth note dropped him into the
+   *  recollections list with the editor above the viewport (F13). */
+  autoFocus?: boolean
 }) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    if (!autoFocus) return
+    const el = textareaRef.current
+    if (!el) return
+    el.focus({ preventScroll: true })
+    el.scrollIntoView({ block: 'nearest' })
+  }, [autoFocus])
+
+  // Size the box to the note being edited. Computed ONCE from the initial
+  // body (state initialiser, not a live derivation) so the field doesn't
+  // jump under the cursor while typing; `resize-y` still lets it be dragged.
+  const [initialRows] = useState(() =>
+    Math.min(24, Math.max(4, body.split('\n').length + 1)),
+  )
+
   return (
     <>
       <p className="mb-1.5 text-xs text-stone-500">
@@ -542,11 +566,12 @@ function NoteFields({
         <span className="text-stone-400">## B-47s in the Cold War</span>
       </p>
       <textarea
+        ref={textareaRef}
         value={body}
         onChange={(e) => setBody(e.target.value)}
         onPaste={(e) => handleRichPaste(e, setBody)}
         placeholder="## A short title&#10;&#10;Background, research, a fact worth keeping…"
-        rows={4}
+        rows={initialRows}
         className="w-full resize-y rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 outline-none focus:border-stone-500"
       />
       <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -611,6 +636,7 @@ function NoteCard({ note, onRemove, onSave }: {
           sourceLabel={sourceLabel} setSourceLabel={setSourceLabel}
           sourceUrl={sourceUrl} setSourceUrl={setSourceUrl}
           visibility={visibility} setVisibility={setVisibility}
+          autoFocus
         />
         {error && <p className="mt-2 text-sm text-rose-600">{error}</p>}
         <div className="mt-3 flex items-center gap-2">
