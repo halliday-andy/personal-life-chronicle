@@ -36,13 +36,13 @@ Andy chose **navigate-with-strong-affordance**. Fix in `PinDetailCard.tsx`
 affordance lived inside a disclosure that only appeared once context already
 existed. Ten of his fourteen homes had no route to it.*
 
-- [ ] Open a pin with **no context yet** (Dartmouth, Coronet Peak, My Mt.
+- [x] Open a pin with **no context yet** (Dartmouth, Coronet Peak, My Mt.
       Snow Chalet — most of the spine) → a **"＋ context"** chip is present
       on both the detail card and the edit panel.
-- [ ] Open it → a one-line "no background about this place yet" note and the
+- [x] Open it → a one-line "no background about this place yet" note and the
       **＋ Add New Context ↗** link; following it opens the place page with
       the composer already open.
-- [ ] Add a note, return to the pin → the chip now reads **"1 context"** and
+- [x] Add a note, return to the pin → the chip now reads **"1 context"** and
       lists the note, add demoted to the top-right corner as before.
 
 ## Regression spot-checks (same card)
@@ -55,3 +55,36 @@ existed. Ten of his fourteen homes had no route to it.*
 - [ ] Other context titles across the app (Journey context list, Entity View)
   are unaffected — the title change only strips a *leading* hash run; spaced
   headings and inline-markdown reduction are covered by the proof.
+
+---
+
+## Findings — Andy's live walk, 2026-07-30
+
+Registered in
+[`../plans/2026-07-30-phase1-remediation-plan.md`](../plans/2026-07-30-phase1-remediation-plan.md)
+as **F10 (R8)** and **F11 (R9)**. Neither is fixed yet.
+
+### F10 — Opening the context chip looks like nothing happened
+
+Clicking the chip revealed the one-line note and "＋ Add New Context ↗"
+**outside the visible area**; it read as a dead control until Andy scrolled.
+
+Confirmed latent defect: the expanded card (`PinDetailCard.tsx:199`) has **no
+`max-height` and no `overflow-y-auto`**, inside an `h-screen overflow-hidden`
+container — bottom-anchored, growing upward, clipping with no way to scroll.
+
+**Screenshot requested**: that geometry clips at the TOP and the globe page
+should not scroll, which does not match "below the container… scroll the
+window". Andy may have been on the place page after following the add link.
+
+### F11 — Rich paste loses tables
+
+Pasting Gemini research on Dartmouth co-education kept the prose but destroyed
+a table. Reproduced against the real converter: the table collapses to a
+vertical run of orphaned cell values.
+
+Root cause: `turndown` has no `<table>` rule and `turndown-plugin-gfm` is not
+installed — while `remark-gfm` IS active in `components/Markdown.tsx:32`. **The
+app can render a markdown table it cannot produce.** Rich paste is correctly
+wired here (`EntityView.tsx:547`); the loss is purely in conversion.
+

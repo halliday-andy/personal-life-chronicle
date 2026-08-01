@@ -35,6 +35,8 @@ change — the best ratio in the set.
 | **F9a** | No dismissal on `TripFramePanel` **or** `PinModal` — no Escape, ✕, or backdrop. Both are keyboard traps | Escape + ✕ + backdrop | **R1** |
 | **F9b** | The exit exists but is labelled "Keep as a draft", which reads as *demote* when re-framing an already-framed trip | contextual label (rule 11, 3rd sighting) | **R2** |
 | **F6** | A trip's destination is immutable at every layer — `frame_trip` has no destination parameter and no sibling supplies one | gated guard relaxation + new `retarget_trip` RPC | **R6** |
+| **F10** | Opening the context chip reveals its content outside the visible area — "seemed to be no action". The detail card has **no `max-height` and no internal scroll** (`PinDetailCard.tsx:199`) inside an `h-screen overflow-hidden` container, so a tall card overflows unreachably | give the card a viewport-bounded max height + internal scroll, and scroll a newly opened disclosure into view | **R8** |
+| **F11** | Rich paste into the context composer **loses tables**. `turndown` has no `<table>` rule and `turndown-plugin-gfm` is not installed — while `remark-gfm` IS installed on the render side. The app can DISPLAY a markdown table it cannot PRODUCE | add `turndown-plugin-gfm`, enable tables/strikethrough/task-lists so the converter matches the renderer | **R9** |
 | **F7** | A stop-less round trip's dashed return is coincident with the solid outbound — *is it legible?* | **CLOSED — PASS (Andy, 2026-07-30).** The dash reads clearly over the solid outbound; the one-way arc to Wendy's apartment shows none. No work needed; **R7 retired** | — |
 
 ## 2. Build order
@@ -204,6 +206,66 @@ implying a different return route; for a stop-less round trip the return is
 *status*, not geometry. **Reserve the drawn return for trips that have actual
 return stops**, where it carries real information, and express round-trip-ness
 in text (the trip row and Travel Journal both have room).
+
+### R8 — The detail card can be read to the end *(F10)* — **AWAITING ANDY'S SCREENSHOT**
+
+Andy, 2026-07-30 (context-card walk): clicking the context chip appeared to do
+nothing; the revealed one-line note and "＋ Add New Context ↗" had opened
+outside the visible area and needed scrolling to reach.
+
+**Confirmed latent defect:** the expanded card is
+`glass absolute bottom-6 … p-5` (`PinDetailCard.tsx:199`) — **no
+`max-height`, no `overflow-y-auto`** — inside
+`nocturne relative h-screen w-screen overflow-hidden` (`GlobeView.tsx:1396`).
+Bottom-anchored, it grows upward until its top is clipped with no way to
+scroll to it. Any pin with recollection + facts + context + related pins can
+exceed the viewport.
+
+**Unresolved:** that geometry clips at the TOP, and the globe page should not
+scroll at all, which does not match Andy's description of content below the
+container needing a window scroll. He may have been on the place page after
+following "Add New Context ↗". **Screenshot requested before building** —
+fixing the wrong end of the card would look like a fix and change nothing.
+
+**Fix regardless of which end:** bound the card to the viewport
+(`max-h-[calc(100vh-…)]` + `overflow-y-auto`) so it is always readable to the
+end, and scroll a newly opened disclosure into view so opening a chip always
+produces visible feedback.
+
+**Class of bug (candidate, pending confirmation):** *a disclosure whose
+revealed content lands outside the viewport reads as a dead control.* The user
+does not conclude "it opened somewhere I can't see"; they conclude "nothing
+happened" — the same silent-failure family as F3's empty search.
+
+### R9 — Pasted tables survive *(F11)*
+
+Andy pasted Gemini research on Dartmouth co-education into the context
+composer and lost the formatting, including a table.
+
+**Confirmed empirically.** Running his shape through the actual converter, a
+`<thead>/<tbody>` table collapses to a vertical run of orphaned cell values
+("Year / Event / 1971 / Trustees vote / …"). Bold and links survive; tables do
+not.
+
+**Root cause is an asymmetry between the two ends of one pipeline:**
+`turndown` ships **no `<table>` rule**, and `turndown-plugin-gfm` is not a
+dependency — but `remark-gfm` **is** installed and active in
+`components/Markdown.tsx:32`. **The app can render a markdown table it is
+incapable of producing.** Rich paste IS correctly wired to this composer
+(`EntityView.tsx:547`); the loss is entirely in conversion.
+
+**Fix:** add `turndown-plugin-gfm` and enable its tables, strikethrough and
+task-list rules, so the converter's capabilities match the renderer's.
+
+**Proof:** extend `scripts/verify-rich-paste.mjs` (or add one) with a table
+fixture, proven red/green — the assertion must fail against the current
+converter.
+
+**Class of bug (new): a lossy converter paired with a capable renderer.** When
+one end of a pipeline is upgraded (remark-gfm on render) the other end must be
+audited for the same capability set, or the product silently supports a format
+it cannot accept. *The tell: an input path and an output path that disagree
+about what the format includes.*
 
 ## 3. What this pass does not include
 
