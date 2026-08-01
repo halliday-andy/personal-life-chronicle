@@ -49,11 +49,21 @@ export function deriveContextTitle(body: string): string {
 
   const lines = text.split(/\r?\n/)
 
-  // 1. First ATX heading anywhere in the note. A trailing closing sequence
-  //    (`## Title ##`) must be space-separated to count as a closer, so a `#`
-  //    inside the title (e.g. "C# notes") is preserved.
+  // 1. First ATX heading anywhere in the note, **with or without a space
+  //    after the hashes**. A trailing closing sequence (`## Title ##`) must be
+  //    space-separated to count as a closer, so a `#` inside the title (e.g.
+  //    "C# notes") is preserved. `(?!#)` forces the hash run to be consumed
+  //    whole, so a hashes-only line (`###`) can never split into "##" plus a
+  //    title of "#".
+  //
+  //    The space used to be REQUIRED here, which meant a loose `##Title` on
+  //    line 1 lost to any proper heading further down — and pasted research
+  //    is full of proper headings. Andy's Dartmouth note took its title from
+  //    the middle of a Gemini article instead of the line he typed for the
+  //    purpose (F12, 2026-07-30). Both spellings are the same authorial act,
+  //    so both count, and the FIRST one wins.
   for (const line of lines) {
-    const heading = line.match(/^\s{0,3}#{1,6}\s+(.+?)(?:\s+#+)?\s*$/)
+    const heading = line.match(/^\s{0,3}#{1,6}(?!#)\s*(.+?)(?:\s+#+)?\s*$/)
     if (heading) {
       const clean = stripInlineMarkdown(heading[1])
       if (clean) return clean

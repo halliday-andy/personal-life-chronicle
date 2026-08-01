@@ -57,6 +57,22 @@ expect(
   'The preamble to my journey.',
 )
 expect('single no-space hash', deriveContextTitle('#Solo note about the base'), 'Solo note about the base')
+
+// ── F12 (2026-07-30, Andy's Dartmouth note): a no-space heading on line 1
+//    LOST to a proper heading further down. Step 1 scanned every line for a
+//    space-separated heading, so pasted research carrying its own headings
+//    hijacked the title the author had deliberately typed first. Fixed by
+//    treating a no-space heading as a heading, so the FIRST one still wins. ──
+expect(
+  'F12: line-1 no-space heading beats a proper heading in pasted body',
+  deriveContextTitle('##Matriculating into an all-male college environment\\n\\nDartmouth College was the last Ivy.\\n\\n## The "Strategic Self-Interest" Argument\\n\\nWhile student activism...'),
+  'Matriculating into an all-male college environment',
+)
+expect(
+  'a proper heading still wins when the first line is prose',
+  deriveContextTitle('Some framing sentence first.\\n\\n## The Real Heading\\n\\nBody'),
+  'The Real Heading',
+)
 expect('hashes-only first line skipped', deriveContextTitle('##\\nReal content on line two'), 'Real content on line two')
 
 // ── stripInlineMarkdown pieces ──
