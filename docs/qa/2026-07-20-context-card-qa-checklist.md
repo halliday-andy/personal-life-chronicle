@@ -83,8 +83,17 @@ Pasting Gemini research on Dartmouth co-education kept the prose but destroyed
 a table. Reproduced against the real converter: the table collapses to a
 vertical run of orphaned cell values.
 
-Root cause: `turndown` has no `<table>` rule and `turndown-plugin-gfm` is not
-installed — while `remark-gfm` IS active in `components/Markdown.tsx:32`. **The
-app can render a markdown table it cannot produce.** Rich paste is correctly
-wired here (`EntityView.tsx:547`); the loss is purely in conversion.
+**Verified against the stored note.** Turndown ran — the body has `## `
+headings, `- ` bullets and turndown's bracket escaping. Headings, bullets,
+links and paragraphs survived. **Two things did not:**
+
+- **Tables** → a vertical run of orphaned cell values.
+- **Bold** → not one `**` in the entire note.
+
+Two root causes: `turndown` has no `<table>` rule (and `turndown-plugin-gfm`
+is absent), and no rule for **presentational** emphasis — Gemini marks bold
+with styled spans rather than `<b>`. Meanwhile `remark-gfm` IS active in
+`components/Markdown.tsx:32`, so the app can render markdown it cannot
+produce. Rich paste is correctly wired here (`EntityView.tsx:547`); the loss
+is purely in conversion.
 

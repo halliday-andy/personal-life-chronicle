@@ -36,7 +36,7 @@ change — the best ratio in the set.
 | **F9b** | The exit exists but is labelled "Keep as a draft", which reads as *demote* when re-framing an already-framed trip | contextual label (rule 11, 3rd sighting) | **R2** |
 | **F6** | A trip's destination is immutable at every layer — `frame_trip` has no destination parameter and no sibling supplies one | gated guard relaxation + new `retarget_trip` RPC | **R6** |
 | **F10** | Opening the context chip reveals its content outside the visible area — "seemed to be no action". The detail card has **no `max-height` and no internal scroll** (`PinDetailCard.tsx:199`) inside an `h-screen overflow-hidden` container, so a tall card overflows unreachably | give the card a viewport-bounded max height + internal scroll, and scroll a newly opened disclosure into view | **R8** |
-| **F11** | Rich paste into the context composer **loses tables**. `turndown` has no `<table>` rule and `turndown-plugin-gfm` is not installed — while `remark-gfm` IS installed on the render side. The app can DISPLAY a markdown table it cannot PRODUCE | add `turndown-plugin-gfm`, enable tables/strikethrough/task-lists so the converter matches the renderer | **R9** |
+| **F11** | Rich paste **loses tables AND all bold**. Verified against the stored note: headings, bullets and links survived, but the table became a vertical run of cells and there is not one `**` in the body. `turndown` has no `<table>` rule (and `turndown-plugin-gfm` is absent) and no rule for **presentational** emphasis — Gemini marks bold with styled spans, not `<b>`. Meanwhile `remark-gfm` IS active on the render side | `turndown-plugin-gfm` for tables + a custom rule mapping `font-weight:600–900` / `font-style:italic` onto strong/em | **R9** |
 | **F7** | A stop-less round trip's dashed return is coincident with the solid outbound — *is it legible?* | **CLOSED — PASS (Andy, 2026-07-30).** The dash reads clearly over the solid outbound; the one-way arc to Wendy's apartment shows none. No work needed; **R7 retired** | — |
 
 ## 2. Build order
@@ -242,10 +242,30 @@ happened" — the same silent-failure family as F3's empty search.
 Andy pasted Gemini research on Dartmouth co-education into the context
 composer and lost the formatting, including a table.
 
-**Confirmed empirically.** Running his shape through the actual converter, a
-`<thead>/<tbody>` table collapses to a vertical run of orphaned cell values
-("Year / Event / 1971 / Trustees vote / …"). Bold and links survive; tables do
-not.
+**Verified against the STORED note, not a guess.** Querying
+`entity_context_notes` for the saved body shows turndown definitely ran —
+`## The "Dartmouth Plan" Solution`, `- Zero-Sum Fear: …` bullets, and
+turndown's own bracket escaping (`\[5, 13, 17, 18\]`). Headings, bullets,
+links and paragraph structure all survived.
+
+**Two losses:**
+
+1. **Tables** — `Institution\n\nTransition to Coeducation\n\nNote\n\nColumbia\n\n1983…`,
+   a vertical run of orphaned cells.
+2. **Bold — completely.** Not one `**` in the whole body, though the source is
+   full of it.
+
+**Correction to an earlier claim in this document's history:** a first pass
+concluded "bold and links survive; tables don't", from a synthetic fixture
+written with `<b>`. Semantic `<b>` does survive. Andy's real source marks
+emphasis **presentationally** (styled spans), which turndown has no rule for —
+so the fixture proved the wrong thing.
+
+**Class of bug (new): test a converter against captured REAL input, not
+idealised markup.** A hand-written fixture encodes the author's assumption
+about the source; the source is free to disagree. *The tell: a fixture nobody
+copied from a real producer.* Sibling of the 2026-07-26 rule that a guard
+which has never failed on its own bug is unproven.
 
 **Root cause is an asymmetry between the two ends of one pipeline:**
 `turndown` ships **no `<table>` rule**, and `turndown-plugin-gfm` is not a
@@ -254,12 +274,22 @@ dependency — but `remark-gfm` **is** installed and active in
 incapable of producing.** Rich paste IS correctly wired to this composer
 (`EntityView.tsx:547`); the loss is entirely in conversion.
 
-**Fix:** add `turndown-plugin-gfm` and enable its tables, strikethrough and
-task-list rules, so the converter's capabilities match the renderer's.
+**Fix — two rules, not one:**
 
-**Proof:** extend `scripts/verify-rich-paste.mjs` (or add one) with a table
-fixture, proven red/green — the assertion must fail against the current
-converter.
+1. `turndown-plugin-gfm` for tables (plus strikethrough and task lists, so the
+   converter's capability set matches `remark-gfm`'s).
+2. A custom rule mapping **presentational** emphasis — inline
+   `font-weight: bold|600|700|800|900` and `font-style: italic` — onto
+   `strong`/`em`, so bold survives sources that never emit `<b>`.
+
+**Proof:** extend `scripts/verify-rich-paste.mjs` with BOTH a table fixture
+and a styled-span-bold fixture, proven red/green.
+
+**Open:** the styled-span rule is written against the most common
+presentational form (inline `style`). If Gemini uses a CSS *class* instead,
+the class name is unknowable from here and the raw clipboard HTML would need
+capturing. Re-test with the same source after the fix; if bold still flattens,
+that is the next step rather than more guessing.
 
 **Class of bug (new): a lossy converter paired with a capable renderer.** When
 one end of a pipeline is upgraded (remark-gfm on render) the other end must be
