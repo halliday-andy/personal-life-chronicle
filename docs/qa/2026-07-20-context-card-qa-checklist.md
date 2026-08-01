@@ -97,3 +97,14 @@ with styled spans rather than `<b>`. Meanwhile `remark-gfm` IS active in
 produce. Rich paste is correctly wired here (`EntityView.tsx:547`); the loss
 is purely in conversion.
 
+### F11 — RESOLVED by R9 (`e5d4b4c`), verified live 2026-08-01
+
+Andy re-pasted the Dartmouth research: the Ivy-League table renders as a real
+table, every bold run is back, and *The Dartmouth* renders italic.
+
+**Observed but deliberately deferred (post-MVP, Andy's call):** citation
+markers arrive as plain bracketed numerals (`[5, 13, 17, 18]`) — unclickable
+noise. Verified that the clipboard carries **no URLs** for them, so retaining
+links is impossible for this source; the choice is strip-or-keep. Recorded in
+`../plans/2026-07-17-spine-and-share-roadmap.md` §5.
+

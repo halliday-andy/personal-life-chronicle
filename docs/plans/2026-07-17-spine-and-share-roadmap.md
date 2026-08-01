@@ -160,6 +160,23 @@ it to someone.
   draft badges, hollow Future Places, unplaced treatment, the icon-hierarchy
   inversion from Phase-5 finding 5). Schedule after the QA walk, which will
   show exactly where legibility breaks.
+- **Dead citation markers in pasted context — post-MVP** (Andy, 2026-08-01,
+  after R9 restored tables and bold). Research pasted from Gemini arrives with
+  citation markers as plain bracketed numerals — `[5, 13, 17, 18]` — which
+  render as unclickable noise inside otherwise clean prose.
+
+  **Constraint, verified against the stored note:** the clipboard HTML carries
+  **no URLs** for these (`has_md_links: false`), so "retain the links" is not
+  achievable for this source — there is nothing to retain. Turndown already
+  preserves real links when a source includes them (proof case 3), so this is
+  Gemini-shaped, not general.
+
+  The real choice is therefore **strip the numerals on paste** (clean prose,
+  loses the signal that a claim was sourced) or **keep them** (visible
+  provenance, visible clutter). Andy's instinct: "either the links are retained
+  or they're stripped" — i.e. the current half-way state is the worst option.
+  Not scheduled; deliberately deferred past MVP.
+
 - **/memories full-text search** — the deferred Slice-6 half; small and
   self-contained; a natural rider on any nearby session.
 - **Life's Players synthesis + rendering** (Step 11 remainder) — deferred
