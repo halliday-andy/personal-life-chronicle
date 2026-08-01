@@ -36,6 +36,7 @@ change — the best ratio in the set.
 | **F9b** | The exit exists but is labelled "Keep as a draft", which reads as *demote* when re-framing an already-framed trip | contextual label (rule 11, 3rd sighting) | **R2** |
 | **F6** | A trip's destination is immutable at every layer — `frame_trip` has no destination parameter and no sibling supplies one | gated guard relaxation + new `retarget_trip` RPC | **R6** |
 | **F12** | A `##Title` typed on line 1 loses its title to a proper heading inside pasted research — `deriveContextTitle` required a space after the hashes, so the loose form fell to a fallback that only runs when the note has NO heading anywhere | accept both spellings in step 1; first heading wins | **R10 — BUILT `4c657d3`** |
+| **F13** | Editing a long context note jumps the page to the recollections list, editor above the viewport. The textarea was `rows={4}` regardless of content, so opening it collapsed a tall rendered block into a short box and the preserved scroll offset pointed nowhere useful | autoFocus + `scrollIntoView` on the editor; size rows from the note (4–24, computed once) | **R11 — BUILT** |
 | **F10** | Opening the context chip reveals its content outside the visible area — "seemed to be no action". The detail card has **no `max-height` and no internal scroll** (`PinDetailCard.tsx:199`) inside an `h-screen overflow-hidden` container, so a tall card overflows unreachably | give the card a viewport-bounded max height + internal scroll, and scroll a newly opened disclosure into view | **R8** |
 | **F11** | Rich paste **loses tables AND all bold**. Verified against the stored note: headings, bullets and links survived, but the table became a vertical run of cells and there is not one `**` in the body. `turndown` has no `<table>` rule (and `turndown-plugin-gfm` is absent) and no rule for **presentational** emphasis — Gemini marks bold with styled spans, not `<b>`. Meanwhile `remark-gfm` IS active on the render side | `turndown-plugin-gfm` for tables + a custom rule mapping `font-weight:600–900` / `font-style:italic` onto strong/em | **R9** |
 | **F7** | A stop-less round trip's dashed return is coincident with the solid outbound — *is it legible?* | **CLOSED — PASS (Andy, 2026-07-30).** The dash reads clearly over the solid outbound; the one-way arc to Wendy's apartment shows none. No work needed; **R7 retired** | — |
@@ -260,8 +261,11 @@ silently when it does, which is why it went unnoticed.
 end, and scroll a newly opened disclosure into view so opening a chip always
 produces visible feedback.
 
-**Class of bug (candidate, pending confirmation):** *a disclosure whose
-revealed content lands outside the viewport reads as a dead control.* The user
+**Class of bug — CONFIRMED at F13, two sightings:** *a mode switch that
+changes an element's height must keep that element in view.* Replacing
+rendered content with an editor collapses the document; a preserved scroll
+offset then points somewhere meaningless. The F10 form of it — *a disclosure
+whose revealed content lands outside the viewport reads as a dead control* — The user
 does not conclude "it opened somewhere I can't see"; they conclude "nothing
 happened" — the same silent-failure family as F3's empty search.
 

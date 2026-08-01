@@ -32,6 +32,17 @@ PRESENTATIONAL emphasis (Gemini uses styled spans, not `<b>`), while
 context-chip symptom, but the detail card genuinely has no max-height and no
 internal scroll inside an `overflow-hidden` viewport — latent, kept on merit.
 
+**R11 BUILT (F13):** editing a long context note jumped the page — the
+textarea was `rows={4}` regardless of content, so opening the editor collapsed
+a tall rendered block into a short box and the preserved scroll offset landed
+Andy in the recollections list with the editor above the viewport. Fixed with
+autoFocus + `scrollIntoView` and content-sized rows (4–24, computed once).
+
+**CLASS-OF-BUG (new, rule 13): a mode switch that changes an element's height
+must keep that element in view.** Suspected at F10, confirmed at F13 — two
+sightings. Replacing rendered content with an editor collapses the document,
+and a preserved scroll offset then points somewhere meaningless.
+
 **CLASS-OF-BUG (new, rule 12): test a converter against captured REAL input,
 not idealised markup.** A synthetic `<b>` fixture proved bold survived rich
 paste; Andy's actual source marks bold presentationally, and all of it was
