@@ -269,7 +269,7 @@ whose revealed content lands outside the viewport reads as a dead control* — T
 does not conclude "it opened somewhere I can't see"; they conclude "nothing
 happened" — the same silent-failure family as F3's empty search.
 
-### R9 — Pasted tables survive *(F11)*
+### R9 — Pasted tables and bold survive *(F11)* — **BUILT**
 
 Andy pasted Gemini research on Dartmouth co-education into the context
 composer and lost the formatting, including a table.

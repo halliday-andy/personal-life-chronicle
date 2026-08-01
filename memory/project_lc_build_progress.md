@@ -38,6 +38,16 @@ a tall rendered block into a short box and the preserved scroll offset landed
 Andy in the recollections list with the editor above the viewport. Fixed with
 autoFocus + `scrollIntoView` and content-sized rows (4–24, computed once).
 
+**R9 BUILT (F11):** rich paste lost tables AND all bold. Two gaps —
+`turndown` has no `<table>` rule (fixed with `turndown-plugin-gfm`; note
+`remark-gfm` was ALREADY active on render, so the app could display markdown
+it could not produce), and turndown understands only SEMANTIC emphasis while
+Gemini marks bold with styled spans (fixed with a `presentationalEmphasis`
+rule reading inline `font-weight`/`font-style`, scoped to `<span>`). Proof
+10 → 15, red/green. **Known limit:** the rule reads INLINE styles; a source
+using a CSS class will still flatten, and the next step there is capturing
+raw clipboard HTML rather than guessing.
+
 **CLASS-OF-BUG (new, rule 13): a mode switch that changes an element's height
 must keep that element in view.** Suspected at F10, confirmed at F13 — two
 sightings. Replacing rendered content with an editor collapses the document,
