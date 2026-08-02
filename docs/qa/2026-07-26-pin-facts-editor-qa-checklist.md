@@ -66,24 +66,24 @@ without stealing back a fact you corrected.*
 
 ## 4. Scoping
 
-- [ ] A **workplace**, **vacation**, or **Log** pin shows **no** Facts
+- [x] A **workplace**, **vacation**, or **Log** pin shows **no** Facts
       section (residence facts read as nonsense there).
-- [ ] A **Second residence** and a **Short-term stay** DO show it (they
+- [x] A **Second residence** and a **Short-term stay** DO show it (they
       are places you lived).
-- [ ] Re-type a primary → vacation → the section disappears; re-type back
+- [x] Re-type a primary → vacation → the section disappears; re-type back
       → it returns with the values intact.
-- [ ] An **unplaced** ("Decide later") home shows the section normally —
+- [x] An **unplaced** ("Decide later") home shows the section normally —
       home-ness is the type, not the spine slot.
 
 ## 5. Regression spot-checks
 
-- [ ] The panel's **Save** button still saves name/when/type/recollection
+- [x] The panel's **Save** button still saves name/when/type/recollection
       as before, and doesn't disturb the facts you set.
-- [ ] Photos, the hopper, and the related-pins/context chips below are
+- [x] Photos, the hopper, and the related-pins/context chips below are
       unaffected.
-- [ ] Saving a recollection still triggers the normal re-extraction, and
+- [x] Saving a recollection still triggers the normal re-extraction, and
       still leaves your sticky facts alone.
-- [ ] `node scripts/verify-sticky-facts.mjs` passes (26/26).
+- [x] `node scripts/verify-sticky-facts.mjs` passes (26/26).
 
 ## Known gaps (deliberate, flag if they bite)
 

@@ -84,6 +84,51 @@ Because relationships are rows, **the same pair can have several**, which gives
 three rows, not one awkward span. Recurrence is what makes intangibles feel
 unlike cars — and the model already handles it.
 
+### 3.1 Worked example — pets (Andy's question, 2026-08-01)
+
+Andy asked whether there is an entity type for pets or animals. **There is
+not, at either layer**, and the gap is instructive because a pet is the
+cleanest instance of §3's insight.
+
+**Verified:** `entity_type` holds exactly seven values — `person · place ·
+organization · concept · artifact · vehicle · event_series`
+(`schema_v1.sql:111`). Nothing in the schema mentions an animal. The seeded
+relationship types have no `cared_for` or `kept`; the nearest is **`owned`**,
+commented explicitly for *"vehicles, artifacts, and property"* with metadata
+`purchase_price`, `sale_price`, `vin`.
+
+**Every existing option is wrong in a way that would cause damage:**
+
+| Option | Why not |
+|---|---|
+| `person` | puts a dog in Life's Cast, on the person-entity page, and into the relationship-role vocabulary beside a parent |
+| `artifact` | files a living creature with objects, and `owned` reads as a purchase record |
+| `concept` | plainly wrong |
+
+**Why it is the best case for the arc model.** A pet has no span; *having*
+one does — with a beginning and an end that are among the most emotionally
+loaded dates in a life. Cars made the argument; pets make it land.
+
+**It also exposes a gap §3 did not name: the VERB.** `owned` is serviceable
+for a Fiat 128 and cold for a dog. A pet wants something like **`cared_for`**
+— which is the same shape as the missing **stance** relationship the table in
+§3 identifies for philosophies and genres. **Two gaps, one fix**: the entity
+side is largely covered, and it is the *relationship vocabulary* that is thin.
+
+**Cost note, concrete rather than theoretical.** Adding an enum value is
+additive and ungated, but Postgres forbids *using* a new enum value in the
+same transaction that adds it, and `scripts/db-apply.mjs:121–124` wraps every
+migration file in `BEGIN`/`COMMIT`. So **`ALTER TYPE entity_type ADD VALUE
+'animal'` must be its own migration file**, separate from anything that
+references the new value. Cheap, but not a one-liner tacked onto another
+change.
+
+**Open, and NOT decided here:** does an animal entity appear on the globe? in
+Life's Cast? in the Cast's synthesis? Those are the questions that make this
+a design unit rather than a seed row. It also bears on the **emotional
+register** idea recorded as a Track-B input — where a pet's arc *ends* is
+exactly the kind of thing one would later want to assemble by feeling.
+
 ## 4. Andy's decisive objection — the key content of this brainstorm
 
 The other thread proposed anchoring arcs to **spine stops** (owner-asserted, no

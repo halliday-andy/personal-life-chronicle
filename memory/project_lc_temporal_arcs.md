@@ -26,6 +26,25 @@ Because relationships are rows, one pair can have several — **recurrence comes
 free**. Into jazz at twenty, out at thirty, back at fifty is three rows, and
 the gap between them is expressive.
 
+## Worked example — pets (Andy, 2026-08-01)
+
+**There is no entity type for animals** (`entity_type` has seven values, none
+of them an animal) and no `cared_for` relationship — the nearest is `owned`,
+seeded for *"vehicles, artifacts, and property"*. `person` would put a dog in
+Life's Cast; `artifact` files a living creature with objects and reads as a
+purchase record. **A pet is the cleanest instance of the insight above** —
+the animal has no span, *having* it does — and it exposes a gap the
+brainstorm had not named: **the VERB**. `owned` is cold for a pet, and the
+missing `cared_for` is the same shape as the missing *stance* type for
+philosophies. Two gaps, one fix; the entity side is mostly covered and the
+**relationship vocabulary** is what's thin.
+
+**Cost note:** Postgres forbids using a new enum value in the transaction
+that adds it, and `db-apply.mjs` wraps each migration in BEGIN/COMMIT — so
+`ALTER TYPE entity_type ADD VALUE 'animal'` must be **its own file**.
+
+Open, not decided: globe? Life's Cast? synthesis?
+
 ## The finding that matters beyond this feature
 
 The other thread proposed anchoring arcs to spine stops. **Andy rejected it,
