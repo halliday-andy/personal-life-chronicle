@@ -190,6 +190,19 @@ it to someone.
   capture-order listings all accumulate pressure. Not scheduled — but any
   new feature adding another per-feature time workaround should trigger the
   "is it time?" conversation.
+
+  **⚑ THE TRIGGER HAS FIRED (2026-08-01).** The temporal-arcs brainstorm
+  ([`2026-08-01-temporal-arcs-brainstorm.md`](2026-08-01-temporal-arcs-brainstorm.md))
+  wants a time axis that co-scrolls with the spine, and Andy supplied the
+  argument against deferring again: **someone who lived in one place their
+  whole life has ONE stop**, so the spine's temporal resolution is a function
+  of how often they moved — meaning invariant #5's assumption that the
+  residential spine IS the temporal scaffold has a class of user it does not
+  serve. Verified the same day: `started_at`/`ended_at` are **dead columns
+  (zero rows populated)** and the spine holds no year data at all, while trips
+  carry `year_hint` on 5 of 6 — the axis exists for trips and not for the
+  spine. **The fork — a general axis vs. another feature-local workaround —
+  is OPEN and explicitly unsettled.** Recommendation on file: draw both.
 - **Keyboard accessibility — deferred, not dropped** (Andy's call 2026-07-26,
   `memory/feedback_lc_accessibility_deferral.md`). The MVP is for testing, so
   dedicated keyboard work waits; free-with-the-build semantics (real buttons,
