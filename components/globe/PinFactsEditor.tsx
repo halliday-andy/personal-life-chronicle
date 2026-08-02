@@ -124,7 +124,12 @@ export default function PinFactsEditor({
   const fieldCls =
     'mt-1 w-full rounded-lg border border-[var(--glass-border)] bg-black/20 px-2 py-1.5 text-sm text-[var(--ink)] placeholder-[var(--ink-dim)]/70 outline-none focus:border-[var(--ember-soft)] disabled:opacity-60'
 
-  /** The "yours now" marker — why a field will survive the next re-reading. */
+  /** The "yours now" marker — why a field will survive the next re-reading.
+   *  The `title` is a bonus, never the carrier: browsers delay native
+   *  tooltips by about a second (not controllable), never show them on
+   *  touch, and announce them inconsistently. The meaning lives in the
+   *  visible legend below instead — second sighting of this pattern, after
+   *  the Journey stop ordinal hidden in a hover title (2026-07-26). */
   const OwnedMark = ({ field }: { field: string }) =>
     isOwned(field) ? (
       <span
@@ -134,6 +139,11 @@ export default function PinFactsEditor({
         ● yours
       </span>
     ) : null
+
+  // Shown only while at least one field is owner-edited — the legend appears
+  // exactly when there is a marker to explain, and explains all of them at
+  // once rather than once per field.
+  const anyOwned = ['residence_type', 'move_reason', 'residence_detail', 'household'].some(isOwned)
 
   return (
     <div className="mt-4 border-t border-[var(--glass-border)] pt-3">
@@ -156,6 +166,12 @@ export default function PinFactsEditor({
           {refreshing ? 'Re-reading…' : '↻ Refresh from recollection'}
         </button>
       </div>
+
+      {anyOwned && (
+        <p className="mt-1 text-[11px] text-[var(--ink-dim)]/80">
+          <span className="text-[var(--ember-soft)]">● yours</span> — kept as you set it when the chronicle re-reads.
+        </p>
+      )}
 
       <div className="mt-2 grid grid-cols-2 gap-2">
         <div>
