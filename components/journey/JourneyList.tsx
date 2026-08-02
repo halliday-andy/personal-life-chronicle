@@ -20,6 +20,7 @@ import Link from 'next/link'
 import Markdown from '../Markdown'
 import { transitionPhrase, type JourneyNode } from '@/lib/journey/tree'
 import { pinTypeMeta } from '@/lib/globe/pin-types'
+import { isHomeType } from '@/lib/globe/anchor-options'
 
 /** The stop that hosts a pin id — the stop itself, or the stop whose
  *  subtree (anchored markers, any depth) contains it. */
@@ -542,7 +543,10 @@ function StopDetailBody({
     )
   }
 
-  const factChips = detail.facts
+  // Homes only — the same predicate the facts EDITOR uses (F17, 2026-08-01).
+  const showFacts = isHomeType(node.type_code)
+
+  const factChips = detail.facts && showFacts
     ? ([
         detail.facts.residence_type && label(detail.facts.residence_type),
         detail.facts.move_reason &&
@@ -556,7 +560,7 @@ function StopDetailBody({
   // See PinDetailCard: the owner's facts are chips; the chronicle's own
   // reading is separated and labelled, because it cannot be corrected
   // (F15/F16, 2026-08-01).
-  const chronicleReading = detail.facts?.rough_temporal_range ?? null
+  const chronicleReading = showFacts ? (detail.facts?.rough_temporal_range ?? null) : null
 
   return (
     <div className="space-y-3">

@@ -161,11 +161,19 @@ export default function PinDetailCard({
     }
   }, [pin.relationship_id])
 
+  // HOMES ONLY (F17, 2026-08-01). Residence facts read as nonsense on a
+  // vacation or workplace pin — "father and sister" on a castle visit — and
+  // `PinEditPanel:475` has always gated the EDITOR on exactly this predicate.
+  // The reading surfaces never gated at all, so the write side was scoped to
+  // homes and the read side showed them everywhere. Same shared `isHomeType`,
+  // so the two can never drift apart again.
+  const showFacts = isHomeType(pin.type_code)
+
   // The OWNER's facts — every one of them editable on the workbench and
   // sticky once set. `residence_detail` ("The place itself") used to be
   // missing here, so an owner could correct it and never see the result on
   // either reading surface (F15, Andy's Loring AFB walk 2026-08-01).
-  const factChips = facts
+  const factChips = facts && showFacts
     ? ([
         facts.residence_type && label(facts.residence_type),
         facts.move_reason && facts.move_reason !== 'unknown' && `moved: ${label(facts.move_reason)}`,
@@ -180,7 +188,7 @@ export default function PinDetailCard({
   // 2026-08-01: keep it — the school-years phrasing is genuinely the useful
   // time range — but mark plainly whose claim it is. This is the counterpart
   // of the "● yours" marker: never leave the reader guessing.
-  const chronicleReading = facts?.rough_temporal_range ?? null
+  const chronicleReading = showFacts ? (facts?.rough_temporal_range ?? null) : null
 
   // Compact arrival strip (J4, 2026-07-10): identity only — the pin and
   // its surroundings are the subject; one click brings the full card.

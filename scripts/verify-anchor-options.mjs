@@ -29,7 +29,7 @@ import { fileURLToPath } from 'node:url'
 const projectRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 const runnerSrc = `
-import { anchorCandidates, isUnplacedHome } from '${projectRoot}/lib/globe/anchor-options'
+import { anchorCandidates, isUnplacedHome, isHomeType } from '${projectRoot}/lib/globe/anchor-options'
 
 let failures = 0
 const ok = (m: string) => console.log('  \\u2713 ' + m)
@@ -84,6 +84,27 @@ ok('all non-Log marker types share the same home list')
 const flags = pins.filter(isUnplacedHome).map((p) => p.relationship_id)
 if (JSON.stringify(flags) === JSON.stringify(['la'])) ok('isUnplacedHome flags exactly the unsequenced primary')
 else bad('isUnplacedHome wrong: ' + JSON.stringify(flags))
+
+// ── isHomeType is the ONE definition of home-ness (F17, 2026-08-01) ────
+// It gates the facts EDITOR (PinEditPanel) and, since this finding, the
+// fact display on BOTH reading surfaces. Andy found "father and sister" on
+// a castle visit because the write side was scoped to homes and the read
+// side was not. Widening this set silently puts residence facts back on
+// vacation pins, so the membership is pinned here.
+const homes = ['lived_at', 'owned_residence_at', 'lived_briefly_at']
+const notHomes = ['vacationed_at', 'worked_at', 'logged_at', 'traveled_for_work_to', 'wants_to_visit']
+
+homes.every((t) => isHomeType(t))
+  ? ok('home types are home-ish: ' + homes.join(', '))
+  : bad('a home type was rejected: ' + JSON.stringify(homes.filter((t) => !isHomeType(t))))
+
+notHomes.every((t) => !isHomeType(t))
+  ? ok('non-home types are not: ' + notHomes.join(', '))
+  : bad('F17 REGRESSION — residence facts would show on: ' + JSON.stringify(notHomes.filter(isHomeType)))
+
+!isHomeType(null) && !isHomeType(undefined) && !isHomeType('')
+  ? ok('null/undefined/empty are not homes')
+  : bad('an empty type code counted as a home')
 
 console.log(failures === 0 ? '\\nPASS' : '\\nFAIL (' + failures + ')')
 process.exit(failures === 0 ? 0 : 1)
