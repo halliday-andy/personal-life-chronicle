@@ -26,7 +26,7 @@ this checklist (Claude can't reach the authed app). Nothing pure-logic here —
   `:153`, whose own comment records why: *"a four-month stay inside a
   twelve-month home read as an afterthought."* The item's intent (kill the
   opaque word "anchored") is satisfied more thoroughly than it asks.
-- [ ] **Replacement for the above — the surviving label.** The elevated block's
+- [x] **Replacement for the above — the surviving label.** The elevated block's
   header is conditional (`hostIsHome ? 'Places at this stop' : 'Related
   places'`). On a **primary residence** it reads **"PLACES AT THIS STOP"**
   (confirmed in Andy's Tachikawa screenshot); on a **marker** pin it should
@@ -35,35 +35,35 @@ this checklist (Claude can't reach the authed app). Nothing pure-logic here —
 - [x] The **context** chip still leads with the notes (2026-07-20 fix intact):
   note title first (no `##`), leading dot/🔒, trailing ↗; the add link is
   top-right and now says **"＋ Add New Context ↗"**.
-- [ ] Recollections chip still expands in place (▸/▾, markdown); ~~related-pins
+- [x] Recollections chip still expands in place (▸/▾, markdown); ~~related-pins
   chip~~ **the elevated places list** still selects + flies to the pin.
-- [ ] Navigate prev/next along the spine — the open chip **resets** (fresh
+- [x] Navigate prev/next along the spine — the open chip **resets** (fresh
   card), same as before.
 
 ## Add New Context deep-link
 
-- [ ] On a pin card, open the **context** chip → click **"＋ Add New
+- [x] On a pin card, open the **context** chip → click **"＋ Add New
   Context ↗"**. You land on the place's entity page with the **Add-context
   composer already open** and scrolled into view (no second click needed).
-- [ ] Only the **context** composer opens — the person-recollection form (on
+- [x] Only the **context** composer opens — the person-recollection form (on
   person pages) does not.
-- [ ] A normal visit to an entity page (no `?addContext`) opens with the
+- [x] A normal visit to an entity page (no `?addContext`) opens with the
   composer **closed**, as before.
 
 ## Edit panel — now the workbench (the new bit)
 
-- [ ] Open a pin → **Edit**. Below the photos/jots you now see the **same
+- [x] Open a pin → **Edit**. Below the photos/jots you now see the **same
   connections chips**: recollections, context, related pins (whichever exist).
-- [ ] The context chip there shows your notes + **"＋ Add New Context ↗"**;
+- [x] The context chip there shows your notes + **"＋ Add New Context ↗"**;
   the recollections chip lists + expands; **"N related pins"** lists them.
-- [ ] Clicking a **related pin** from the edit panel **exits edit mode** and
+- [x] Clicking a **related pin** from the edit panel **exits edit mode** and
   opens that pin's detail card, flying to it.
-- [ ] The full **jots hopper** (add / check off / delete) is still present and
+- [x] The full **jots hopper** (add / check off / delete) is still present and
   working — there is **no second/duplicate hopper**.
-- [ ] By the recollection editor, the old "research? → add context ↗" link is
+- [x] By the recollection editor, the old "research? → add context ↗" link is
   now a non-clickable hint (**"research goes in Context ↓"**) — no competing
   add-context CTA.
-- [ ] An edit panel for a pin with **no** connections yet shows no empty
+- [x] An edit panel for a pin with **no** connections yet shows no empty
   connections block (just the hint).
 
 ## Drift check (the point of Approach A)

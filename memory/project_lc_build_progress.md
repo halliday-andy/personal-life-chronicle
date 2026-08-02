@@ -48,6 +48,15 @@ rule reading inline `font-weight`/`font-style`, scoped to `<span>`). Proof
 using a CSS class will still flatten, and the next step there is capturing
 raw clipboard HTML rather than guessing.
 
+**R8 BUILT (F10, reproduced 2026-08-01):** opening a chip activated it and
+nothing else happened — the panel opened below the fold in `PinEditPanel`,
+which ALREADY scrolls; the disclosures render after the chip row inside that
+container and nothing brought them into view. Fixed in shared
+`PinConnections` (`scrollIntoView({ block: 'nearest' })` on open) plus a
+bounded height + internal scroll on `PinDetailCard`. **My first diagnosis
+named the wrong component and I closed it as un-reproducible — "cannot
+reproduce" is not "not a bug".**
+
 **CLASS-OF-BUG (new, rule 13): a mode switch that changes an element's height
 must keep that element in view.** Suspected at F10, confirmed at F13 — two
 sightings. Replacing rendered content with an editor collapses the document,

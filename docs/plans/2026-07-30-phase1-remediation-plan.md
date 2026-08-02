@@ -37,7 +37,7 @@ change — the best ratio in the set.
 | **F6** | A trip's destination is immutable at every layer — `frame_trip` has no destination parameter and no sibling supplies one | gated guard relaxation + new `retarget_trip` RPC | **R6** |
 | **F12** | A `##Title` typed on line 1 loses its title to a proper heading inside pasted research — `deriveContextTitle` required a space after the hashes, so the loose form fell to a fallback that only runs when the note has NO heading anywhere | accept both spellings in step 1; first heading wins | **R10 — BUILT `4c657d3`** |
 | **F13** | Editing a long context note jumps the page to the recollections list, editor above the viewport. The textarea was `rows={4}` regardless of content, so opening it collapsed a tall rendered block into a short box and the preserved scroll offset pointed nowhere useful | autoFocus + `scrollIntoView` on the editor; size rows from the note (4–24, computed once) | **R11 — BUILT** |
-| **F10** | Opening the context chip reveals its content outside the visible area — "seemed to be no action". The detail card has **no `max-height` and no internal scroll** (`PinDetailCard.tsx:199`) inside an `h-screen overflow-hidden` container, so a tall card overflows unreachably | give the card a viewport-bounded max height + internal scroll, and scroll a newly opened disclosure into view | **R8** |
+| **F10** | Opening a chip activates it and nothing else visibly happens — the panel opens below the fold and the chip reads as a dead control. **REPRODUCED 2026-08-01 on Zaragoza AB**, in `PinEditPanel` (not the detail card, and not a missing scroll container — the panel already scrolls). Disclosures render after the chip row inside that scroll container and nothing brought them into view | `PinConnections` scrolls its disclosure into view on open; `PinDetailCard` also gains a bounded height + internal scroll, without which it has no scrollable ancestor to act on | **R8 — BUILT** |
 | **F11** | Rich paste **loses tables AND all bold**. Verified against the stored note: headings, bullets and links survived, but the table became a vertical run of cells and there is not one `**` in the body. `turndown` has no `<table>` rule (and `turndown-plugin-gfm` is absent) and no rule for **presentational** emphasis — Gemini marks bold with styled spans, not `<b>`. Meanwhile `remark-gfm` IS active on the render side | `turndown-plugin-gfm` for tables + a custom rule mapping `font-weight:600–900` / `font-style:italic` onto strong/em | **R9** |
 | **F7** | A stop-less round trip's dashed return is coincident with the solid outbound — *is it legible?* | **CLOSED — PASS (Andy, 2026-07-30).** The dash reads clearly over the solid outbound; the one-way arc to Wendy's apartment shows none. No work needed; **R7 retired** | — |
 
@@ -232,7 +232,7 @@ correct themselves on next render.
 (a proper heading still wins when line 1 is prose) passed before and after, so
 the change is bounded to the reported defect.
 
-### R8 — The detail card can be read to the end *(F10)* — **NOT REPRODUCIBLE; latent defect stands**
+### R8 — An opened chip scrolls itself into view *(F10)* — **BUILT**
 
 Andy, 2026-07-30 (context-card walk): clicking the context chip appeared to do
 nothing; the revealed one-line note and "＋ Add New Context ↗" had opened
@@ -246,15 +246,22 @@ Bottom-anchored, it grows upward until its top is clipped with no way to
 scroll to it. Any pin with recollection + facts + context + related pins can
 exceed the viewport.
 
-**Andy could not reproduce it (2026-07-30)** — possibly idiosyncratic to the
-Dartmouth card's particular height. The reported symptom is therefore
-UNCONFIRMED, and the geometry never matched it anyway (that clipping happens
-at the TOP, and the globe page cannot scroll).
+**REPRODUCED 2026-08-01** on Zaragoza AB, with before/after screenshots.
+**The original diagnosis named the wrong component.** This is `PinEditPanel`,
+which already has a scroll container (`overflow-y-auto`, `:283`) — the defect
+is that the disclosures render after the chip row *inside* it, so opening one
+appends content below the current scroll position and nothing scrolls.
 
-**But the latent defect is real and read directly from the code**, so R8 stays
-on the list on its own merit rather than as a fix for an unreproducible
-report. It will bite whenever a pin accumulates enough content — and it fails
-silently when it does, which is why it went unnoticed.
+Fixed in the shared `PinConnections` (ref + `scrollIntoView({ block:
+'nearest' })` on open), so both card surfaces benefit. `PinDetailCard` also
+gained `max-h-[calc(100vh-8rem)] overflow-y-auto` — the latent defect the
+original write-up correctly identified, and a precondition for
+`scrollIntoView` to have anything to act on there.
+
+**Lesson worth keeping: "cannot reproduce" is not "not a bug."** The first
+pass closed this as unconfirmed because the geometry did not match Andy's
+description — and the geometry genuinely did not, because it was a different
+component.
 
 **Fix regardless of which end:** bound the card to the viewport
 (`max-h-[calc(100vh-…)]` + `overflow-y-auto`) so it is always readable to the
