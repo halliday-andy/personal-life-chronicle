@@ -19,7 +19,7 @@
  * Mount with key={relationshipId} so navigating pins resets the open chip.
  */
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { pinTypeMeta } from '@/lib/globe/pin-types'
 import PinHopper from './PinHopper'
 import Markdown from '../Markdown'
@@ -79,6 +79,22 @@ export default function PinConnections({
   hostIsHome?: boolean
 }) {
   const [openChip, setOpenChip] = useState<OpenChip>(null)
+  const disclosureRef = useRef<HTMLDivElement>(null)
+
+  // Opening a chip appends its panel BELOW the chip row, inside a scrollable
+  // host (the edit panel's `overflow-y-auto` column at PinEditPanel.tsx:283,
+  // or the detail card). Nothing scrolled, so on a long pin the panel opened
+  // past the fold and the chip read as a DEAD CONTROL — Andy reproduced this
+  // on Zaragoza AB after it first appeared un-reproducible (F10, raised
+  // 2026-07-30, confirmed with screenshots 2026-08-01).
+  //
+  // Rule 13: a mode switch that changes an element's height must keep that
+  // element in view. `block: 'nearest'` scrolls the minimum needed, so an
+  // already-visible panel is left alone.
+  useEffect(() => {
+    if (!openChip) return
+    disclosureRef.current?.scrollIntoView({ block: 'nearest' })
+  }, [openChip])
   const [dragId, setDragId] = useState<string | null>(null)
   const [order, setOrder] = useState<string[] | null>(null)
   const [orderError, setOrderError] = useState<string | null>(null)
@@ -227,6 +243,7 @@ export default function PinConnections({
         })}
       </div>
 
+      <div ref={disclosureRef}>
       {openChip === 'recollections' && linked.length > 0 && (
         <div className="mt-2">
           <div className="flex items-baseline justify-end">
@@ -323,6 +340,7 @@ export default function PinConnections({
           onCountChange={setStubCount}
         />
       )}
+      </div>
 
     </div>
   )

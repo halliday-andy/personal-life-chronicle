@@ -196,7 +196,12 @@ export default function PinDetailCard({
   }
 
   return (
-    <div className="glass absolute bottom-6 left-1/2 z-30 w-[min(640px,94vw)] -translate-x-1/2 rounded-2xl p-5 text-[var(--ink)]">
+    // Bounded to the viewport with its own scroll (F10, 2026-08-01). The card
+    // is bottom-anchored inside an `overflow-hidden` globe container, so
+    // without this it grows upward until its head is clipped with no way to
+    // reach it — and PinConnections' scroll-into-view has no scrollable
+    // ancestor to act on.
+    <div className="glass absolute bottom-6 left-1/2 z-30 max-h-[calc(100vh-8rem)] w-[min(640px,94vw)] -translate-x-1/2 overflow-y-auto rounded-2xl p-5 text-[var(--ink)]">
       <input
         ref={fileRef}
         type="file"
