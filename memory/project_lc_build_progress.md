@@ -17,8 +17,12 @@ and proven red/green), `0be03e7` R1 modal dismissal (new
 now PRESERVES the armed origin, only a real frame consumes it), `fb8ac78` R2
 the framing panel's exit set (Discard/Keep/Save for drafts, Cancel/Save when
 framed). QA: `docs/qa/2026-07-30-remediation-r1-r3-qa-checklist.md`.
-**R4–R5 deliberately wait for the pin-card reconciliation walk** — that
-checklist covers the very surfaces R4 modifies.
+**R4–R5 UNBLOCKED 2026-08-01** — Andy completed the pin-card reconciliation
+walk, whose only finding was that the "N related pins" chip item is superseded
+(the 07-26 stop-places unit removed the chip the 07-20 rename had renamed).
+**Phase-1 checklists: four of five walked** — trip-from-here (F1–F9),
+context-card (F10–F13), pin-facts editor (F14–F17), pin-card reconciliation.
+Only **stop-places order** remains, plus the data chores.
 
 **Context-card walk added F10–F12.** `4c657d3` **R10 BUILT**: a `##Title` on
 line 1 lost to a proper heading inside pasted research, because

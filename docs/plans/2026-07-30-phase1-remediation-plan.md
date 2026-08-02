@@ -5,8 +5,9 @@
 [trip-from-here checklist](../qa/2026-07-19-trip-from-here-qa-checklist.md).
 **Status:** **R1–R3 BUILT 2026-07-30** (`0be03e7`, `fb8ac78`, `52cf87e`) —
 QA checklist [`../qa/2026-07-30-remediation-r1-r3-qa-checklist.md`](../qa/2026-07-30-remediation-r1-r3-qa-checklist.md),
-Andy's live pass pending. **R4–R5 wait for the pin-card reconciliation walk**
-(that checklist covers the very surfaces R4 modifies). R6 carries the gated
+Andy's live pass pending. **R4–R5 UNBLOCKED 2026-08-01** — Andy completed the pin-card reconciliation
+walk (its only finding was that the "N related pins" chip item is superseded,
+not failing), so the surfaces R4 rewrites have now been proven. R6 carries the gated
 migration. **Sequencing agreed with Andy 2026-07-30 — remediation ships as ONE
 pass BEFORE Loose-Ends L1.** **All four open design questions resolved
 2026-07-30 (§4): R1–R5 are fully specified and unblocked.** R6's migration is
