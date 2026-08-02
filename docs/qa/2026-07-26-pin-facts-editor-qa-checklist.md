@@ -38,11 +38,11 @@ Everything below needs your eye.
       (blur), and gets its own "● yours".
 - [x] Hover "● yours" → the tooltip explains re-reading won't overwrite it.
 - [x] Close the panel and reopen it → your values are still there.
-- [ ] Check the **detail card** and the **Journey** chips → they show the
+- [x] Check the **detail card** and the **Journey** chips → they show the
       value you set, not the old extracted one.
-- [ ] **Clearing counts as setting:** empty a text field → the chip
+- [x] **Clearing counts as setting:** empty a text field → the chip
       disappears, and the field stays marked yours.
-- [ ] Click into a field and click away **without changing anything** →
+- [x] Click into a field and click away **without changing anything** →
       no "● yours" appears. (Looking at a fact must not claim it.)
 
 ## 3. The refresh button — the sticky invariant, live
@@ -50,18 +50,18 @@ Everything below needs your eye.
 *This is the heart of it: prove the chronicle can re-read your text
 without stealing back a fact you corrected.*
 
-- [ ] Edit **one** fact (say household) so it's marked yours; leave the
+- [x] Edit **one** fact (say household) so it's marked yours; leave the
       others alone.
-- [ ] Press **↻ Refresh from recollection** → "Re-reading your
+- [x] Press **↻ Refresh from recollection** → "Re-reading your
       recollection…", then after a few seconds the facts reload with a
       note that anything you edited was left alone.
-- [ ] **Your edited fact is unchanged.** The others may have been refilled
+- [x] **Your edited fact is unchanged.** The others may have been refilled
       from the text.
-- [ ] Now edit the **recollection text** (e.g. fix a name), save, then
+- [x] Now edit the **recollection text** (e.g. fix a name), save, then
       refresh the facts → the untouched facts reflect the new wording.
-- [ ] On a pin with **no recollection yet**, the refresh button is
+- [x] On a pin with **no recollection yet**, the refresh button is
       disabled and its tooltip says to add a recollection first.
-- [ ] Press refresh twice in quick succession → no crash, no duplicate
+- [x] Press refresh twice in quick succession → no crash, no duplicate
       state; the button is disabled while it works.
 
 ## 4. Scoping

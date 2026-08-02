@@ -77,6 +77,22 @@ editable NOWHERE, restating Loring's `when` phrase in the machine's words.
 **Andy's call: keep it, separate it** — it now sits under its own label,
 *"The chronicle's reading · not yours to edit"*.
 
+**R14 BUILT (F17):** residence facts rendered on NON-HOME pins — "father and
+sister" on a castle visit. The facts EDITOR always gated on `isHomeType`
+(`PinEditPanel:475`); the two READING surfaces never gated at all. **The write
+side was scoped and the read side was not** — an asymmetry, not a regression;
+R13 merely made it conspicuous. Both reading surfaces now use the same shared
+predicate. `verify-anchor-options` gained the coverage of `isHomeType` it
+never had, pinning HOME_TYPES membership so widening it can't silently put
+residence facts back on vacation pins.
+
+**PRINCIPLE (rule 16): when a rule gates writing, check it also gates
+reading.** Three sightings now of the same shape — the pin-card
+reconciliation drift (edit panel showed LESS than the card), F15
+(`residence_detail` editable but rendered nowhere), and F17 (facts scoped on
+write, unscoped on read). *The tell: a predicate imported by a reading surface
+but used only for something incidental.*
+
 **PRINCIPLE (rule 15): show whose claim it is.** The "● yours" marker (R12)
 and "the chronicle's reading" (R13) are counterparts — owner-asserted and
 machine-read must never render as peers. *In an app that stores biography,
