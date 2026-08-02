@@ -48,7 +48,7 @@ rule reading inline `font-weight`/`font-style`, scoped to `<span>`). Proof
 using a CSS class will still flatten, and the next step there is capturing
 raw clipboard HTML rather than guessing.
 
-**R8 BUILT (F10, reproduced 2026-08-01):** opening a chip activated it and
+**R8 BUILT + VERIFIED LIVE on Zaragoza AB (F10, reproduced 2026-08-01):** opening a chip activated it and
 nothing else happened — the panel opened below the fold in `PinEditPanel`,
 which ALREADY scrolls; the disclosures render after the chip row inside that
 container and nothing brought them into view. Fixed in shared

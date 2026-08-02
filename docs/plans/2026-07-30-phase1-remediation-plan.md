@@ -37,7 +37,7 @@ change — the best ratio in the set.
 | **F6** | A trip's destination is immutable at every layer — `frame_trip` has no destination parameter and no sibling supplies one | gated guard relaxation + new `retarget_trip` RPC | **R6** |
 | **F12** | A `##Title` typed on line 1 loses its title to a proper heading inside pasted research — `deriveContextTitle` required a space after the hashes, so the loose form fell to a fallback that only runs when the note has NO heading anywhere | accept both spellings in step 1; first heading wins | **R10 — BUILT `4c657d3`** |
 | **F13** | Editing a long context note jumps the page to the recollections list, editor above the viewport. The textarea was `rows={4}` regardless of content, so opening it collapsed a tall rendered block into a short box and the preserved scroll offset pointed nowhere useful | autoFocus + `scrollIntoView` on the editor; size rows from the note (4–24, computed once) | **R11 — BUILT** |
-| **F10** | Opening a chip activates it and nothing else visibly happens — the panel opens below the fold and the chip reads as a dead control. **REPRODUCED 2026-08-01 on Zaragoza AB**, in `PinEditPanel` (not the detail card, and not a missing scroll container — the panel already scrolls). Disclosures render after the chip row inside that scroll container and nothing brought them into view | `PinConnections` scrolls its disclosure into view on open; `PinDetailCard` also gains a bounded height + internal scroll, without which it has no scrollable ancestor to act on | **R8 — BUILT** |
+| **F10** | Opening a chip activates it and nothing else visibly happens — the panel opens below the fold and the chip reads as a dead control. **REPRODUCED 2026-08-01 on Zaragoza AB**, in `PinEditPanel` (not the detail card, and not a missing scroll container — the panel already scrolls). Disclosures render after the chip row inside that scroll container and nothing brought them into view | `PinConnections` scrolls its disclosure into view on open; `PinDetailCard` also gains a bounded height + internal scroll, without which it has no scrollable ancestor to act on | **R8 — BUILT + VERIFIED** |
 | **F11** | Rich paste **loses tables AND all bold**. Verified against the stored note: headings, bullets and links survived, but the table became a vertical run of cells and there is not one `**` in the body. `turndown` has no `<table>` rule (and `turndown-plugin-gfm` is absent) and no rule for **presentational** emphasis — Gemini marks bold with styled spans, not `<b>`. Meanwhile `remark-gfm` IS active on the render side | `turndown-plugin-gfm` for tables + a custom rule mapping `font-weight:600–900` / `font-style:italic` onto strong/em | **R9** |
 | **F7** | A stop-less round trip's dashed return is coincident with the solid outbound — *is it legible?* | **CLOSED — PASS (Andy, 2026-07-30).** The dash reads clearly over the solid outbound; the one-way arc to Wendy's apartment shows none. No work needed; **R7 retired** | — |
 
@@ -232,7 +232,7 @@ correct themselves on next render.
 (a proper heading still wins when line 1 is prose) passed before and after, so
 the change is bounded to the reported defect.
 
-### R8 — An opened chip scrolls itself into view *(F10)* — **BUILT**
+### R8 — An opened chip scrolls itself into view *(F10)* — **BUILT + VERIFIED LIVE (Andy, Zaragoza AB, 2026-08-01)**
 
 Andy, 2026-07-30 (context-card walk): clicking the context chip appeared to do
 nothing; the revealed one-line note and "＋ Add New Context ↗" had opened

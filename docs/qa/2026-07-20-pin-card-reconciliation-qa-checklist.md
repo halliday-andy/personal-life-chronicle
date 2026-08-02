@@ -68,6 +68,6 @@ this checklist (Claude can't reach the authed app). Nothing pure-logic here —
 
 ## Drift check (the point of Approach A)
 
-- [ ] The recollections / context / related-pins lists look **identical** on
+- [x] The recollections / context / related-pins lists look **identical** on
   the detail card and the edit panel (same component) — confirm one obvious
   case (e.g. the context note title renders the same in both).
