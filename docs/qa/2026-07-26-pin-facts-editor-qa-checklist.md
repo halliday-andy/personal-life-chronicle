@@ -36,8 +36,8 @@ Everything below needs your eye.
       a "● yours" mark appears next to that field's label.
 - [x] Type in **Who lived there with you** → it saves when you click away
       (blur), and gets its own "● yours".
-- [ ] Hover "● yours" → the tooltip explains re-reading won't overwrite it.
-- [ ] Close the panel and reopen it → your values are still there.
+- [x] Hover "● yours" → the tooltip explains re-reading won't overwrite it.
+- [x] Close the panel and reopen it → your values are still there.
 - [ ] Check the **detail card** and the **Journey** chips → they show the
       value you set, not the old extracted one.
 - [ ] **Clearing counts as setting:** empty a text field → the chip

@@ -68,6 +68,21 @@ hidden the same way on 2026-07-26 and promoted to visible text then, so the
 precedent already existed and this is the pattern repeating rather than a new
 judgement call.
 
+**R13 BUILT (F15/F16, Andy's Loring AFB walk):** `residence_detail` was
+missing from the fact chips on BOTH reading surfaces *and* from the client
+types — the omission fossilised, though the API returned it all along, so an
+owner could correct "The place itself" and never see it. And
+`rough_temporal_range` rendered as a peer of editable facts while being
+editable NOWHERE, restating Loring's `when` phrase in the machine's words.
+**Andy's call: keep it, separate it** — it now sits under its own label,
+*"The chronicle's reading · not yours to edit"*.
+
+**PRINCIPLE (rule 15): show whose claim it is.** The "● yours" marker (R12)
+and "the chronicle's reading" (R13) are counterparts — owner-asserted and
+machine-read must never render as peers. *In an app that stores biography,
+whose sentence it is is not decoration.* Sibling of the 07-26 rule that
+placeholder text must be unmistakably illustrative.
+
 **CLASS-OF-BUG (new, rule 13): a mode switch that changes an element's height
 must keep that element in view.** Suspected at F10, confirmed at F13 — two
 sightings. Replacing rendered content with an editor collapses the document,
