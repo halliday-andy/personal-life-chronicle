@@ -17,24 +17,24 @@ Everything below needs your eye.
 
 ## 1. It's there, and it reads right
 
-- [ ] Open a **primary residence** pin → **Edit** → below the
+- [x] Open a **primary residence** pin → **Edit** → below the
       recollection (above the photos) there's a **Facts** section headed
       "read from your recollection, yours to correct".
-- [ ] Two dropdowns — **Kind of place**, **Why you moved** — and two text
+- [x] Two dropdowns — **Kind of place**, **Why you moved** — and two text
       fields — **The place itself**, **Who lived there with you**.
       `[taste]` the density against the rest of the panel.
-- [ ] Existing extracted values are **pre-filled** (try Lockbourne or
+- [x] Existing extracted values are **pre-filled** (try Lockbourne or
       Mt. Snow, which have real extracted facts).
-- [ ] The dropdown labels read as English ("Caring for family",
+- [x] The dropdown labels read as English ("Caring for family",
       "Military posting"), not as codes.
-- [ ] A pin whose facts were never extracted shows the section with
+- [x] A pin whose facts were never extracted shows the section with
       everything on "— not set —" (it should NOT be missing).
 
 ## 2. Editing sticks
 
-- [ ] Change **Why you moved** → it saves immediately (no Save press) and
+- [x] Change **Why you moved** → it saves immediately (no Save press) and
       a "● yours" mark appears next to that field's label.
-- [ ] Type in **Who lived there with you** → it saves when you click away
+- [x] Type in **Who lived there with you** → it saves when you click away
       (blur), and gets its own "● yours".
 - [ ] Hover "● yours" → the tooltip explains re-reading won't overwrite it.
 - [ ] Close the panel and reopen it → your values are still there.
@@ -93,6 +93,6 @@ without stealing back a fact you corrected.*
   chips de-underscore the raw code ("family care") while the editor shows
   a curated label ("Caring for family"). One line to unify — Andy's call
   on which wording wins.
-- **Refresh waits a fixed ~3.5s** for the async re-reading before
+- **Refresh waits a fixed \~3.5s** for the async re-reading before
   re-checking. If extraction is slow you'll see "still working"; reopen
   the pin to see the result. No live progress.

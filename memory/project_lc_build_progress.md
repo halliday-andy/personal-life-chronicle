@@ -57,6 +57,17 @@ bounded height + internal scroll on `PinDetailCard`. **My first diagnosis
 named the wrong component and I closed it as un-reproducible — "cannot
 reproduce" is not "not a bug".**
 
+**R12 BUILT (F14):** the "● yours" sticky-fact marker explained itself only
+through a native `title`, whose ~1s reveal delay is the BROWSER's and is not
+controllable; it also never fires on touch and is announced inconsistently.
+Promoted to a visible legend under the Facts heading, shown only while a
+marker exists. **CLASS-OF-BUG (rule 14): meaning carried only by a native
+`title` tooltip is effectively hidden.** *The tell: an explanation that exists
+only in a `title` attribute.* SECOND sighting — the Journey stop ordinal was
+hidden the same way on 2026-07-26 and promoted to visible text then, so the
+precedent already existed and this is the pattern repeating rather than a new
+judgement call.
+
 **CLASS-OF-BUG (new, rule 13): a mode switch that changes an element's height
 must keep that element in view.** Suspected at F10, confirmed at F13 — two
 sightings. Replacing rendered content with an editor collapses the document,
