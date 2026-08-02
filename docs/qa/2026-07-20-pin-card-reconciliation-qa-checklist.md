@@ -14,16 +14,29 @@ this checklist (Claude can't reach the authed app). Nothing pure-logic here —
 
 ## Detail card (read view) — should be UNCHANGED except the rename
 
-- [ ] Open a pin with recollections/context/related pins. The count-chip row
+- [x] Open a pin with recollections/context/related pins. The count-chip row
   looks and behaves as before: single-open (tapping one closes another), the
   jot chip always present.
-- [ ] The old **"N anchored"** chip now reads **"N related pin"** (one) /
-  **"N related pins"** (many).
-- [ ] The **context** chip still leads with the notes (2026-07-20 fix intact):
+- [~] ~~The old **"N anchored"** chip now reads **"N related pin"** (one) /
+  **"N related pins"** (many).~~ **SUPERSEDED — not testable, and not a
+  failure** (Andy, 2026-08-01). The rename shipped on 07-20; the **stop-places
+  unit on 07-26 then removed the chip entirely**. `PinConnections.tsx:134–145`
+  now builds exactly three chips — recollections, context, hopper — and the
+  related pins were promoted out of the chip row into the elevated block at
+  `:153`, whose own comment records why: *"a four-month stay inside a
+  twelve-month home read as an afterthought."* The item's intent (kill the
+  opaque word "anchored") is satisfied more thoroughly than it asks.
+- [ ] **Replacement for the above — the surviving label.** The elevated block's
+  header is conditional (`hostIsHome ? 'Places at this stop' : 'Related
+  places'`). On a **primary residence** it reads **"PLACES AT THIS STOP"**
+  (confirmed in Andy's Tachikawa screenshot); on a **marker** pin it should
+  read **"Related places"**. Check the marker case — it is the last descendant
+  of the "anchored" wording.
+- [x] The **context** chip still leads with the notes (2026-07-20 fix intact):
   note title first (no `##`), leading dot/🔒, trailing ↗; the add link is
   top-right and now says **"＋ Add New Context ↗"**.
-- [ ] Recollections chip still expands in place (▸/▾, markdown); related-pins
-  chip still selects + flies to the pin.
+- [ ] Recollections chip still expands in place (▸/▾, markdown); ~~related-pins
+  chip~~ **the elevated places list** still selects + flies to the pin.
 - [ ] Navigate prev/next along the spine — the open chip **resets** (fresh
   card), same as before.
 

@@ -79,6 +79,16 @@ happens otherwise, and it has now bitten in this codebase repeatedly.
 Empty state carries the *invitation* (variant 2), so a marker pin with no trip
 still offers framing — inside the disclosure, not as chrome.
 
+### Note for build — the chip row is already variant-aware
+
+`PinConnections` builds its chips from a single array
+(`PinConnections.tsx:134–145`), currently **recollections · context · hopper**,
+and `variant="panel"` renders a subset. A Trips chip joins that array rather
+than being bolted on beside it. Note also that the related-pins chip **no
+longer exists** — the 2026-07-26 stop-places unit promoted it out of the row
+into an elevated block; do not reintroduce a count chip for something that
+earned its way out of one.
+
 ### Non-negotiable at build time
 
 **Namespace the sibling key `trips-${relationshipId}`.** `PinTrips` becomes a
