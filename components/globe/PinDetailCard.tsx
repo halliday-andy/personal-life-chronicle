@@ -20,7 +20,13 @@ import Markdown from '../Markdown'
 export interface PinFacts {
   residence_type: string | null
   move_reason: string | null
+  /** "The place itself" — editable on the workbench. Was absent from this
+   *  type as well as from the render, so the omission was fossilised: the
+   *  API had been returning it all along (F15, 2026-08-01). */
+  residence_detail: string | null
   household_composition: string | null
+  /** Extraction artifact — read from the recollection, editable NOWHERE.
+   *  Rendered separately and labelled, never among the owner's facts. */
   rough_temporal_range: string | null
 }
 
@@ -155,14 +161,26 @@ export default function PinDetailCard({
     }
   }, [pin.relationship_id])
 
+  // The OWNER's facts — every one of them editable on the workbench and
+  // sticky once set. `residence_detail` ("The place itself") used to be
+  // missing here, so an owner could correct it and never see the result on
+  // either reading surface (F15, Andy's Loring AFB walk 2026-08-01).
   const factChips = facts
     ? ([
         facts.residence_type && label(facts.residence_type),
         facts.move_reason && facts.move_reason !== 'unknown' && `moved: ${label(facts.move_reason)}`,
+        facts.residence_detail,
         facts.household_composition,
-        facts.rough_temporal_range,
       ].filter(Boolean) as string[])
     : []
+
+  // The CHRONICLE's reading — extracted, not editable anywhere. It used to
+  // sit among the chips above, indistinguishable from the owner's own facts,
+  // so Andy went looking for a field that does not exist (F16). Andy's call
+  // 2026-08-01: keep it — the school-years phrasing is genuinely the useful
+  // time range — but mark plainly whose claim it is. This is the counterpart
+  // of the "● yours" marker: never leave the reader guessing.
+  const chronicleReading = facts?.rough_temporal_range ?? null
 
   // Compact arrival strip (J4, 2026-07-10): identity only — the pin and
   // its surroundings are the subject; one click brings the full card.
@@ -364,6 +382,14 @@ export default function PinDetailCard({
                   {c}
                 </span>
               ))}
+            </div>
+          )}
+          {chronicleReading && (
+            <div className="mt-2">
+              <p className="text-[10px] uppercase tracking-wide text-[var(--ink-dim)]/60">
+                The chronicle&apos;s reading · not yours to edit
+              </p>
+              <p className="mt-0.5 text-xs italic text-[var(--ink-dim)]/80">{chronicleReading}</p>
             </div>
           )}
           {/* A pin's connected collections — recollections, context, related

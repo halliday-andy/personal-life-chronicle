@@ -37,7 +37,10 @@ interface StopDetail {
   facts: {
     residence_type: string | null
     move_reason: string | null
+    /** "The place itself" — editable; see PinFacts (F15, 2026-08-01). */
+    residence_detail: string | null
     household_composition: string | null
+    /** Extraction artifact — not editable anywhere; rendered separately. */
     rough_temporal_range: string | null
   } | null
   linked: LinkedRecollection[]
@@ -545,10 +548,15 @@ function StopDetailBody({
         detail.facts.move_reason &&
           detail.facts.move_reason !== 'unknown' &&
           `moved: ${label(detail.facts.move_reason)}`,
+        detail.facts.residence_detail,
         detail.facts.household_composition && `with ${detail.facts.household_composition}`,
-        detail.facts.rough_temporal_range,
       ].filter(Boolean) as string[])
     : []
+
+  // See PinDetailCard: the owner's facts are chips; the chronicle's own
+  // reading is separated and labelled, because it cannot be corrected
+  // (F15/F16, 2026-08-01).
+  const chronicleReading = detail.facts?.rough_temporal_range ?? null
 
   return (
     <div className="space-y-3">
@@ -583,6 +591,15 @@ function StopDetailBody({
               {c}
             </span>
           ))}
+        </div>
+      )}
+
+      {chronicleReading && (
+        <div>
+          <p className="text-[10px] uppercase tracking-wide text-stone-400">
+            The chronicle&apos;s reading · not yours to edit
+          </p>
+          <p className="mt-0.5 text-xs italic text-stone-500">{chronicleReading}</p>
         </div>
       )}
 
