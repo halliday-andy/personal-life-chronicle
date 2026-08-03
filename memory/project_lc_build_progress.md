@@ -138,6 +138,18 @@ reorder row steals the gesture.** Links and images drag by default; an `<a>`
 inside a `draggable` `<li>` wins over its parent. *The tell: reorder that
 works only when you grab the row's whitespace.*
 
+**R17 BUILT (F20):** the chronicle's three line tiers were coloured for
+NOCTURNE and hardcoded at layer creation, so on the daylight basemap a Log's
+dashed tether all but vanished on greens and beiges. The 2026-07-18 regime
+swaps the canvas and re-installs the layers, but nothing re-tuned what was
+drawn on it. `chronicleLinePaint(regime)` now lives beside the regime logic.
+**Blur was the worst offender — a soft edge reads as GLOW on dark and SMUDGE
+on light**, so daylight drops it, raises opacity, and darkens hues. Identity
+preserved across regimes; only values change. Proof gained four assertions
+aimed at the actual failure mode: every tier defined in both regimes, daylight
+never fainter, daylight never blurrier, tiers mutually distinct. **Another
+instance of rule 16's shape.**
+
 **PRINCIPLE (rule 16): when a rule gates writing, check it also gates
 reading.** Three sightings now of the same shape — the pin-card
 reconciliation drift (edit panel showed LESS than the card), F15
