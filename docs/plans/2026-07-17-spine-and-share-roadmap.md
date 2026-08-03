@@ -198,11 +198,38 @@ it to someone.
   you zoom in. Implementable against the existing DOM markers (repositionable
   divs) with a throttled recompute on zoom/move.
 
-  **Design constraint that must not be lost:** a displaced pin is briefly
-  *lying about where a place is*. In an app this careful about not
-  fabricating, displacement has to be **visibly** a displacement — a hairline
-  back to true position, or a treatment reading as "these are crowded" —
-  otherwise the globe quietly misrepresents geography.
+  **⚑ REFERENCE IMPLEMENTATION — the Codex build already does this**
+  (Andy, 2026-08-01, three screenshots across zoom levels; the sibling
+  implementation from `memory/project_lc_dual_track_final_review.md`). Two
+  numbered pins, "12" and "8", ~10km apart near Tokyo:
+
+  | Zoom | Behaviour |
+  |---|---|
+  | City (Akishima/Tokorozawa) | separated naturally; 12 north-west of 8 |
+  | Regional (Kanto) | still separated, **12 still left of 8** |
+  | Country (Japan) | **adjacent, not stacked** — true positions are a few px apart, yet both stay legible and 12 is still left of 8 |
+
+  So displacement with preserved bearing is not theoretical — it is running,
+  and Andy's verdict is that it "doesn't obscure or dilute the comprehension
+  of the important message, which is that there are pins here to be zoomed in
+  on and reviewed."
+
+  **That last sentence resolves the truthfulness worry** recorded here
+  earlier — *"a displaced pin is briefly lying about where a place is"*.
+  **At low zoom the marker is ALREADY a claim about a region, not a point:** a
+  ~45px badge covers roughly a hundred kilometres at country zoom, so
+  displacement adds no imprecision the marker size has not already added. And
+  displacement operates only where markers overlap, which is exactly the zoom
+  range where no precision is being claimed — decaying to zero before reaching
+  the range where a pin does read as a coordinate.
+
+  **Consequence: the "visibly displaced" treatment (a hairline back to true
+  position) is probably unnecessary**, which makes this materially simpler
+  than first recorded. Worth confirming during design rather than assuming.
+
+  *Not adopted, just observed:* the Codex pins are numbered badges (stop
+  ordinals, plus "F2" for a future place) rather than coloured dots. Different
+  visual language; Andy pointed only at the sizing and separation behaviour.
 
   *Related, not a code issue:* Andy has **three pins named variations of
   "Coronet Peak"** within a few hundred metres (the residence, "Year 2 Coronet
