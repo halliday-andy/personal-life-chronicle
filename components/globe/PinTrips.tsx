@@ -48,6 +48,12 @@ export interface TripCardContext {
   isHomeBase: boolean
   /** Future Places read "Been there now?" rather than "was this a journey?" */
   isFuturePlace: boolean
+  /** Reveal this pin's trips the moment the card opens, without a click.
+   *  TRUE ONLY FOR A TRIP'S DESTINATION (Andy, 2026-08-01): landing on the
+   *  place a trip went TO, the trip is the point of the pin, and it usually
+   *  has exactly one. Deliberately NOT true for an origin — a home with many
+   *  departures is the case F21 just stopped from burying the map. */
+  autoOpen: boolean
   onStartTripFromHere: () => void
   onFrame: (trip: TripRow) => void
   onRoute: (tripId: string) => void
@@ -90,6 +96,12 @@ export default function PinTrips({
   const openChangeRef = useRef(ctx.onOpenChange)
   useEffect(() => { openChangeRef.current = ctx.onOpenChange })
   useEffect(() => { openChangeRef.current?.(open) }, [open])
+  // Report CLOSED on unmount, so deselecting a pin cannot leave the globe's
+  // route gate stuck open. This has to live here rather than as a reset in
+  // GlobeView: child effects run BEFORE parent effects, so a parent reset
+  // keyed on selection would fire after this component reported itself open
+  // and silently clobber an auto-opened panel.
+  useEffect(() => () => { openChangeRef.current?.(false) }, [])
 
   // Rendered even while closed, hidden by CSS rather than unmounted, so the
   // trips' own PinHoppers keep their counts live and do not refetch on every

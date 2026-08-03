@@ -363,3 +363,32 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .mapboxgl-canvas { transition: none; }
 }
+
+/* Prominent scrollbar for the globe's glass surfaces (Andy, 2026-08-01).
+   The detail card is now height-capped and scrolls internally, so the
+   scrollbar stops being decoration and becomes the affordance telling you
+   there is more below — a default thin dark bar on a dark glass panel is
+   effectively invisible. Ember-tinted so it reads as chrome rather than as
+   browser furniture. */
+.globe-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(244, 177, 74, 0.55) transparent;
+}
+.globe-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+.globe-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.globe-scroll::-webkit-scrollbar-thumb {
+  background: rgba(244, 177, 74, 0.5);
+  background-clip: content-box;
+  border: 2px solid transparent;
+  border-radius: 8px;
+}
+.globe-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(244, 177, 74, 0.85);
+  background-clip: content-box;
+  border: 2px solid transparent;
+}
+

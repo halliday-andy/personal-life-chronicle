@@ -84,7 +84,10 @@ export default function PinConnections({
    *  inspects it — it only sizes the chip and hands it to `PinTrips`. */
   tripCtx?: TripCardContext
 }) {
-  const [openChip, setOpenChip] = useState<OpenChip>(null)
+  // Seeded, not forced: keyed by pin, so this re-evaluates on every
+  // selection and the user can still close it. Only a trip's DESTINATION
+  // opens itself (see TripCardContext.autoOpen).
+  const [openChip, setOpenChip] = useState<OpenChip>(tripCtx?.autoOpen ? 'trips' : null)
   const [tripCount, setTripCount] = useState(0)
   const disclosureRef = useRef<HTMLDivElement>(null)
 

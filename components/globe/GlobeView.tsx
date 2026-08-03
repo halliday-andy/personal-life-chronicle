@@ -919,11 +919,6 @@ export default function GlobeView() {
     }
   }, [pins, trips, ready, selectedId, editMode, refining, selectPin])
 
-  // A new selection closes the trips gate: PinConnections is keyed by pin so
-  // its chip resets on switch, and a deselect unmounts it entirely without
-  // reporting closed. Resetting here covers both.
-  useEffect(() => { setTripsPanelOpen(false) }, [selectedId])
-
   // Tether visibility (item 3): default = none (bare spine); a hovered pin
   // transiently reveals its associated side lines — a primary shows the
   // tethers of markers anchored to it; a marker shows its own. Kept in its
@@ -1831,6 +1826,9 @@ export default function GlobeView() {
           isHome: sel.type_code === SPINE_CODE || sel.type_code === null,
           isHomeBase: homeBaseId === selectedId,
           isFuturePlace: sel.type_code === 'wants_to_visit',
+          // Destinations only — arriving at the place a trip went TO, the
+          // trip IS the pin's point. An origin may have many departures.
+          autoOpen: mine.some((t) => t.destination_relationship_id === selectedId),
           onStartTripFromHere: () => {
             setTripFromHere({ relationshipId: sel.relationship_id, name: sel.name })
             deselect()

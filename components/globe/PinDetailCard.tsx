@@ -232,7 +232,7 @@ export default function PinDetailCard({
     // without this it grows upward until its head is clipped with no way to
     // reach it — and PinConnections' scroll-into-view has no scrollable
     // ancestor to act on.
-    <div className="glass absolute bottom-6 left-1/2 z-30 max-h-[calc(100vh-8rem)] w-[min(640px,94vw)] -translate-x-1/2 overflow-y-auto rounded-2xl p-5 text-[var(--ink)]">
+    <div className="glass globe-scroll absolute bottom-6 left-1/2 z-30 max-h-[55vh] w-[min(640px,94vw)] -translate-x-1/2 overflow-y-auto rounded-2xl p-5 text-[var(--ink)]">
       <input
         ref={fileRef}
         type="file"

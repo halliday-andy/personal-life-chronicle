@@ -284,7 +284,7 @@ export default function PinEditPanel({
           the fixed-height panel — flex children with overflow may legally
           collapse to zero). The BODY scrolls as a whole; every section
           keeps its natural height; Save/Delete stay pinned beneath. */}
-      <div className="-mr-2 mt-1 min-h-0 flex-1 overflow-y-auto pr-2">
+      <div className="globe-scroll -mr-2 mt-1 min-h-0 flex-1 overflow-y-auto pr-2">
 
       {/* Reorder applies only to the residential spine. The selector is the
           authoritative control (jump to any slot in one write); Earlier/Later
