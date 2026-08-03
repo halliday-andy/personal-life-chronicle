@@ -3,7 +3,7 @@
 App: **http://localhost:3001/globe** (sign in first).
 
 Covers the first three units of
-[`../plans/2026-07-30-phase1-remediation-plan.md`](../plans/2026-07-30-phase1-remediation-plan.md):
+`../plans/2026-07-30-phase1-remediation-plan.md`:
 modal dismissal (R1/F9a), the framing panel's exits (R2/F9b), and pin search
 (R3/F3). **R4–R6 are not built** — the trip strip is still in globe chrome, so
 F1's occlusion is still live and expected.
@@ -12,14 +12,14 @@ F1's occlusion is still live and expected.
 
 ## 1. Search finds pins by word *(R3 / F3)*
 
-- [ ] Type **`Mount Snow Chalet`** into the find box → **My Mt. Snow Chalet**
+- [x] Type **`Mount Snow Chalet`** into the find box → **My Mt. Snow Chalet**
       appears under "Your pins". *This is the exact query that returned
       nothing before.*
-- [ ] Type **`chalet snow`** (words reversed) → still found.
-- [ ] Type **`Mt Snow Chal`** (partial last word) → still found.
-- [ ] Type **`Mount Snow Castle`** → **not** found. An unmatched word must
+- [x] Type **`chalet snow`** (words reversed) → still found.
+- [x] Type **`Mt Snow Chal`** (partial last word) → still found.
+- [x] Type **`Mount Snow Castle`** → **not** found. An unmatched word must
       reject the pin; this is stricter recall, not fuzzy search.
-- [ ] A single-word query still behaves as before — `snow` lists the three
+- [x] A single-word query still behaves as before — `snow` lists the three
       Mt. Snow pins, `peak` lists the Coronet Peak ones.
 
 **Watch for:** results that feel *too* loose. The rule is that every word you
@@ -28,11 +28,11 @@ that's a real finding.
 
 ## 2. Search says when it finds nothing *(R3 / F3)*
 
-- [ ] Type a place you have **not** pinned (e.g. `Reykjavik`) → the **"Your
+- [x] Type a place you have **not** pinned (e.g. `Reykjavik`) → the **"Your
       pins"** group still appears, reading **"None of your pins match — this
       would be a new place."**
-- [ ] Type something matching a pin → the message is replaced by the results.
-- [ ] Confirm this reads as *useful* rather than noisy. It is deliberate: a
+- [x] Type something matching a pin → the message is replaced by the results.
+- [x] Confirm this reads as *useful* rather than noisy. It is deliberate: a
       silent empty group was indistinguishable from the occlusion bug and the
       query-append trap, and "none match" also warns you before creating a
       duplicate.
@@ -42,8 +42,14 @@ it can be shown only when the query has no Places results either.
 
 ## 3. Both modals can be dismissed *(R1 / F9a)*
 
-- [ ] Open the **pin placement** modal (click the globe) → press **Escape** →
-      it closes, nothing is created.
+- [ ] **The draft bar first.** Click the globe → the *"Drag the pin to the
+      exact spot"* bar appears with Cancel / **Add this place**. Press
+      **Escape** → the draft is discarded. *(This surface had no Escape until
+      F25, 2026-08-01 — the original wording below sent Andy here by mistake,
+      since clicking the globe does NOT open the modal.)*
+- [ ] **Then the modal.** From the draft bar click **Add this place** → the
+      pin placement modal opens → press **Escape** → it closes, nothing is
+      created.
 - [ ] Open it again → click the **backdrop** → closes. (This already worked;
       confirm it still does.)
 - [ ] Open the **framing panel** (Edit frame on any trip) → press **Escape** →

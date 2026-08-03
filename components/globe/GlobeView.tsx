@@ -26,6 +26,7 @@ import { type TripCardContext } from './PinTrips'
 import { useUiChrome } from '../UiChromeContext'
 import { clusterFrame } from '@/lib/globe/cluster-frame'
 import { nextRegime, styleForRegime, chronicleLinePaint, NOCTURNE_STYLE, type GlobeRegime } from '@/lib/globe/style-regime'
+import { useEscapeKey } from '@/lib/ui/use-escape-key'
 import { buildCreatePinPayload } from '@/lib/globe/create-pin-payload'
 import { suggestTripOrigin } from '@/lib/globe/trip-origin'
 import type { ProximityHint } from '@/lib/globe/proximity'
@@ -449,6 +450,14 @@ export default function GlobeView() {
     setDraft(null)
     setModalOpen(false)
   }, [])
+
+  // Escape backs out of the DRAFT bar too (F25, Andy 2026-08-01). R1 gave
+  // Escape to PinModal and TripFramePanel and missed this third surface,
+  // which behaves exactly like them: a transient state with a Cancel. The
+  // draft bar renders on `draft && !modalOpen`, so the hook is enabled on
+  // exactly that condition — PinModal owns Escape once it is open, and two
+  // handlers can never fire for one keypress.
+  useEscapeKey(clearDraft, draft !== null && !modalOpen)
 
   const deselect = useCallback(() => {
     selectedIdRef.current = null
