@@ -19,10 +19,10 @@ import 'mapbox-gl/dist/mapbox-gl.css'
 import FindLocationBox, { RetrievedPlace } from './FindLocationBox'
 import PinModal, { PinDraftData } from './PinModal'
 import TripFramePanel, { TripFramingContext } from './TripFramePanel'
-import { TRIP_SUBTYPE_LABELS, type TripLeg, type TripRow } from '@/lib/globe/trip-types'
+import { type TripLeg, type TripRow } from '@/lib/globe/trip-types'
 import PinEditPanel from './PinEditPanel'
 import PinDetailCard from './PinDetailCard'
-import PinHopper from './PinHopper'
+import { type TripCardContext } from './PinTrips'
 import { useUiChrome } from '../UiChromeContext'
 import { clusterFrame } from '@/lib/globe/cluster-frame'
 import { nextRegime, styleForRegime, NOCTURNE_STYLE, type GlobeRegime } from '@/lib/globe/style-regime'
@@ -312,8 +312,6 @@ export default function GlobeView() {
   const [tripFromHere, setTripFromHere] = useState<{ relationshipId: string; name: string } | null>(null)
   // Trip jots on the globe strip (2026-07-19, Andy's ask): capture the
   // highlights while framing; elaborate later in the Travel Journal.
-  const [openJotsTrip, setOpenJotsTrip] = useState<string | null>(null)
-  const [tripJotCounts, setTripJotCounts] = useState<Record<string, number>>({})
   // Trip route layer (U4): loaded trips, the hidden-by-default toggle
   // (R10 — the spine stays visually dominant), and route-building mode.
   const [trips, setTrips] = useState<TripRow[]>([])
@@ -1089,9 +1087,9 @@ export default function GlobeView() {
     }
   }, [pins, selectedId, loadTrips, loadPins, homeBaseId, tripFromHere])
 
-  // Un-framing (U6, R14): delete the trip, keep the pin. Two-step inline
-  // confirm (the edit panel's delete pattern).
-  const [confirmUnframe, setConfirmUnframe] = useState<string | null>(null)
+  // Un-framing (U6, R14): delete the trip, keep the pin. The two-step
+  // confirm now lives with the button, in PinTrips (R4) — this is just the
+  // request. Also reached from the framing panel's Discard (R2).
   const unframeTrip = useCallback(async (tripId: string) => {
     setError(null)
     try {
@@ -1100,7 +1098,6 @@ export default function GlobeView() {
         const b = await res.json().catch(() => ({}))
         throw new Error(b.detail || b.error || `HTTP ${res.status}`)
       }
-      setConfirmUnframe(null)
       await loadTrips()
       setNotice('Trip removed — the pin and its recollections are untouched.')
     } catch (e) {
@@ -1677,168 +1674,13 @@ export default function GlobeView() {
         </div>
       )}
 
-      {/* Trips touching the selected pin (U4): frame drafts, build routes.
-          U6 adds the other half: a non-primary pin with NO trip offers
-          "frame as trip" (R14) — the Wallace Monument path. */}
-      {selectedId && !editMode && !refining && !routeEdit && !framing && (() => {
-        const mine = trips.filter((t) =>
-          t.destination_relationship_id === selectedId ||
-          t.origin_relationship_id === selectedId ||
-          t.stops.some((s) => s.relationship_id === selectedId))
-        const selPin = pins.find((p) => p.relationship_id === selectedId)
-        // A residence summarizes rather than enumerates (U7, R19): homes
-        // with many departures link to the Travel Journal instead of
-        // stacking rows over the globe.
-        if (selPin && (selPin.type_code === SPINE_CODE || selPin.type_code === null)) {
-          const fromHere = trips.filter((t) => t.origin_relationship_id === selectedId).length
-          return (
-            <div className="glass absolute left-1/2 top-20 z-30 flex max-w-[min(560px,92vw)] -translate-x-1/2 flex-wrap items-center gap-2 rounded-xl px-3 py-2 text-xs text-[var(--ink)]">
-              <span style={{ color: TRIP_ROUTE_COLOR }}>✈</span>
-              {fromHere > 0 && <span>{fromHere} trip{fromHere === 1 ? '' : 's'} originated here</span>}
-              {homeBaseId === selectedId && (
-                <span className="rounded-full border border-[var(--glass-border)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[var(--ember-soft)]">
-                  home base
-                </span>
-              )}
-              {/* Origin-first entry (2026-07-19, Andy's ask): arm this home
-                  as the next trip's origin, then place the destination. */}
-              <button
-                onClick={() => {
-                  setTripFromHere({ relationshipId: selPin.relationship_id, name: selPin.name })
-                  deselect()
-                }}
-                className="rounded-lg border border-[var(--glass-border)] px-2 py-0.5 hover:text-[var(--ember-soft)]"
-              >
-                Start a trip from here
-              </button>
-              {fromHere > 0 && (
-                <a href="/journey?mode=travel" className="ml-auto rounded-lg border border-[var(--glass-border)] px-2 py-0.5 hover:text-[var(--ember-soft)]">
-                  Travel Journal →
-                </a>
-              )}
-            </div>
-          )
-        }
-        if (mine.length === 0) {
-          if (!selPin || selPin.type_code === SPINE_CODE || selPin.type_code === null) return null
-          return (
-            <div className="glass absolute left-1/2 top-20 z-30 flex max-w-[min(560px,92vw)] -translate-x-1/2 flex-wrap items-center gap-2 rounded-xl px-3 py-2 text-xs text-[var(--ink)]">
-              <span style={{ color: TRIP_ROUTE_COLOR }}>✈</span>
-              <span className="text-[var(--ink-dim)]">
-                {selPin.type_code === 'wants_to_visit'
-                  ? 'Been there now? It becomes a real place + trip:'
-                  : 'This was a journey? Frame it as a trip:'}
-              </span>
-              {(Object.keys(TRIP_SUBTYPE_LABELS) as (keyof typeof TRIP_SUBTYPE_LABELS)[]).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => void frameSelectedAsTrip(s)}
-                  className="rounded-lg border border-[var(--glass-border)] px-2 py-0.5 hover:text-[var(--ember-soft)]"
-                >
-                  {TRIP_SUBTYPE_LABELS[s]}
-                </button>
-              ))}
-            </div>
-          )
-        }
-        return (
-          <div className="glass absolute left-1/2 top-20 z-30 flex max-w-[min(560px,92vw)] -translate-x-1/2 flex-col gap-1.5 rounded-xl px-3 py-2 text-xs text-[var(--ink)]">
-            {mine.map((t) => (
-              <div key={t.trip_id}>
-              <div className="flex flex-wrap items-center gap-2">
-                <span style={{ color: TRIP_ROUTE_COLOR }}>✈</span>
-                <span className="font-medium">{t.title || `Trip to ${t.destination_name}`}</span>
-                <span className="text-[var(--ink-dim)]">{TRIP_SUBTYPE_LABELS[t.subtype]}{t.when_text ? ` · ${t.when_text}` : ''}</span>
-                {t.is_draft && (
-                  <span className="rounded-full border border-[var(--glass-border)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide" style={{ color: TRIP_ROUTE_COLOR }}>
-                    needs framing
-                  </span>
-                )}
-                <span className="ml-auto flex gap-1.5">
-                  <button
-                    onClick={() => setFraming({
-                      tripId: t.trip_id,
-                      destinationName: t.title || t.destination_name,
-                      suggestedOriginId: suggestTripOrigin({
-                        existingOriginId: t.origin_relationship_id,
-                        armedOriginId: tripFromHere?.relationshipId,
-                        anchorId: selPin?.anchor_residence_id,
-                      }),
-                      defaultWhen: t.when_text ?? '',
-                      returnToOrigin: t.return_to_origin,
-                      isDraft: t.is_draft,
-                    })}
-                    className="rounded-lg border border-[var(--glass-border)] px-2 py-0.5 hover:text-[var(--ember-soft)]"
-                  >
-                    {t.is_draft ? 'Frame' : 'Edit frame'}
-                  </button>
-                  <button
-                    onClick={() => setRouteEdit({ tripId: t.trip_id, leg: 'outbound' })}
-                    className="rounded-lg border border-[var(--glass-border)] px-2 py-0.5 hover:text-[var(--ember-soft)]"
-                  >
-                    Route
-                  </button>
-                  {confirmUnframe === t.trip_id ? (
-                    <button
-                      onClick={() => void unframeTrip(t.trip_id)}
-                      className="rounded-lg border border-rose-400/50 px-2 py-0.5 text-rose-300 hover:bg-rose-500/10"
-                    >
-                      Really remove the trip? The pin stays.
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setConfirmUnframe(t.trip_id)
-                        setTimeout(() => setConfirmUnframe((c) => (c === t.trip_id ? null : c)), 4000)
-                      }}
-                      className="rounded-lg border border-[var(--glass-border)] px-2 py-0.5 text-[var(--ink-dim)] hover:text-rose-300"
-                      title="Delete the trip; the pin and its recollections are untouched"
-                    >
-                      Unframe
-                    </button>
-                  )}
-                  {/* Trip jots (2026-07-19): highlights captured while the
-                      route is fresh; elaborated later in the Travel Journal. */}
-                  <button
-                    onClick={() => setOpenJotsTrip((c) => (c === t.trip_id ? null : t.trip_id))}
-                    className={`rounded-lg border border-[var(--glass-border)] px-2 py-0.5 hover:text-[var(--ember-soft)] ${openJotsTrip === t.trip_id ? 'text-[var(--ember-soft)]' : ''}`}
-                    title="Jot the trip's highlights — write them up in the Travel Journal"
-                  >
-                    ✎ jots{(tripJotCounts[t.trip_id] ?? 0) > 0 ? ` · ${tripJotCounts[t.trip_id]}` : ''}
-                  </button>
-                </span>
-              </div>
-              {/* Mounted regardless so the count stays live; renders its UI
-                  only while its chip is open (the detail-card pattern). */}
-              <PinHopper
-                entityId={t.trip_entity_id}
-                hostName={t.title || `Trip to ${t.destination_name}`}
-                variant="card"
-                open={openJotsTrip === t.trip_id}
-                onCountChange={(n) =>
-                  setTripJotCounts((m) => (m[t.trip_id] === n ? m : { ...m, [t.trip_id]: n }))}
-              />
-              </div>
-            ))}
-            {/* Reuse this destination (U7, R17): repeat visits stay
-                distinct trips on the same pin (R2). */}
-            {selPin && selPin.type_code !== SPINE_CODE && (
-              <div className="flex flex-wrap items-center gap-2 border-t border-[var(--glass-border)] pt-1.5 text-[var(--ink-dim)]">
-                <span>Another trip here:</span>
-                {(Object.keys(TRIP_SUBTYPE_LABELS) as (keyof typeof TRIP_SUBTYPE_LABELS)[]).map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => void frameSelectedAsTrip(s)}
-                    className="rounded-lg border border-[var(--glass-border)] px-2 py-0.5 hover:text-[var(--ember-soft)]"
-                  >
-                    {TRIP_SUBTYPE_LABELS[s]}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )
-      })()}
+      {/* The three trip strips that used to float here at `top-20` moved
+          onto the pin card as `PinTrips` (R4, 2026-08-01). That retired
+          three findings at once: F1 (this band painted over the search
+          dropdown), F2 ("Start a trip from here" was the one pin-scoped
+          control living in globe chrome) and F8 (a trip's jots were
+          unreachable from its destination pin). The band is now EMPTY, so
+          F1 cannot recur by someone re-tuning a z-index. */}
 
       {/* Route-building banner (U4): click pins in travel order. */}
       {routeEdit && (() => {
@@ -1941,6 +1783,40 @@ export default function GlobeView() {
         const spinePos = spine.findIndex((p) => p.relationship_id === selectedId)
         const primaries = spine.map((p) => ({ relationship_id: p.relationship_id, name: p.name }))
         const allPins = pins.map((p) => ({ relationship_id: p.relationship_id, name: p.name, type_code: p.type_code, sort_order: p.sort_order }))
+        // The pin's trips, assembled once for whichever card renders (R4).
+        // The globe keeps the modes that genuinely belong to it — arming an
+        // origin, drawing a route, opening the framing panel — and hands the
+        // rest to the card as callbacks.
+        const mine = trips.filter((t) =>
+          t.destination_relationship_id === selectedId ||
+          t.origin_relationship_id === selectedId ||
+          t.stops.some((st) => st.relationship_id === selectedId))
+        const tripCtx: TripCardContext = {
+          trips: mine,
+          originatedHere: trips.filter((t) => t.origin_relationship_id === selectedId).length,
+          isHome: sel.type_code === SPINE_CODE || sel.type_code === null,
+          isHomeBase: homeBaseId === selectedId,
+          isFuturePlace: sel.type_code === 'wants_to_visit',
+          onStartTripFromHere: () => {
+            setTripFromHere({ relationshipId: sel.relationship_id, name: sel.name })
+            deselect()
+          },
+          onFrame: (t) => setFraming({
+            tripId: t.trip_id,
+            destinationName: t.title || t.destination_name,
+            suggestedOriginId: suggestTripOrigin({
+              existingOriginId: t.origin_relationship_id,
+              armedOriginId: tripFromHere?.relationshipId,
+              anchorId: sel.anchor_residence_id,
+            }),
+            defaultWhen: t.when_text ?? '',
+            returnToOrigin: t.return_to_origin,
+            isDraft: t.is_draft,
+          }),
+          onRoute: (tripId) => setRouteEdit({ tripId, leg: 'outbound' }),
+          onUnframe: (tripId) => void unframeTrip(tripId),
+          onFrameAsTrip: (subtype) => void frameSelectedAsTrip(subtype),
+        }
         return editMode ? (
           <PinEditPanel
             pin={sel}
@@ -1958,6 +1834,7 @@ export default function GlobeView() {
             onDelete={handlePanelDelete}
             onClose={deselect}
             onSelectAnchored={(relId) => { selectPin(relId); const t = pins.find((x) => x.relationship_id === relId); if (t) mapRef.current?.flyTo({ center: [t.lng, t.lat], speed: 0.7, essential: true }) }}
+            tripCtx={tripCtx}
           />
         ) : (
           <PinDetailCard
@@ -1972,6 +1849,7 @@ export default function GlobeView() {
             onEdit={() => { setRefining(false); setEditMode(true) }}
             onClose={deselect}
             onSelectAnchored={(relId) => { selectPin(relId); const t = pins.find((x) => x.relationship_id === relId); if (t) mapRef.current?.flyTo({ center: [t.lng, t.lat], speed: 0.7, essential: true }) }}
+            tripCtx={tripCtx}
           />
         )
       })()}

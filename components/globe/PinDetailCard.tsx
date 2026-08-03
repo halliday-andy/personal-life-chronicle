@@ -14,6 +14,7 @@ import { preprocessPinImage } from '@/lib/globe/image-preprocess'
 import { isHomeType } from '@/lib/globe/anchor-options'
 import { pinTypeMeta } from '@/lib/globe/pin-types'
 import PhotoLightbox from './PhotoLightbox'
+import type { TripCardContext } from './PinTrips'
 import PinConnections, { type LinkedRecollection, type AnchoredPin, type ContextEntry } from './PinConnections'
 import Markdown from '../Markdown'
 
@@ -54,6 +55,7 @@ export default function PinDetailCard({
   onEdit,
   onClose,
   onSelectAnchored,
+  tripCtx,
 }: {
   pin: { relationship_id: string; place_entity_id: string; name: string; when_text: string | null; place_subtype: string | null; type_code: string | null }
   position: number   // 0-based index in the SPINE sequence; -1 for off-spine markers
@@ -68,6 +70,9 @@ export default function PinDetailCard({
   onEdit: () => void
   onClose: () => void
   onSelectAnchored: (relationshipId: string) => void  // open a pin anchored here (Slice 3.6)
+  /** The pin's trips, assembled by GlobeView (R4). Passed straight through
+   *  to PinConnections, which hands it to PinTrips. */
+  tripCtx?: TripCardContext
 }) {
   // Prev/next walks the residential spine; shown only on spine pins with
   // neighbours (markers are off-spine, position -1).
@@ -416,6 +421,7 @@ export default function PinDetailCard({
             hostIsHome={isHomeType(pin.type_code)}
             onSelectAnchored={onSelectAnchored}
             variant="card"
+            tripCtx={tripCtx}
           />
         </div>
       </div>

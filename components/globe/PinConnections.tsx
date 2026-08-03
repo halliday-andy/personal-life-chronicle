@@ -22,6 +22,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { pinTypeMeta } from '@/lib/globe/pin-types'
 import PinHopper from './PinHopper'
+import PinTrips, { type TripCardContext } from './PinTrips'
 import Markdown from '../Markdown'
 
 export interface LinkedRecollection {
@@ -53,7 +54,7 @@ export interface ContextEntry {
 // Which collection is expanded. Only one opens at a time so the read-view card
 // never grows tall enough to occlude its own pin — presence stays visible as
 // counts, content is opt-in (2026-06-26 reframe).
-type OpenChip = 'recollections' | 'context' | 'hopper' | null
+type OpenChip = 'recollections' | 'context' | 'hopper' | 'trips' | null
 
 export default function PinConnections({
   entityId,
@@ -65,6 +66,7 @@ export default function PinConnections({
   variant,
   relationshipId,
   hostIsHome = false,
+  tripCtx,
 }: {
   entityId: string
   placeName: string
@@ -77,8 +79,13 @@ export default function PinConnections({
   relationshipId: string
   /** Home types read as a "stop"; a workplace with Logs under it does not. */
   hostIsHome?: boolean
+  /** The pin's trips, as a single assembled object (R4, 2026-08-01). Absent
+   *  on surfaces that have no globe behind them. `PinConnections` never
+   *  inspects it — it only sizes the chip and hands it to `PinTrips`. */
+  tripCtx?: TripCardContext
 }) {
   const [openChip, setOpenChip] = useState<OpenChip>(null)
+  const [tripCount, setTripCount] = useState(0)
   const disclosureRef = useRef<HTMLDivElement>(null)
 
   // Opening a chip appends its panel BELOW the chip row, inside a scrollable
@@ -157,6 +164,10 @@ export default function PinConnections({
     // Class-of-bug: never hide the control that CREATES the first item behind
     // the existence of an item.
     { key: 'context' as const, label: context.length > 0 ? `${context.length} context` : '＋ context' },
+    // Always present when the surface has a globe behind it: a home offers
+    // "start a trip from here" even with no trips yet, and a marker pin
+    // offers "frame it as a trip" (F2 — the control belongs on the pin).
+    tripCtx && { key: 'trips' as const, label: tripCount > 0 ? `✈ ${tripCount} trip${tripCount === 1 ? '' : 's'}` : '✈ trips' },
     includeHopper && { key: 'hopper' as const, label: stubCount > 0 ? `✎ ${stubCount} to write` : '✎ jot' },
   ].filter(Boolean) as { key: Exclude<OpenChip, null>; label: string }[]
 
@@ -339,6 +350,11 @@ export default function PinConnections({
           open={openChip === 'hopper'}
           onCountChange={setStubCount}
         />
+      )}
+      {/* Mounted regardless of which chip is open so the trips' own jot
+          counts stay live — same discipline as the hopper above. */}
+      {tripCtx && (
+        <PinTrips ctx={tripCtx} open={openChip === 'trips'} onCountChange={setTripCount} />
       )}
       </div>
 

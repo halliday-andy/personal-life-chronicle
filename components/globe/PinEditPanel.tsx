@@ -17,6 +17,7 @@ import { anchorCandidates, isHomeType, isUnplacedHome } from '@/lib/globe/anchor
 import { spineSlotOptions } from '@/lib/globe/reorder'
 import PhotoLightbox from './PhotoLightbox'
 import PinHopper from './PinHopper'
+import type { TripCardContext } from './PinTrips'
 import PinConnections, { type LinkedRecollection, type AnchoredPin, type ContextEntry } from './PinConnections'
 import PinFactsEditor, { type PinFactsValue } from './PinFactsEditor'
 import Markdown from '../Markdown'
@@ -69,6 +70,7 @@ export default function PinEditPanel({
   onDelete,
   onClose,
   onSelectAnchored,
+  tripCtx,
 }: {
   pin: EditablePin
   relocated: boolean
@@ -88,6 +90,8 @@ export default function PinEditPanel({
   onClose: () => void
   /** Open a related (anchored) pin from the connections list. */
   onSelectAnchored: (relationshipId: string) => void
+  /** The pin's trips, assembled by GlobeView (R4). */
+  tripCtx?: TripCardContext
 }) {
   const [name, setName] = useState(pin.name)
   const [whenText, setWhenText] = useState(pin.when_text ?? '')
@@ -607,6 +611,7 @@ export default function PinEditPanel({
           onSelectAnchored={onSelectAnchored}
           relationshipId={pin.relationship_id}
           hostIsHome={isHomeType(typeCode)}
+          tripCtx={tripCtx}
           variant="panel"
         />
       )}
