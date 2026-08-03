@@ -179,6 +179,17 @@ in `GlobeView` keyed on `selectedId` fired AFTER the child reported itself
 open and silently clobbered the auto-opened panel. *The tell: a parent
 "reset on change" effect racing a child's mount effect.*
 
+**R20 BUILT (F25):** the globe's DRAFT CONFIRM BAR had no Escape. R1 fixed
+`PinModal` and `TripFramePanel` and **missed a third surface of the same
+kind** — a transient state with a Cancel. Gated on `draft !== null &&
+!modalOpen`, exactly the bar's render condition, so two handlers can never
+fire for one keypress. The R1 checklist ALSO mis-described the bar as "the pin
+placement modal", which is what sent Andy to the wrong surface — reworded to
+walk both in order. **Lesson: when fixing a class of surface, ENUMERATE the
+class.** Two were obvious; the third only surfaced because a QA step described
+it wrongly. Remaining candidates of the same kind, NOT yet given Escape:
+route-building, origin capture, the armed trip banner, refine-location.
+
 **PRINCIPLE (rule 16): when a rule gates writing, check it also gates
 reading.** Three sightings now of the same shape — the pin-card
 reconciliation drift (edit panel showed LESS than the card), F15
