@@ -164,6 +164,21 @@ origin). Correct suppression is conditional on that pair's route being drawn,
 which needs the two line effects to coordinate; unconditional suppression
 would lose the only "belongs to that home" cue when routes are hidden.
 
+**R19 BUILT (F23/F24):** the detail card could reach ~85% of the viewport in
+the middle of the map, so opening the trips chip cost you the globe — capped
+at **55vh** (it has scrolled internally since R8) with a new ember-tinted
+`.globe-scroll` bar, applied to the edit panel's column too so the two globe
+surfaces share one vocabulary. And a trip's **DESTINATION** now auto-opens its
+trips panel (painting the route via R18's gate) — **destinations only**, since
+an origin may have many departures, which is what R18 just stopped from
+burying the map.
+
+**GOTCHA worth keeping: child effects run BEFORE parent effects.** Reporting
+the trips panel's closed state on UNMOUNT had to live in `PinTrips`; a reset
+in `GlobeView` keyed on `selectedId` fired AFTER the child reported itself
+open and silently clobbered the auto-opened panel. *The tell: a parent
+"reset on change" effect racing a child's mount effect.*
+
 **PRINCIPLE (rule 16): when a rule gates writing, check it also gates
 reading.** Three sightings now of the same shape — the pin-card
 reconciliation drift (edit panel showed LESS than the card), F15
