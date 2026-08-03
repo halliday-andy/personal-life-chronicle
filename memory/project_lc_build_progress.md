@@ -121,6 +121,18 @@ systems drawing the same kind of thing must agree about what reveals them.**
 *The tell: a reveal gesture that works from one end of a relationship and not
 the other.*
 
+**BUT THE REPORTED CASE WAS NOT THIS BUG.** No trip touches Coronet Peak Ski
+School (verified: 0 rows) — the Dirt Bikes trip belongs to the similarly-named
+RESIDENCE "Coronet Peak, Queenstown NZ" a few hundred metres away, and at that
+zoom its arc reads as pointing at the workplace. The app was correct; the
+asymmetry I fixed was real but was not what Andy hit.
+
+**PERSONAL PATTERN worth naming (2nd occurrence today, after F10's wrong
+component): VERIFY THE PREMISE BEFORE FIXING.** One query — "does any trip
+touch this pin?" — would have settled it before a line was written. Reading
+code and finding *a* plausible cause is not the same as confirming *the*
+cause. Andy's data is queryable; use it first.
+
 **CLASS-OF-BUG (rule 17): a natively-draggable element inside a drag-to-
 reorder row steals the gesture.** Links and images drag by default; an `<a>`
 inside a `draggable` `<li>` wins over its parent. *The tell: reorder that
