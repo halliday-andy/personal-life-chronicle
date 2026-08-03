@@ -17,6 +17,19 @@ and proven red/green), `0be03e7` R1 modal dismissal (new
 now PRESERVES the armed origin, only a real frame consumes it), `fb8ac78` R2
 the framing panel's exit set (Discard/Keep/Save for drafts, Cancel/Save when
 framed). QA: `docs/qa/2026-07-30-remediation-r1-r3-qa-checklist.md`.
+**R4 BUILT `2de4ea4` — three findings, one change.** `PinTrips.tsx` carries
+all three former globe strips onto the pin card (home summary / unframed
+invitation / framed trip rows), owning the state the strips owned. **Mounted
+BY `PinConnections` as `PinHopper` is — a deliberate deviation from the design
+(which said "third sibling in each card") and a better one:** the chip row
+lives inside `PinConnections`, so this is the faithful reading of "a Trips
+chip on the count-chip row", AND it makes the sibling-key hazard moot rather
+than handled. `PinConnections` stays ignorant of trips via one opaque
+`tripCtx`. Globe keeps its own modes as callbacks (arm origin, draw route,
+open framing). **The `top-20` band is now EMPTY, so F1 cannot recur by someone
+re-tuning a z-index.** 162 lines of JSX removed plus the orphaned state. QA:
+`docs/qa/2026-08-01-trip-strip-on-card-qa-checklist.md`.
+
 **R4–R5 UNBLOCKED 2026-08-01** — Andy completed the pin-card reconciliation
 walk, whose only finding was that the "N related pins" chip item is superseded
 (the 07-26 stop-places unit removed the chip the 07-20 rename had renamed).

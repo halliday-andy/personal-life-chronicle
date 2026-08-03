@@ -27,9 +27,9 @@ change — the best ratio in the set.
 
 | # | Finding | Fix | Unit |
 |---|---|---|---|
-| **F1** | Trip strip (`z-30`, `top-20`) occludes the search dropdown (`z-20`, `top-6`), hiding pin-search's "Your pins" group | strip → card; the band empties, so no stacking rule to maintain | **R4** |
-| **F2** | "Start a trip from here" lives in globe chrome; Andy hunted the card and edit panel for it | strip → card (rule 10) | **R4** |
-| **F8** | A trip's jots are invisible from its destination pin — they host on the *trip* entity, the card reads the *place* entity | strip → card; trip jots arrive via the trip disclosure. **Counts stay per-host** | **R4** |
+| **F1** | Trip strip (`z-30`, `top-20`) occludes the search dropdown (`z-20`, `top-6`), hiding pin-search's "Your pins" group | strip → card; the band empties, so no stacking rule to maintain | **R4 — BUILT** |
+| **F2** | "Start a trip from here" lives in globe chrome; Andy hunted the card and edit panel for it | strip → card (rule 10) | **R4 — BUILT** |
+| **F8** | A trip's jots are invisible from its destination pin — they host on the *trip* entity, the card reads the *place* entity | strip → card; trip jots arrive via the trip disclosure. **Counts stay per-host** | **R4 — BUILT** |
 | **F4** | The armed placement modal never says the pin is the trip's destination; CTA reads "Add this place" | mode-aware heading + CTA (rule 11) | **R5** |
 | **F5** | Anchor reads as trip origin and is preset to the armed pin, but editing it would not change the origin | clarifying label; ownership stays in the framing panel | **R5** |
 | **F3** | `searchPins` matches the whole query as a substring, so `Mount Snow Chalet` misses `My Mt. Snow Chalet`; failure is silent | token-wise matching + an explicit "no pins matched" | **R3** |
@@ -129,7 +129,7 @@ while the bug was live).
 Rd./Road behave; the proof fails on the pre-fix matcher and passes after; a
 query with genuinely no matches says so.
 
-### R4 — The trip strip moves onto the pin card *(F1, F2, F8)*
+### R4 — The trip strip moves onto the pin card *(F1, F2, F8)* — **BUILT `2de4ea4`**
 The structural unit. `components/globe/PinTrips.tsx` mounted by **both**
 `PinDetailCard` and `PinEditPanel`, all three strip variants, as a chip on the
 count-chip row with single-open disclosure.
@@ -146,7 +146,16 @@ Full design:
   only one place would recreate the exact drift the pin-card reconciliation
   doc was written to fix, in the same files.
 
-**Non-negotiable:** namespace the sibling key `trips-${relationshipId}`.
+**Deviation at build (2026-08-01, better than designed):** `PinTrips` is
+mounted BY `PinConnections`, exactly as `PinHopper` is — not as a third
+sibling in each card. The design asked for "a Trips chip on the pin's
+count-chip row", and that row lives inside `PinConnections`, so this is the
+faithful reading. It also makes the sibling-key hazard **moot** rather than
+merely handled: `PinTrips` is a child, not a sibling keyed by relationship
+id. `PinConnections` stays ignorant of trips — it takes one opaque `tripCtx`
+object, sizes the chip from a reported count, and passes it on.
+
+**Superseded by the above, kept for the reasoning:** namespace the sibling key `trips-${relationshipId}`.
 `PinTrips` lands beside `PinFactsEditor` (`facts-…`) and `PinConnections`
 (`connections-…`); the bare-id collision is what rendered the Facts block
 nineteen times. `scripts/verify-jsx-sibling-keys.mjs` covers the file set.
