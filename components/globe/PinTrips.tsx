@@ -29,7 +29,7 @@
  * the framing panel) are callbacks — the globe still owns its own modes.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import PinHopper from './PinHopper'
 import { TRIP_SUBTYPE_LABELS, type TripRow, type TripSubtype } from '@/lib/globe/trip-types'
 
@@ -53,6 +53,12 @@ export interface TripCardContext {
   onRoute: (tripId: string) => void
   onUnframe: (tripId: string) => void
   onFrameAsTrip: (subtype: TripSubtype) => void
+  /** Fired when this panel opens or closes. The globe uses it to decide
+   *  whether to PAINT this pin's routes: selection alone no longer draws
+   *  them, because that override had no off-switch and a home with many
+   *  departures buried the map (F21, Andy 2026-08-01). Opening the chip is
+   *  the "show me these" gesture; closing it is the way out. */
+  onOpenChange?: (open: boolean) => void
 }
 
 const btn =
@@ -78,6 +84,12 @@ export default function PinTrips({
   // other pin reports the trips touching it.
   const count = isHome ? ctx.originatedHere : trips.length
   useEffect(() => { onCountChange?.(count) }, [count, onCountChange])
+
+  // Report open/closed upward. Held in a ref so an inline arrow from the
+  // caller cannot make this fire on every render.
+  const openChangeRef = useRef(ctx.onOpenChange)
+  useEffect(() => { openChangeRef.current = ctx.onOpenChange })
+  useEffect(() => { openChangeRef.current?.(open) }, [open])
 
   // Rendered even while closed, hidden by CSS rather than unmounted, so the
   // trips' own PinHoppers keep their counts live and do not refetch on every

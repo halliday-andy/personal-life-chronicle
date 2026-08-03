@@ -310,6 +310,10 @@ export default function GlobeView() {
   // of the NEXT trip framed — origin-first entry into the destination-first
   // flow. Consumed when a framing panel closes; cancellable from its banner.
   const [tripFromHere, setTripFromHere] = useState<{ relationshipId: string; name: string } | null>(null)
+  // Whether the selected pin's trips panel is OPEN — the gate on painting
+  // its routes (F21). Selection alone used to paint them with no way to
+  // stop; the chip is now both the reveal and the off-switch.
+  const [tripsPanelOpen, setTripsPanelOpen] = useState(false)
   // Trip jots on the globe strip (2026-07-19, Andy's ask): capture the
   // highlights while framing; elaborate later in the Travel Journal.
   // Trip route layer (U4): loaded trips, the hidden-by-default toggle
@@ -915,6 +919,11 @@ export default function GlobeView() {
     }
   }, [pins, trips, ready, selectedId, editMode, refining, selectPin])
 
+  // A new selection closes the trips gate: PinConnections is keyed by pin so
+  // its chip resets on switch, and a deselect unmounts it entirely without
+  // reporting closed. Resetting here covers both.
+  useEffect(() => { setTripsPanelOpen(false) }, [selectedId])
+
   // Tether visibility (item 3): default = none (bare spine); a hovered pin
   // transiently reveals its associated side lines — a primary shows the
   // tethers of markers anchored to it; a marker shows its own. Kept in its
@@ -974,8 +983,10 @@ export default function GlobeView() {
   useEffect(() => {
     if (!ready) return
     const map = mapRef.current
+    // Selection alone no longer paints — the trips CHIP does. Hover stays a
+    // transient peek that dismisses itself when the pointer leaves.
     const peeked = (id: string | null) =>
-      id !== null && (id === selectedId || id === hoverPreview)
+      id !== null && ((id === selectedId && tripsPanelOpen) || id === hoverPreview)
     const touches = (t: TripRow) =>
       peeked(t.destination_relationship_id) ||
       peeked(t.origin_relationship_id) ||
@@ -987,7 +998,7 @@ export default function GlobeView() {
     const src = map?.getSource('trip-routes') as mapboxgl.GeoJSONSource | undefined
     if (!src) return
     src.setData(routeData)
-  }, [trips, tripsVisible, selectedId, hoverPreview, routeEdit, ready])
+  }, [trips, tripsVisible, selectedId, tripsPanelOpen, hoverPreview, routeEdit, ready])
 
   // Route building: a pin click appends a stop to the active leg. Kept in
   // a ref so the once-bound marker click handlers never go stale.
@@ -1839,6 +1850,7 @@ export default function GlobeView() {
           onRoute: (tripId) => setRouteEdit({ tripId, leg: 'outbound' }),
           onUnframe: (tripId) => void unframeTrip(tripId),
           onFrameAsTrip: (subtype) => void frameSelectedAsTrip(subtype),
+          onOpenChange: setTripsPanelOpen,
         }
         return editMode ? (
           <PinEditPanel
