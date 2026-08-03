@@ -25,7 +25,7 @@ import PinDetailCard from './PinDetailCard'
 import { type TripCardContext } from './PinTrips'
 import { useUiChrome } from '../UiChromeContext'
 import { clusterFrame } from '@/lib/globe/cluster-frame'
-import { nextRegime, styleForRegime, NOCTURNE_STYLE, type GlobeRegime } from '@/lib/globe/style-regime'
+import { nextRegime, styleForRegime, chronicleLinePaint, NOCTURNE_STYLE, type GlobeRegime } from '@/lib/globe/style-regime'
 import { buildCreatePinPayload } from '@/lib/globe/create-pin-payload'
 import { suggestTripOrigin } from '@/lib/globe/trip-origin'
 import type { ProximityHint } from '@/lib/globe/proximity'
@@ -573,6 +573,9 @@ export default function GlobeView() {
     const installChronicleLayers = () => {
       if (map.getSource('trip-tethers')) return
       const data = lineDataRef.current
+      // Regime is set BEFORE setStyle, so by the time this runs on the new
+      // style's load it already describes the canvas being drawn on.
+      const paint = chronicleLinePaint(regimeRef.current)
       // Tethers first, so the residential spine always draws on top of them.
       // Tier 3 — dashed, dim, no glow: trips that aren't a change of residence.
       map.addSource('trip-tethers', { type: 'geojson', data: data.tethers ?? EMPTY_FC })
@@ -584,9 +587,10 @@ export default function GlobeView() {
         paint: {
           // Cool, desaturated slate — deliberately NOT a dimmer ember so trip
           // tethers read as distinct from the glowing spine (item 3 note).
-          'line-color': '#94a0c4',
-          'line-width': 1.1,
-          'line-opacity': 0.55,
+          // Values are regime-dependent; the MEANING of the colour is not.
+          'line-color': paint.tether.color,
+          'line-width': paint.tether.width,
+          'line-opacity': paint.tether.opacity,
           'line-dasharray': [2, 2.5],
         },
       })
@@ -619,7 +623,12 @@ export default function GlobeView() {
         type: 'line',
         source: 'commute-lines',
         layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: { 'line-color': '#5fc6dc', 'line-width': 1.5, 'line-opacity': 0.7, 'line-blur': 0.3 },
+        paint: {
+          'line-color': paint.commute.color,
+          'line-width': paint.commute.width,
+          'line-opacity': paint.commute.opacity,
+          'line-blur': paint.commute.blur,
+        },
       })
 
       // Tier 1 — the residential spine (lived_at), solid glowing chevron arcs.
@@ -629,7 +638,12 @@ export default function GlobeView() {
         type: 'line',
         source: 'arcs',
         layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: { 'line-color': '#f4b14a', 'line-width': 1.6, 'line-opacity': 0.55, 'line-blur': 0.4 },
+        paint: {
+          'line-color': paint.spine.color,
+          'line-width': paint.spine.width,
+          'line-opacity': paint.spine.opacity,
+          'line-blur': paint.spine.blur,
+        },
       })
       // Selected pin's legs: inbound ("approached from") brighter than
       // outbound ("egressed to"). Paint expressions are set on selection.
