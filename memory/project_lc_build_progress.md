@@ -150,6 +150,20 @@ aimed at the actual failure mode: every tier defined in both regimes, daylight
 never fainter, daylight never blurrier, tiers mutually distinct. **Another
 instance of rule 16's shape.**
 
+**R18 BUILT (F21):** a selected pin painted its trip routes even with routes
+toggled OFF, with no escape — `tripsVisible || touches(t)` made the legend
+additive only, and R10's "always show the selected pin's trips" assumed one or
+two. **R16 (hover) widened the same override earlier the same evening.** Now
+the card's ✈ chip gates it: opening shows, closing hides, hover stays a
+transient peek. Control sits on the pin's own surface (rule 10) and reuses R4.
+
+**F22 DEFERRED to the visual-language pass:** when a trip destination is
+anchored to that trip's ORIGIN, tether and route draw the SAME segment
+(confirmed — Sheep Station's anchor is Coronet Peak, Queenstown NZ, the trip's
+origin). Correct suppression is conditional on that pair's route being drawn,
+which needs the two line effects to coordinate; unconditional suppression
+would lose the only "belongs to that home" cue when routes are hidden.
+
 **PRINCIPLE (rule 16): when a rule gates writing, check it also gates
 reading.** Three sightings now of the same shape — the pin-card
 reconciliation drift (edit panel showed LESS than the card), F15
