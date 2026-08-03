@@ -111,6 +111,16 @@ draggable row by its title started the anchor's drag instead of the row's and
 reorder-by-title silently failed — it only worked if the row was grabbed
 outside the link. `draggable={false}` on both `ChildRow` links fixes both.
 
+**R16 BUILT (F19):** hovering a pin peeked its tethers but never its TRIPS.
+Two line systems disagreed about hover — the tether effect always honoured
+`hoverPreview`, the route effect honoured only `selectedId` / the global
+toggle / route-building. Hovering the trip's far end showed THAT pin's tether
+to its anchor, a different system, which made the behaviour read as a
+one-sided link rather than a missing one. **CLASS-OF-BUG (rule 18): two
+systems drawing the same kind of thing must agree about what reveals them.**
+*The tell: a reveal gesture that works from one end of a relationship and not
+the other.*
+
 **CLASS-OF-BUG (rule 17): a natively-draggable element inside a drag-to-
 reorder row steals the gesture.** Links and images drag by default; an `<a>`
 inside a `draggable` `<li>` wins over its parent. *The tell: reorder that

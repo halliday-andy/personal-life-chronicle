@@ -27,7 +27,7 @@ the bottom of a long card and clicked a faint "2 related pins" chip.*
       without a handle.
 - [x] A stop with **one** place isn't draggable (nothing to reorder).
 - [x] Reorder in one stop → **no other stop changes**.
-- [ ] Grandchildren (Ramada / Trans Hotel under Coronet Peak Ski School) still
+- [x] Grandchildren (Ramada / Trans Hotel under Coronet Peak Ski School) still
       sit under their parent and don't drag independently.
 - [x] Stops you've never touched look **exactly as before** — nothing
       reshuffles until a first drag.
