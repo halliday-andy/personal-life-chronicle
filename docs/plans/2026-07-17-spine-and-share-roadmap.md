@@ -160,6 +160,54 @@ it to someone.
   draft badges, hollow Future Places, unplaced treatment, the icon-hierarchy
   inversion from Phase-5 finding 5). Schedule after the QA walk, which will
   show exactly where legibility breaks.
+
+  **⚑ PIN OCCLUSION — added 2026-08-01 from Andy's Queenstown observation.**
+  Two distinct problems, one small and one a design unit.
+
+  **(a) Stacking is accidental.** There is **no `z-index` on pins anywhere** —
+  not in `globals.css`, not on the marker elements — and Mapbox's `Marker`
+  does not sort. Markers are DOM nodes created in `pins.forEach` order
+  (`GlobeView.tsx:786`), so **stacking is insertion order**: whichever pin the
+  API returns later wins. A workplace can permanently hide a primary residence
+  for no reason a user could infer. Andy had to zoom far in to discover the
+  two Queenstown pins were separate.
+
+  *Options:* latitude-based (`viewport-y`, the cartographic convention — the
+  southerly pin on top, layering like a landscape) **or** type-priority (homes
+  always above markers). **Recommend latitude + selected/hovered always on
+  top**: type-priority would draw a workplace that is genuinely in front
+  behind a home, which contradicts (b)'s whole objective. **Ordering can only
+  make occlusion honest — it cannot remove it.**
+
+  **(b) Separation that preserves relative orientation** — Andy's proposal,
+  and the actual remedy. On zoom-out, pins should stay separated **without
+  swapping their relative positions**: if one sits above-left of another when
+  zoomed in, it must still sit above-left when crowded.
+
+  *This rules out both standard answers.* **Clustering** collapses neighbours
+  into a count bubble — cheap, standard, and wrong here: each pin is a place
+  in a life, and "3" erases what the globe is for. **Spiderfying** keeps
+  identity but arranges legs in a circle *by array index*, destroying
+  orientation — exactly the swap Andy objects to.
+
+  *The technique that fits is cartographic **displacement**:* group pins whose
+  SCREEN distance falls below the pin size at the current zoom, take the
+  group's centroid, and push each outward **along its true bearing** until
+  they just separate. Orientation is preserved exactly; displacement decays to
+  zero as natural separation grows, so pins settle onto true coordinates as
+  you zoom in. Implementable against the existing DOM markers (repositionable
+  divs) with a throttled recompute on zoom/move.
+
+  **Design constraint that must not be lost:** a displaced pin is briefly
+  *lying about where a place is*. In an app this careful about not
+  fabricating, displacement has to be **visibly** a displacement — a hairline
+  back to true position, or a treatment reading as "these are crowded" —
+  otherwise the globe quietly misrepresents geography.
+
+  *Related, not a code issue:* Andy has **three pins named variations of
+  "Coronet Peak"** within a few hundred metres (the residence, "Year 2 Coronet
+  Peak", and the Ski School), which is what made a trip arc landing on the
+  residence read as pointing at the workplace.
 - **Dead citation markers in pasted context — post-MVP** (Andy, 2026-08-01,
   after R9 restored tables and bold). Research pasted from Gemini arrives with
   citation markers as plain bracketed numerals — `[5, 13, 17, 18]` — which
