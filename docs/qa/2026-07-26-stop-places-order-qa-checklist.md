@@ -20,16 +20,16 @@ the bottom of a long card and clicked a faint "2 related pins" chip.*
 
 ## 1. Journey — the stop's places
 
-- [ ] Expand a stop with **more than one** place (Loring AFB, My Mt. Snow
+- [x] Expand a stop with **more than one** place (Loring AFB, My Mt. Snow
       Chalet, Year 2 Coronet Peak, 26th Street Santa Monica).
-- [ ] Drag one place above the other → it moves, and **stays** after a page
+- [x] Drag one place above the other → it moves, and **stays** after a page
       reload. `[taste]` whether the drag affordance is discoverable enough
       without a handle.
-- [ ] A stop with **one** place isn't draggable (nothing to reorder).
-- [ ] Reorder in one stop → **no other stop changes**.
+- [x] A stop with **one** place isn't draggable (nothing to reorder).
+- [x] Reorder in one stop → **no other stop changes**.
 - [ ] Grandchildren (Ramada / Trans Hotel under Coronet Peak Ski School) still
       sit under their parent and don't drag independently.
-- [ ] Stops you've never touched look **exactly as before** — nothing
+- [x] Stops you've never touched look **exactly as before** — nothing
       reshuffles until a first drag.
 
 ## 2. Globe — the same places, elevated

@@ -103,6 +103,19 @@ predicate. `verify-anchor-options` gained the coverage of `isHomeType` it
 never had, pinning HOME_TYPES membership so widening it can't silently put
 residence facts back on vacation pins.
 
+**R15 BUILT (F18):** a place title in Journey dragged as a LINK. Only direct
+children get the draggable `<li>`; grandchildren have no drag handlers — what
+dragged was the `<a href>`, natively draggable in every browser. **The bigger
+half: the same native drag hijacked DIRECT children**, so grabbing a
+draggable row by its title started the anchor's drag instead of the row's and
+reorder-by-title silently failed — it only worked if the row was grabbed
+outside the link. `draggable={false}` on both `ChildRow` links fixes both.
+
+**CLASS-OF-BUG (rule 17): a natively-draggable element inside a drag-to-
+reorder row steals the gesture.** Links and images drag by default; an `<a>`
+inside a `draggable` `<li>` wins over its parent. *The tell: reorder that
+works only when you grab the row's whitespace.*
+
 **PRINCIPLE (rule 16): when a rule gates writing, check it also gates
 reading.** Three sightings now of the same shape — the pin-card
 reconciliation drift (edit panel showed LESS than the card), F15
