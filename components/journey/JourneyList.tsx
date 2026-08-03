@@ -820,9 +820,18 @@ function ChildRow({
           style={{ backgroundColor: meta.color }}
           title={meta.label}
         />
+        {/* draggable={false} matters twice over (F18, Andy's QA 2026-08-01).
+            An <a href> is natively draggable in every browser, so (1) a
+            GRANDCHILD — which has no reorder machinery at all — still
+            appeared to drag, then dropped with no effect; and (2) on a
+            DIRECT child, grabbing the title started the anchor's own drag
+            INSTEAD of the row's, so reorder-by-title silently failed and
+            only worked if you grabbed the row outside the link. Suppressing
+            the link's drag hands the gesture back to the <li>. */}
         <Link
           href={`/globe?pin=${node.relationship_id}`}
           title={`Show ${node.name} on the globe`}
+          draggable={false}
           className="font-medium text-stone-800 hover:text-amber-800 hover:underline"
         >
           {node.name}
@@ -841,6 +850,7 @@ function ChildRow({
             href={`/memories?entity=${placeEntityId}`}
             className="text-amber-700/80 hover:text-amber-800 hover:underline"
             title={`Read the recollections at ${node.name}`}
+            draggable={false}
           >
             +{moreCount} more {moreCount === 1 ? 'recollection' : 'recollections'} →
           </Link>
