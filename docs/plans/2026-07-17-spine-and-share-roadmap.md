@@ -198,6 +198,13 @@ it to someone.
   you zoom in. Implementable against the existing DOM markers (repositionable
   divs) with a throttled recompute on zoom/move.
 
+  **→ Preliminary design recorded 2026-08-01:**
+  [`2026-08-01-pin-separation-preliminary-design.md`](2026-08-01-pin-separation-preliminary-design.md)
+  — written after reading the Codex source directly (not inferred from the
+  screenshots). Adopts its core, fixes two cheap limitations (offset pop,
+  input-order dependence), and defers density to the post-MVP refinement
+  phase at Andy's call.
+
   **⚑ REFERENCE IMPLEMENTATION — the Codex build already does this**
   (Andy, 2026-08-01, three screenshots across zoom levels; the sibling
   implementation from `memory/project_lc_dual_track_final_review.md`). Two
