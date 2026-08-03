@@ -948,15 +948,24 @@ export default function GlobeView() {
   useEffect(() => { if (ready) void loadTrips() }, [ready, loadTrips])
 
   // Which routes render: all framed trips when the toggle is on; always
-  // the trips touching the selected pin (their complete route, R10) and
-  // the trip being route-built.
+  // the trips touching the selected OR HOVERED pin (their complete route,
+  // R10) and the trip being route-built.
+  //
+  // Hover was missing here while the tether effect above has always honoured
+  // it, so a pin peeked its anchor lines but never its trips — hovering the
+  // trip's far end showed its tether home, which made the omission look like
+  // a one-sided link (F19, Andy's QA 2026-08-01). Peeking should reveal
+  // everything attached to a pin, not a subset. Drafts still draw nothing at
+  // rest: tripRouteFeatures skips them unless they are being built.
   useEffect(() => {
     if (!ready) return
     const map = mapRef.current
+    const peeked = (id: string | null) =>
+      id !== null && (id === selectedId || id === hoverPreview)
     const touches = (t: TripRow) =>
-      t.destination_relationship_id === selectedId ||
-      t.origin_relationship_id === selectedId ||
-      t.stops.some((s) => s.relationship_id === selectedId) ||
+      peeked(t.destination_relationship_id) ||
+      peeked(t.origin_relationship_id) ||
+      t.stops.some((s) => peeked(s.relationship_id)) ||
       t.trip_id === routeEdit?.tripId
     const visible = trips.filter((t) => tripsVisible || touches(t))
     const routeData = tripRouteFeatures(visible, routeEdit?.tripId ?? null)
@@ -964,7 +973,7 @@ export default function GlobeView() {
     const src = map?.getSource('trip-routes') as mapboxgl.GeoJSONSource | undefined
     if (!src) return
     src.setData(routeData)
-  }, [trips, tripsVisible, selectedId, routeEdit, ready])
+  }, [trips, tripsVisible, selectedId, hoverPreview, routeEdit, ready])
 
   // Route building: a pin click appends a stop to the active leg. Kept in
   // a ref so the once-bound marker click handlers never go stale.
