@@ -16,6 +16,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import PinHopper from '@/components/globe/PinHopper'
 import { TRIP_SUBTYPE_LABELS, type TripRow, type TripStop } from '@/lib/globe/trip-types'
+import { tripKindLabel } from '@/lib/globe/trip-kind'
 
 function groupTrips(trips: TripRow[]): { label: string; trips: TripRow[] }[] {
   const groups: { label: string; trips: TripRow[] }[] = []
@@ -242,8 +243,11 @@ function TripCard({
               <span aria-hidden className="shrink-0 text-xs text-stone-400">{expanded ? '▾' : '▸'}</span>
             </span>
             <span className="mt-1 flex flex-wrap items-center gap-2 text-xs font-normal">
+              {/* Same derivation as the globe's pin card — a one-way
+                  arrival at a home is a Relocation on both surfaces or the
+                  two disagree about what the journey was (R22). */}
               <span className="rounded-full border border-stone-200 px-2 py-0.5 text-stone-500">
-                {TRIP_SUBTYPE_LABELS[trip.subtype]}
+                {tripKindLabel(trip)}
               </span>
               {trip.when_text && (
                 <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-amber-800">

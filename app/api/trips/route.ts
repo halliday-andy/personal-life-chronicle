@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createUserClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { TRIP_SUBTYPES } from '@/lib/globe/trip-types'
+import { withDestinationTypes } from '@/lib/trips/destination-types'
 
 export async function GET() {
   const userClient = createUserClient()
@@ -30,7 +31,10 @@ export async function GET() {
   if (error) {
     return NextResponse.json({ error: 'Failed to load trips', detail: error.message }, { status: 500 })
   }
-  return NextResponse.json({ trips: data ?? [], homeBaseRelationshipId: hb?.id ?? null })
+  // The destination's pin type, so a one-way arrival at a home can read
+  // "Relocation" (R22). Shared with the journey page's own get_trips call.
+  const trips = await withDestinationTypes(admin, data ?? [])
+  return NextResponse.json({ trips, homeBaseRelationshipId: hb?.id ?? null })
 }
 
 interface PostBody {

@@ -19,6 +19,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { buildJourneyTree, type JourneyPin } from '@/lib/journey/tree'
 import JourneySurface from '@/components/journey/JourneySurface'
 import type { TripRow } from '@/lib/globe/trip-types'
+import { withDestinationTypes } from '@/lib/trips/destination-types'
 
 export const dynamic = 'force-dynamic'
 
@@ -53,7 +54,10 @@ export default async function JourneyPage({
   }
 
   const tree = buildJourneyTree((pins ?? []) as JourneyPin[])
-  const tripRows = (trips ?? []) as TripRow[]
+  // The destination's pin type rides along so a one-way arrival at a home
+  // reads "Relocation" here exactly as it does on the globe (R22). Same
+  // helper as GET /api/trips — two surfaces, one definition.
+  const tripRows = await withDestinationTypes(admin, (trips ?? []) as TripRow[])
   // ?trip= or ?mode=travel lands in the Travel Journal (U5).
   const initialMode =
     searchParams.mode === 'travel' || (searchParams.trip && !searchParams.pin)

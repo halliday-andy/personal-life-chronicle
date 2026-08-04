@@ -53,5 +53,10 @@ export interface TripRow {
   destination_name: string
   destination_lng: number | null
   destination_lat: number | null
+  /** The destination pin's TYPE, attached after get_trips by
+   *  `withDestinationTypes` — not part of the RPC's own payload (R22).
+   *  Optional because the RPC alone does not supply it; `tripKindLabel`
+   *  falls back to the subtype when it is missing rather than guessing. */
+  destination_type_code?: string | null
   stops: TripStop[]
 }

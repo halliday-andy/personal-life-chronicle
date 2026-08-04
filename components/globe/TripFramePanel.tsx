@@ -26,6 +26,7 @@ import { useEscapeKey } from '@/lib/ui/use-escape-key'
 import PinSelect, { type SelectablePin } from './PinSelect'
 import { buildTripPatchPayload } from '@/lib/globe/trip-patch-payload'
 import { TRIP_SUBTYPES, TRIP_SUBTYPE_LABELS, type TripSubtype } from '@/lib/globe/trip-types'
+import { isRelocation } from '@/lib/globe/trip-kind'
 
 export interface TripFramingContext {
   tripId: string
@@ -118,6 +119,14 @@ export default function TripFramePanel({
   // of describing the state the panel opened in.
   const destinationLabel = nameOf(destinationId)
   const retargeting = destinationId !== ctx.destinationRelationshipId
+  // Said at the moment of the decision, not only afterwards on the card:
+  // a one-way trip ending at a home is the case R6 part 1 unlocked, and
+  // without the word it reads like a mistake.
+  const relocating = isRelocation({
+    subtype,
+    return_to_origin: returnToOrigin,
+    destination_type_code: pins.find((p) => p.relationship_id === destinationId)?.type_code,
+  })
 
   const save = async () => {
     setSaving(true)
@@ -250,6 +259,7 @@ export default function TripFramePanel({
         {!returnToOrigin && (
           <p className="mt-1 text-xs text-[var(--ink-dim)]/80">
             One-way — the journey ends at {destinationLabel}; no return arc will draw.
+            {relocating && ' Ending at a home makes this a relocation, and it will be named one.'}
           </p>
         )}
 

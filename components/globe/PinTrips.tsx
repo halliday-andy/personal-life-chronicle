@@ -32,6 +32,7 @@
 import { useEffect, useRef, useState } from 'react'
 import PinHopper from './PinHopper'
 import { TRIP_SUBTYPE_LABELS, type TripRow, type TripSubtype } from '@/lib/globe/trip-types'
+import { tripKindLabel } from '@/lib/globe/trip-kind'
 
 export const TRIP_ROUTE_COLOR = '#e0709b'
 
@@ -158,8 +159,11 @@ export default function PinTrips({
           <div className="flex flex-wrap items-center gap-2">
             <span style={{ color: TRIP_ROUTE_COLOR }}>✈</span>
             <span className="font-medium">{t.title || `Trip to ${t.destination_name}`}</span>
+            {/* "Relocation" when it went one way and ended somewhere he
+                lived — the word that makes R6's removed destination guard
+                legible instead of looking like a data error (R22). */}
             <span className="text-[var(--ink-dim)]">
-              {TRIP_SUBTYPE_LABELS[t.subtype]}
+              {tripKindLabel(t)}
               {t.when_text ? ` · ${t.when_text}` : ''}
             </span>
             {t.is_draft && (
