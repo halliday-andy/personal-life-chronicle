@@ -39,6 +39,12 @@ mechanics that placing, sequencing, and correcting it depend on.
 - [ ] **Places at a stop — elevated + owner-ordered** — [2026-07-26-stop-places-order-qa-checklist.md](2026-07-26-stop-places-order-qa-checklist.md). Built 2026-07-26 from the Mt. Snow Chalet finding: a short-term stay inside a home was buried behind a faint "2 related pins" chip at the bottom of a long card. Now an elevated list on both globe surfaces and in Journey, in the owner's drag order (chronological sorting is not available — invariant #5).
 - [x] **Pin-facts editor** — [2026-07-26-pin-facts-editor-qa-checklist.md](2026-07-26-pin-facts-editor-qa-checklist.md). Built 2026-07-26, closing the 2026-07-10 design: the four facts read from a home's recollection are editable on the workbench, each edit sticky against re-extraction, with a "↻ Refresh from recollection" button. §3 is the one that matters — it proves the sticky invariant live.
 
+**Data chores — ALL DONE, verified 2026-08-01** (`review_queue` has 0
+unresolved items of any type; only one `Phillips Exeter Academy` entity
+remains; Leola's aliases are `["Leola"]` with the junk "Leo" gone). The list
+below is retained for the record. *Note: 30 open `memory_stubs` are JOTS —
+memories parked to write up — not a review backlog.*
+
 **Data chores to fold into this sitting** (5 minutes each, all on /entities
 or /review): merge the Phillips Exeter twins (safe in either direction since
 `20260706130000`); confirm the junk "Leo" alias is gone from Leola Lapides

@@ -271,11 +271,12 @@ lost. *The tell: a fixture nobody copied from a real producer.* Sibling of the
   misses the pin actually named **"My Mt. Snow Chalet"** (`mount` ≠ `mt.`).
   Indistinguishable from the occlusion above and from the known append trap —
   all three render as nothing. **"No pins matched" must be said out loud.**
-- **Live-data finding, matters to Track A:** "Wendy's shared apartment" is
-  typed `vacationed_at`, not a residence, so it is **not on the spine** — a
-  workaround for the guard forbidding a primary residence as a trip
-  destination. The trip-terminus relaxation designed today is what lets it be
-  retyped correctly. Also confirmed: 14 sequenced stops, **4 residences with
+- **CORRECTED 2026-08-01 (Andy):** an earlier note here claimed "Wendy's
+  shared apartment" was a residence workaround that belonged on the spine.
+  **It was never a residence.** It is a legitimate non-spine pin, and in the
+  1978 Fiat 128 relocation it should be an itinerary **STOP** — the trip runs
+  My Mt. Snow Chalet → *stop* Wendy's apartment → **SSV Day Lodge Room** as
+  destination. Nothing to retype; the only remodel is the retarget. Also confirmed: 14 sequenced stops, **4 residences with
   `sort_order` NULL** (26th Street Santa Monica, Brookbend Drive Des Peres,
   Peabody Terrace HBS, Canmore House).
 - **CLASS-OF-BUG (new, rule 11): a generic surface reused in a specific mode

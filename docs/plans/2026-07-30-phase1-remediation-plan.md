@@ -208,8 +208,7 @@ onto the spine.
 
 **Live-data repairs ride here, each asked separately, and none is urgent
 (Andy, 2026-07-30):** the Fiat 128 trip → terminus SSV Day Lodge Room with
-Wendy's apartment demoted to a stop; Wendy's apartment retyped from
-`vacationed_at` to a residence.
+Wendy's apartment demoted to a stop; Wendy's apartment demoted from destination to an itinerary STOP.
 
 ### R7 — The dashed return *(F7)* — **RETIRED, no work**
 Not scheduled. The geometry is intended (`pair()` builds a great circle; the

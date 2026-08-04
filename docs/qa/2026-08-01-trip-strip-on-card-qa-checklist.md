@@ -57,30 +57,30 @@ over the globe, that is a finding.
 
 - [ ] **Frame / Edit frame** → the framing panel opens with the right origin
       suggestion (armed origin wins, then the anchor, then Home Base).
-- [ ] **Route** → the route-building banner opens and drawing still works.
+- [x] **Route** → the route-building banner opens and drawing still works.
       *(Route editing stays a globe mode — it draws on the map.)*
-- [ ] **Unframe** → two-step confirm ("Really remove the trip? The pin
+- [x] **Unframe** → two-step confirm ("Really remove the trip? The pin
       stays."), then the trip goes and the pin remains.
-- [ ] Unframe's confirm **times out after \~4s** if you don't click it.
+- [x] Unframe's confirm **times out after \~4s** if you don't click it.
 
 ## 6. Behaviour changes to judge, not bugs
 
-- [ ] **Compact card:** the arrival strip (identity only) has no trips chip —
+- [x] **Compact card:** the arrival strip (identity only) has no trips chip —
       one click expands the card and it is there. The old strip appeared even
       in compact mode. **[taste]** Is one click acceptable?
-- [ ] **During route editing** the card stays open behind the route banner,
+- [x] **During route editing** the card stays open behind the route banner,
       so the trips chip is reachable. The old strip hid itself in that mode.
       No overlap (the banner is `z-40`, `top-6`), but say if it feels busy.
 
 ## 7. Regressions to rule out
 
-- [ ] Navigating pins with ← → resets the open chip (the chip row is keyed by
+- [x] Navigating pins with ← → resets the open chip (the chip row is keyed by
       pin).
-- [ ] The place's own recollections / context / related-places / jot chips all
+- [x] The place's own recollections / context / related-places / jot chips all
       behave as before.
-- [ ] Opening the trips chip **scrolls itself into view** on a long pin
+- [x] Opening the trips chip **scrolls itself into view** on a long pin
       (R8 must still hold).
-- [ ] Jot counts on trips stay live without opening the panel.
+- [x] Jot counts on trips stay live without opening the panel.
 
 ## Proof scripts
 
