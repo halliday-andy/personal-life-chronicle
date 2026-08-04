@@ -238,8 +238,19 @@ validation and positioning stay in one place. Promoting an existing STOP
 deletes its stop row first (a pin must never be both). An UNTITLED trip's
 derived entity name follows the move; a TITLED trip keeps the owner's
 sentence untouched. Proof `verify-retarget-trip.mjs` 8/8, run inside a
-ROLLED-BACK transaction against real pins as fixtures. **Remaining: the Fiat
-128 remodel — live rows, so it is its own ask.**
+ROLLED-BACK transaction against real pins as fixtures. **The Fiat 128 remodel is DELIBERATELY NOT DONE** — Andy's call 2026-08-03:
+correcting it with SQL would spend the only end-to-end QA fixture for R22.
+**Do not "helpfully" fix it.**
+
+**NEXT UNIT — R22**, fully specced at
+`docs/plans/2026-08-03-r22-trip-destination-ui-design.md`: `retarget_trip`
+exists and is proven but NOTHING CALLS IT, so a trip's destination is
+changeable only by an agent running SQL. R22 adds the API path and a
+destination selector on the framing panel (~an afternoon), and its acceptance
+is Andy performing the 1978 remodel himself in the UI.
+
+**SESSION HANDOFF: `docs/plans/2026-08-03-handoff-prompt.md`** — written at
+the context limit with nothing mid-flight.
 
 **CLASS-OF-BUG (rule 20): a constraint keyed on a MUTABLE classification
 misjudges history.** Validating a past fact against a present type produces
