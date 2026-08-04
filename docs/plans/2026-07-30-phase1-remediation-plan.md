@@ -182,7 +182,7 @@ Design: same doc §4.
 **Accept:** the mode is stated only while true; the type stays changeable
 (§1's guarantee); no trip-level state moves into the pin-level dialog.
 
-### R6 — A trip's destination becomes changeable *(F6)* — **part 1 APPLIED 2026-08-03; `retarget_trip` still to build**
+### R6 — A trip's destination becomes changeable *(F6)* — **BOTH PARTS APPLIED 2026-08-03**
 Two parts:
 
 1. **Guard REMOVED — applied 2026-08-03 with Andy's approval.** Not the
@@ -202,7 +202,7 @@ Two parts:
    `allow_spine := NOT p_return_to_origin`; **`frame_trip` re-validates**, so a
    one-way trip terminating at a home cannot later be flipped back to a round
    trip and become invalid.
-2. **`retarget_trip(...)` — new RPC, additive, ungated.** Repoint the
+2. **`retarget_trip(...)` — APPLIED 2026-08-03**, `20260803130000_retarget_trip.sql`, proof `verify-retarget-trip.mjs` 8/8 (runs inside a rolled-back transaction, so the chronicle is untouched). Repoint the
    destination, optionally demoting the old one to a stop. **Repoint before
    demoting** (`add_trip_stop` refuses the current destination); leg
    `outbound` for one-way; **never rename a user-titled trip.**

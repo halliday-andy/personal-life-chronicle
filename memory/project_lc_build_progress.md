@@ -229,9 +229,17 @@ on a destination's current type misjudges a life where places change role.
 it was removed, not made conditional — DROP + CREATE with an orphan-overload
 proof. Retained: ownership, globe-pin check, and `add_trip_stop`'s turnaround
 refusal (about a trip's own shape, not a pin's type). Proof
-`scripts/verify-trip-destination-guard.mjs` 9/9, read-only. **Still to build:
-`retarget_trip` (additive, ungated), then the Fiat 128 remodel as its own
-ask.**
+`scripts/verify-trip-destination-guard.mjs` 9/9, read-only. **R6 PART 2 APPLIED 2026-08-03:** `20260803130000_retarget_trip.sql` —
+`retarget_trip(user, trip, new_destination, demote_old_to_stop = true)`.
+Additive. **Order is load-bearing:** `add_trip_stop` refuses the CURRENT
+destination, so the old one can only be demoted AFTER the repoint lands; the
+demotion routes through `add_trip_stop` rather than a bare INSERT so
+validation and positioning stay in one place. Promoting an existing STOP
+deletes its stop row first (a pin must never be both). An UNTITLED trip's
+derived entity name follows the move; a TITLED trip keeps the owner's
+sentence untouched. Proof `verify-retarget-trip.mjs` 8/8, run inside a
+ROLLED-BACK transaction against real pins as fixtures. **Remaining: the Fiat
+128 remodel — live rows, so it is its own ask.**
 
 **CLASS-OF-BUG (rule 20): a constraint keyed on a MUTABLE classification
 misjudges history.** Validating a past fact against a present type produces
