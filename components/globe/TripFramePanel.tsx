@@ -19,6 +19,16 @@ import { useEscapeKey } from '@/lib/ui/use-escape-key'
 export interface TripFramingContext {
   tripId: string
   destinationName: string
+  /** The trip's CURRENT title, so re-framing edits it rather than appearing
+   *  untitled. Empty on a fresh trip. Kept separate from `destinationName`,
+   *  which conflated the two — once a trip was titled, its title became the
+   *  "destination name" and got quoted back inside the placeholder example,
+   *  so a saved title looked like ghost text in an empty field (F26,
+   *  Andy 2026-08-01). */
+  defaultTitle?: string
+  /** The trip's CURRENT year hint, same reasoning as the title — 5 of 6 of
+   *  Andy's trips carry one, and re-framing showed the field blank. */
+  defaultYearHint?: string
   /** Origin suggestion — the destination pin's anchor residence, if any. */
   suggestedOriginId: string | null
   defaultWhen: string
@@ -60,9 +70,9 @@ export default function TripFramePanel({
   onAddOrigin?: () => void
 }) {
   const [originId, setOriginId] = useState<string>(ctx.suggestedOriginId ?? '')
-  const [title, setTitle] = useState('')
+  const [title, setTitle] = useState(ctx.defaultTitle ?? '')
   const [whenText, setWhenText] = useState(ctx.defaultWhen)
-  const [yearHint, setYearHint] = useState('')
+  const [yearHint, setYearHint] = useState(ctx.defaultYearHint ?? '')
   // One-way support (2026-07-19, Andy's chalet→Calgary drive): the model
   // always had trips.return_to_origin; this is the missing UI for it.
   const [returnToOrigin, setReturnToOrigin] = useState<boolean>(ctx.returnToOrigin ?? true)

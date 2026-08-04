@@ -1845,6 +1845,8 @@ export default function GlobeView() {
           onFrame: (t) => setFraming({
             tripId: t.trip_id,
             destinationName: t.title || t.destination_name,
+            defaultTitle: t.title ?? '',
+            defaultYearHint: t.year_hint != null ? String(t.year_hint) : '',
             suggestedOriginId: suggestTripOrigin({
               existingOriginId: t.origin_relationship_id,
               armedOriginId: tripFromHere?.relationshipId,
