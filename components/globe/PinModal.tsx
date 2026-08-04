@@ -13,7 +13,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { PIN_TYPES, pinTypeMeta, SPINE_CODE } from '@/lib/globe/pin-types'
 import { anchorCandidates, isUnplacedHome } from '@/lib/globe/anchor-options'
-import { TRIP_SUBTYPES, TRIP_SUBTYPE_LABELS, tripSubtypeDefaultPinCode, type TripSubtype } from '@/lib/globe/trip-types'
+import { TRIP_SUBTYPES, TRIP_SUBTYPE_LABELS, tripSubtypeDefaultPinCode, type TripLeg, type TripSubtype } from '@/lib/globe/trip-types'
 import { handleRichPaste } from '@/lib/richPaste'
 import { useEscapeKey } from '@/lib/ui/use-escape-key'
 
@@ -60,6 +60,7 @@ export default function PinModal({
   defaultTypeCode,
   defaultAnchorId,
   armedOriginName,
+  stopCaptureFor,
 }: {
   placeLabel: string
   saving: boolean
@@ -85,6 +86,12 @@ export default function PinModal({
    *  (`GlobeView` renders it on `!modalOpen`), so without this the only cue
    *  disappears exactly when it is needed (F4, 2026-07-30). */
   armedOriginName?: string
+  /** Route-building placed this draft (R22 add-on): the pin about to be
+   *  saved becomes a STOP on the named trip's named leg. Same rule-11
+   *  contract as `armedOriginName` — the route banner is covered while
+   *  this dialog is open, so the mode has to be stated here or the only
+   *  cue vanishes exactly when it is needed (F4, 2026-07-30). */
+  stopCaptureFor?: { tripName: string; leg: TripLeg }
 }) {
   // Escape closes, matching the backdrop's existing dismiss — and refuses
   // while a save is in flight, for the same reason the backdrop does (F9a).
@@ -141,6 +148,10 @@ export default function PinModal({
   // trip and this reverts to the generic dialog, preserving the guarantee
   // that the type stays changeable here.
   const settingTripDestination = Boolean(armedOriginName) && isTrip
+  // Same contract, the other direction: choosing "Trip" here means the user
+  // has decided this place is a journey of its own rather than a waypoint
+  // on one, so the stop framing steps aside instead of arguing with them.
+  const capturingStop = Boolean(stopCaptureFor) && !isTrip
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
@@ -151,12 +162,23 @@ export default function PinModal({
       />
       <div className="glass relative z-10 w-full max-w-lg rounded-2xl p-6 text-[var(--ink)]">
         <p className="text-xs uppercase tracking-[0.18em] text-[var(--ink-dim)]">
-          {settingTripDestination ? 'Where did the trip go?' : 'A place in your life'}
+          {settingTripDestination
+            ? 'Where did the trip go?'
+            : capturingStop
+              ? 'A stop along the way'
+              : 'A place in your life'}
         </p>
         {settingTripDestination && (
           <p className="mt-1 text-sm leading-relaxed text-[var(--ink)]">
             The trip from <strong>{armedOriginName}</strong> — pin the place that
             marked the turn toward home.
+          </p>
+        )}
+        {capturingStop && stopCaptureFor && (
+          <p className="mt-1 text-sm leading-relaxed text-[var(--ink)]">
+            Somewhere you passed through on <strong>{stopCaptureFor.tripName}</strong> — it
+            joins the {stopCaptureFor.leg} leg after the stops already there.
+            It becomes a place of its own too, so it can carry its own recollection.
           </p>
         )}
         <label className="mt-1 block text-xs text-[var(--ink-dim)]">Name on the pin</label>
@@ -367,8 +389,8 @@ export default function PinModal({
             className="rounded-lg bg-[var(--ember)] px-5 py-2 text-sm font-medium text-[#241500] shadow-[0_0_20px_rgba(244,177,74,0.45)] hover:bg-[var(--ember-soft)] disabled:opacity-60"
           >
             {saving
-              ? (settingTripDestination ? 'Setting…' : 'Placing…')
-              : (settingTripDestination ? 'Set the destination' : 'Add this place')}
+              ? (settingTripDestination ? 'Setting…' : capturingStop ? 'Adding…' : 'Placing…')
+              : (settingTripDestination ? 'Set the destination' : capturingStop ? 'Add this stop' : 'Add this place')}
           </button>
         </div>
       </div>

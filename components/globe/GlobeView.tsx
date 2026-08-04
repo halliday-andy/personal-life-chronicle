@@ -775,9 +775,14 @@ export default function GlobeView() {
       // While refining a pin's location, ignore stray map clicks (e.g. a
       // drag-release) — the refine banner owns Save/Cancel.
       if (refiningRef.current) return
-      // While building a trip route, the globe is a click target for
-      // STOPS only (pins) — empty-globe clicks do nothing.
-      if (routeEditRef.current) return
+      // While building a trip route, an empty-globe click PINS a new stop
+      // (R22 add-on). It used to do nothing, so every waypoint that wasn't
+      // already on the globe cost a mode exit: Done → click → create the
+      // pin → reopen Route → click it. Straight to the draft rather than
+      // deselecting first, because in this mode the banner promises the
+      // click will pin something, and spending it on closing a card would
+      // make the banner lie on the first try.
+      if (routeEditRef.current) { setDraftAt(e.lngLat.lng, e.lngLat.lat, ''); return }
       // Clicking empty globe: deselect an open pin, else drop a new draft.
       if (selectedIdRef.current) { deselect(); return }
       setDraftAt(e.lngLat.lng, e.lngLat.lat, '')
@@ -1214,6 +1219,27 @@ export default function GlobeView() {
         return
       }
 
+      // Route-building stop capture (R22 add-on): this pin was placed from
+      // inside route mode, so it joins the trip as a stop and the mode
+      // persists — the next click can pin the next waypoint. Skipped when
+      // the user changed the type to Trip, which says they meant a journey
+      // of its own rather than a waypoint on one.
+      const routing = routeEditRef.current
+      if (routing && !data.trip) {
+        const stopRes = await fetch(`/api/trips/${routing.tripId}/stops`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ relationshipId: pin.relationship_id, leg: routing.leg }),
+        })
+        if (!stopRes.ok) {
+          const b = await stopRes.json().catch(() => ({}))
+          throw new Error(`The pin is saved, but adding it as a stop failed: ${b.detail || b.error || `HTTP ${stopRes.status}`}`)
+        }
+        await loadTrips()
+        setNotice(`${data.name?.trim() || 'The new pin'} is a stop on the ${routing.leg} leg — open its card any time to write what happened there.`)
+        return
+      }
+
       // Destination-first trip capture (U3): the pin is the destination;
       // create the draft trip, then offer the optional framing step. The
       // pin's anchor doubles as the origin suggestion ("home at the time").
@@ -1638,9 +1664,19 @@ export default function GlobeView() {
           onSave={handleSave}
           onCancel={() => setModalOpen(false)}
           originCapture={!!originCapture}
-          defaultTypeCode={tripFromHere ? 'trip' : undefined}
+          // A waypoint defaults to a Log — the type built for "a place worth
+          // marking on the map", which is what a stop is. Still changeable,
+          // like every other default here.
+          defaultTypeCode={tripFromHere ? 'trip' : routeEdit ? 'logged_at' : undefined}
           defaultAnchorId={tripFromHere?.relationshipId}
           armedOriginName={tripFromHere?.name}
+          stopCaptureFor={routeEdit && !tripFromHere
+            ? {
+                tripName: trips.find((t) => t.trip_id === routeEdit.tripId)?.title
+                  || `the trip to ${trips.find((t) => t.trip_id === routeEdit.tripId)?.destination_name ?? 'this place'}`,
+                leg: routeEdit.leg,
+              }
+            : undefined}
         />
       )}
 
@@ -1762,8 +1798,8 @@ export default function GlobeView() {
               </span>
             </div>
             <p className="mt-1.5 text-[var(--ink-dim)]">
-              Click pins on the globe in travel order to add {routeEdit.leg} stops.
-              New places: pin them first (a Log works well), then click them.
+              Click pins on the globe in travel order to add {routeEdit.leg} stops — or
+              click anywhere empty to pin a new place and add it in one go.
             </p>
             {(['outbound', 'return'] as TripLeg[]).map((leg) => {
               const stops = legStops(leg)
