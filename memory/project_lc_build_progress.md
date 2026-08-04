@@ -215,6 +215,30 @@ away from a trip, so the mode is stated only while TRUE. F5's clarifying line
 says the anchor is the era, not the origin. **The remediation pass is now
 complete except R6**, which carries the gated migration.
 
+**R6 PART 1 APPLIED 2026-08-03** (gated, Andy approved, applied by filename):
+`20260803120000_trip_destination_guard_removed.sql` **REMOVES** the "a primary
+residence cannot be a trip destination" rule — not the relaxation originally
+designed. **Andy's scenario killed the premise:** a ROUND trip to view a house
+under construction, which becomes home six months later; the journey never
+changed, the world did, yet the trip became unsaveable — and recording it
+after the move was refused outright, since `create_trip` ran the same test.
+**PIN TYPES DESCRIBE THE PRESENT; TRIPS DESCRIBE THE PAST**, so any rule keyed
+on a destination's current type misjudges a life where places change role.
+`return_to_origin` already carries the distinction, asserted by the owner.
+`p_allow_spine` existed only for this rule (1 of 4 call sites passed false) so
+it was removed, not made conditional — DROP + CREATE with an orphan-overload
+proof. Retained: ownership, globe-pin check, and `add_trip_stop`'s turnaround
+refusal (about a trip's own shape, not a pin's type). Proof
+`scripts/verify-trip-destination-guard.mjs` 9/9, read-only. **Still to build:
+`retarget_trip` (additive, ungated), then the Fiat 128 remodel as its own
+ask.**
+
+**CLASS-OF-BUG (rule 20): a constraint keyed on a MUTABLE classification
+misjudges history.** Validating a past fact against a present type produces
+false refusals as the world changes. *The tell: a rule that reads an entity's
+current type to decide whether a past event was legitimate.* Earned when
+Andy's counter-example broke a guard I was about to extend rather than remove.
+
 **PRINCIPLE (rule 16): when a rule gates writing, check it also gates
 reading.** Three sightings now of the same shape — the pin-card
 reconciliation drift (edit panel showed LESS than the card), F15

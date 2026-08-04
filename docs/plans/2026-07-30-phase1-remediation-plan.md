@@ -182,10 +182,15 @@ Design: same doc §4.
 **Accept:** the mode is stated only while true; the type stays changeable
 (§1's guarantee); no trip-level state moves into the pin-level dialog.
 
-### R6 — A trip's destination becomes changeable *(F6)* — **GATED**
+### R6 — A trip's destination becomes changeable *(F6)* — **part 1 APPLIED 2026-08-03; `retarget_trip` still to build**
 Two parts:
 
-1. **Guard relaxation (GATED, approved in principle 2026-07-30, unapplied).** A
+1. **Guard REMOVED — applied 2026-08-03 with Andy's approval.** Not the
+   relaxation first designed: Andy's scenario (a round trip to a house under
+   construction that later becomes home) showed the premise was unsound —
+   pin types describe the PRESENT, trips describe the PAST. `p_allow_spine`
+   removed entirely rather than made conditional. Proof
+   `verify-trip-destination-guard.mjs` 9/9. **Superseded text below.** A
    primary residence may be a trip destination when `return_to_origin = false`
    — terminus, not turnaround. Alters `validate_trip_pin` and `create_trip`;
    the signature change means `DROP FUNCTION` and a post-apply proof of
