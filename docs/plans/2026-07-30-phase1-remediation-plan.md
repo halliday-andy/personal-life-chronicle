@@ -30,8 +30,8 @@ change — the best ratio in the set.
 | **F1** | Trip strip (`z-30`, `top-20`) occludes the search dropdown (`z-20`, `top-6`), hiding pin-search's "Your pins" group | strip → card; the band empties, so no stacking rule to maintain | **R4 — BUILT** |
 | **F2** | "Start a trip from here" lives in globe chrome; Andy hunted the card and edit panel for it | strip → card (rule 10) | **R4 — BUILT** |
 | **F8** | A trip's jots are invisible from its destination pin — they host on the *trip* entity, the card reads the *place* entity | strip → card; trip jots arrive via the trip disclosure. **Counts stay per-host** | **R4 — BUILT** |
-| **F4** | The armed placement modal never says the pin is the trip's destination; CTA reads "Add this place" | mode-aware heading + CTA (rule 11) | **R5** |
-| **F5** | Anchor reads as trip origin and is preset to the armed pin, but editing it would not change the origin | clarifying label; ownership stays in the framing panel | **R5** |
+| **F4** | The armed placement modal never says the pin is the trip's destination; CTA reads "Add this place" | mode-aware heading + CTA (rule 11) | **R5 — BUILT** |
+| **F5** | Anchor reads as trip origin and is preset to the armed pin, but editing it would not change the origin | clarifying label; ownership stays in the framing panel | **R5 — BUILT** |
 | **F3** | `searchPins` matches the whole query as a substring, so `Mount Snow Chalet` misses `My Mt. Snow Chalet`; failure is silent | token-wise matching + an explicit "no pins matched" | **R3** |
 | **F9a** | No dismissal on `TripFramePanel` **or** `PinModal` — no Escape, ✕, or backdrop. Both are keyboard traps | Escape + ✕ + backdrop | **R1** |
 | **F9b** | The exit exists but is labelled "Keep as a draft", which reads as *demote* when re-framing an already-framed trip | contextual label (rule 11, 3rd sighting) | **R2** |
@@ -174,7 +174,7 @@ nineteen times. `scripts/verify-jsx-sibling-keys.mjs` covers the file set.
 its destination pin **without merging the counts**; both card surfaces render
 identically from the one component.
 
-### R5 — The armed modal states its mode *(F4, F5)*
+### R5 — The armed modal states its mode *(F4, F5)* — **BUILT**
 Heading *"Where did the trip from **X** go?"*, sub-line reusing the banner's
 wording, CTA **"Set the destination"**. Reverts to generic if the type changes
 away from a trip. Plus F5's clarifying label on the anchor.

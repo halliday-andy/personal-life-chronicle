@@ -208,6 +208,13 @@ specific mode must state the mode) — same root, one component serving two
 jobs and only remembering one of them. Third such finding in this panel after
 F9b's exit labels and F5's anchor/origin conflation.
 
+**R5 BUILT (F4/F5):** the armed placement modal now states its mode —
+heading *"Where did the trip go?"*, sub-line naming the origin, action **"Set
+the destination"** — and reverts to the generic dialog if the type is changed
+away from a trip, so the mode is stated only while TRUE. F5's clarifying line
+says the anchor is the era, not the origin. **The remediation pass is now
+complete except R6**, which carries the gated migration.
+
 **PRINCIPLE (rule 16): when a rule gates writing, check it also gates
 reading.** Three sightings now of the same shape — the pin-card
 reconciliation drift (edit panel showed LESS than the card), F15
