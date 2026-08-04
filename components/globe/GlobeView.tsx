@@ -19,7 +19,7 @@ import 'mapbox-gl/dist/mapbox-gl.css'
 import FindLocationBox, { RetrievedPlace } from './FindLocationBox'
 import PinModal, { PinDraftData } from './PinModal'
 import TripFramePanel, { TripFramingContext } from './TripFramePanel'
-import { type TripLeg, type TripRow } from '@/lib/globe/trip-types'
+import { type TripLeg, type TripRow, type TripSubtype } from '@/lib/globe/trip-types'
 import PinEditPanel from './PinEditPanel'
 import PinDetailCard from './PinDetailCard'
 import { type TripCardContext } from './PinTrips'
@@ -1068,7 +1068,10 @@ export default function GlobeView() {
 
   // Retroactive framing (U6, R14): the selected pin becomes a trip's
   // destination — the pin row itself is untouched (proven in U1).
-  const frameSelectedAsTrip = useCallback(async (subtype: string) => {
+  // `TripSubtype`, not `string`: its only caller is TripCardContext's
+  // onFrameAsTrip, which is already typed, and the framing panel now needs
+  // the value to survive as the union rather than widening on the way in.
+  const frameSelectedAsTrip = useCallback(async (subtype: TripSubtype) => {
     const selPin = pins.find((p) => p.relationship_id === selectedId)
     if (!selPin) return
     setError(null)
@@ -1112,6 +1115,8 @@ export default function GlobeView() {
       setFraming({
         tripId,
         destinationName: selPin.name,
+        destinationRelationshipId: selPin.relationship_id,
+        subtype,
         suggestedOriginId: suggestTripOrigin({
           armedOriginId: tripFromHere?.relationshipId,
           anchorId: selPin.anchor_residence_id,
@@ -1231,6 +1236,8 @@ export default function GlobeView() {
         setFraming({
           tripId,
           destinationName: data.name?.trim() || draft.label || 'This place',
+          destinationRelationshipId: pin.relationship_id,
+          subtype: data.trip.subtype,
           // Armed "from here" origin first, then anchor ("home at the
           // time"), then Home Base when unanchored (R16).
           suggestedOriginId: suggestTripOrigin({
@@ -1845,7 +1852,14 @@ export default function GlobeView() {
           },
           onFrame: (t) => setFraming({
             tripId: t.trip_id,
-            destinationName: t.title || t.destination_name,
+            // The DESTINATION's name, not the trip's title. Passing
+            // `t.title || t.destination_name` here made the panel's one-way
+            // sentence read "the journey ends at The epic solo road trip in
+            // the overloaded Fiat 128" — the panel resolves the heading from
+            // defaultTitle itself now, so this field means one thing.
+            destinationName: t.destination_name,
+            destinationRelationshipId: t.destination_relationship_id,
+            subtype: t.subtype,
             defaultTitle: t.title ?? '',
             defaultYearHint: t.year_hint != null ? String(t.year_hint) : '',
             suggestedOriginId: suggestTripOrigin({

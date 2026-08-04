@@ -11,14 +11,33 @@
  * not a cancel — the destination is preserved either way.
  *
  * Also reused by the pin detail card's "Frame as trip" action (U6).
+ *
+ * R22 (2026-08-03) added the other end. The panel used to STATE the
+ * destination as a settled fact — "The destination is saved" — which sent
+ * Andy hunting for a control that did not exist, because `retarget_trip`
+ * was reachable only by an agent running SQL. A panel that names a field
+ * it cannot edit must either say so or offer the edit; this offers it.
+ * The trip's KIND arrived by the same reasoning: `frame_trip` has always
+ * taken `p_subtype` and no caller ever sent one.
  */
 
 import { useState } from 'react'
 import { useEscapeKey } from '@/lib/ui/use-escape-key'
+import PinSelect, { type SelectablePin } from './PinSelect'
+import { buildTripPatchPayload } from '@/lib/globe/trip-patch-payload'
+import { TRIP_SUBTYPES, TRIP_SUBTYPE_LABELS, type TripSubtype } from '@/lib/globe/trip-types'
 
 export interface TripFramingContext {
   tripId: string
+  /** The DESTINATION's own name — never the trip's title. The two were
+   *  conflated (`t.title || t.destination_name`), which is why the one-way
+   *  hint could read "the journey ends at The epic solo road trip in the
+   *  overloaded Fiat 128". Same family as F26; R22 made it load-bearing,
+   *  since the destination is now editable and the sentence must track it. */
   destinationName: string
+  /** Which pin the trip currently ends at — pre-selects the destination
+   *  selector, and is the baseline the retarget decision compares against. */
+  destinationRelationshipId: string
   /** The trip's CURRENT title, so re-framing edits it rather than appearing
    *  untitled. Empty on a fresh trip. Kept separate from `destinationName`,
    *  which conflated the two — once a trip was titled, its title became the
@@ -29,6 +48,9 @@ export interface TripFramingContext {
   /** The trip's CURRENT year hint, same reasoning as the title — 5 of 6 of
    *  Andy's trips carry one, and re-framing showed the field blank. */
   defaultYearHint?: string
+  /** The trip's CURRENT kind. Always known: a subtype is chosen at
+   *  creation, so there is no "unset" state to represent. */
+  subtype: TripSubtype
   /** Origin suggestion — the destination pin's anchor residence, if any. */
   suggestedOriginId: string | null
   defaultWhen: string
@@ -51,7 +73,7 @@ export default function TripFramePanel({
   onAddOrigin,
 }: {
   ctx: TripFramingContext
-  pins: { relationship_id: string; name: string; type_code: string | null }[]
+  pins: SelectablePin[]
   /** The frame SAVED. Distinct from onDismiss because a successful frame
    *  consumes the armed "trip from here" origin and a dismissal must not
    *  (F9a/R1) — the armed pin is applied here, not at trip creation, so
@@ -70,6 +92,12 @@ export default function TripFramePanel({
   onAddOrigin?: () => void
 }) {
   const [originId, setOriginId] = useState<string>(ctx.suggestedOriginId ?? '')
+  const [destinationId, setDestinationId] = useState<string>(ctx.destinationRelationshipId)
+  // Default ON: the old destination is usually the story of the journey —
+  // Wendy's apartment is where the Fiat 128 stopped, not somewhere to
+  // discard. Matches `retarget_trip`'s own default rather than restating it.
+  const [demoteOldToStop, setDemoteOldToStop] = useState(true)
+  const [subtype, setSubtype] = useState<TripSubtype>(ctx.subtype)
   const [title, setTitle] = useState(ctx.defaultTitle ?? '')
   const [whenText, setWhenText] = useState(ctx.defaultWhen)
   const [yearHint, setYearHint] = useState(ctx.defaultYearHint ?? '')
@@ -83,8 +111,13 @@ export default function TripFramePanel({
   // Escape closes without writing, and refuses mid-save (F9a).
   useEscapeKey(onDismiss, !saving)
 
-  const suggested = pins.find((p) => p.relationship_id === ctx.suggestedOriginId)
-  const others = pins.filter((p) => p.relationship_id !== ctx.suggestedOriginId)
+  const nameOf = (relId: string) =>
+    pins.find((p) => p.relationship_id === relId)?.name ?? ctx.destinationName
+  // Where the trip ends AS CURRENTLY CHOSEN — every sentence about the
+  // journey's end reads from this, so the copy tracks the selector instead
+  // of describing the state the panel opened in.
+  const destinationLabel = nameOf(destinationId)
+  const retargeting = destinationId !== ctx.destinationRelationshipId
 
   const save = async () => {
     setSaving(true)
@@ -97,21 +130,24 @@ export default function TripFramePanel({
       const res = await fetch(`/api/trips/${ctx.tripId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          originRelationshipId: originId || null,
-          title: title.trim() || undefined,
-          whenText: whenText.trim() || undefined,
-          yearHint: year,
-          returnToOrigin,
-        }),
+        body: JSON.stringify(
+          buildTripPatchPayload(
+            { originId, destinationId, demoteOldToStop, title, whenText, yearHint: year, subtype, returnToOrigin },
+            ctx.destinationRelationshipId,
+          ),
+        ),
       })
       if (!res.ok) {
         const b = await res.json().catch(() => ({}))
         throw new Error(b.detail || b.error || `HTTP ${res.status}`)
       }
-      onDone(originId
-        ? `Trip framed — ${title.trim() || ctx.destinationName} has its origin.`
-        : `Trip saved — frame the origin whenever you're ready.`)
+      onDone(
+        retargeting
+          ? `The trip now ends at ${destinationLabel}${demoteOldToStop ? ` — ${ctx.destinationName} is a stop along the way.` : '.'}`
+          : originId
+            ? `Trip framed — ${title.trim() || ctx.destinationName} has its origin.`
+            : `Trip saved — frame the origin whenever you're ready.`,
+      )
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not frame the trip.')
       setSaving(false)
@@ -125,7 +161,7 @@ export default function TripFramePanel({
         aria-hidden
         onClick={saving ? undefined : onDismiss}
       />
-      <div className="glass relative z-10 w-full max-w-lg rounded-2xl p-6 text-[var(--ink)]">
+      <div className="glass relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl p-6 text-[var(--ink)]">
         <button
           type="button"
           onClick={onDismiss}
@@ -137,37 +173,69 @@ export default function TripFramePanel({
         </button>
         <p className="text-xs uppercase tracking-[0.18em] text-[var(--ink-dim)]">Frame the trip</p>
         <h2 className="nocturne-display mt-1 text-2xl font-medium leading-tight">
-          {ctx.destinationName}
+          {/* A titled trip is known by its title; an untitled one by where it
+              went. Resolved HERE rather than by the caller passing a title
+              under the name `destinationName` — that conflation is what made
+              the one-way sentence name a trip instead of a place. */}
+          {ctx.defaultTitle?.trim() || ctx.destinationName}
         </h2>
         <p className="mt-1 text-xs leading-relaxed text-[var(--ink-dim)]">
           {ctx.isDraft
-            ? 'The destination is saved. Origin → destination is enough to complete the trip — or keep it as a draft and come back later.'
-            : 'Adjust anything here and save, or close without changing it.'}
+            ? 'Origin → destination is enough to complete the trip — change either if you recorded it differently, or keep it as a draft and come back later.'
+            : 'Adjust anything here and save, or close without changing it. Both ends of the journey can move.'}
         </p>
 
-        <label className="mt-5 block text-sm text-[var(--ink-dim)]">Where did the trip start?</label>
-        <select
-          value={originId}
-          onChange={(e) => {
-            if (e.target.value === '__new__') { onAddOrigin?.(); return }
-            setOriginId(e.target.value)
-          }}
-          disabled={saving}
-          className="mt-1 w-full rounded-xl border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--ember-soft)]"
-        >
-          {suggested && (
-            <option value={suggested.relationship_id}>
-              {suggested.name} (home at the time)
-            </option>
-          )}
-          {others.map((p) => (
-            <option key={p.relationship_id} value={p.relationship_id}>{p.name}</option>
-          ))}
-          {onAddOrigin && (
-            <option value="__new__">＋ Pin a new origin on the globe…</option>
-          )}
-          <option value="">Decide later</option>
-        </select>
+        <div className="mt-5">
+          <PinSelect
+            id="trip-origin"
+            label="Where did the trip start?"
+            value={originId}
+            onChange={setOriginId}
+            pins={pins}
+            disabled={saving}
+            suggestedId={ctx.suggestedOriginId}
+            suggestionSuffix="home at the time"
+            allowNone
+            noneLabel="Decide later"
+            onAddNew={onAddOrigin}
+            addNewLabel="＋ Pin a new origin on the globe…"
+          />
+        </div>
+
+        {/* R22. No "decide later" and no "pin a new one": the column is NOT
+            NULL, and origin capture only ever sets an ORIGIN — offering a
+            destination equivalent would name a mode that does not exist. */}
+        <div className="mt-3">
+          <PinSelect
+            id="trip-destination"
+            label="Where did it end?"
+            value={destinationId}
+            onChange={setDestinationId}
+            pins={pins}
+            disabled={saving}
+            allowNone={false}
+          />
+        </div>
+
+        {retargeting && (
+          <label className="mt-2 flex items-start gap-2 text-sm text-[var(--ink-dim)]">
+            <input
+              type="checkbox"
+              checked={demoteOldToStop}
+              onChange={(e) => setDemoteOldToStop(e.target.checked)}
+              disabled={saving}
+              className="mt-0.5 accent-[var(--ember)]"
+            />
+            <span>
+              Keep <strong className="font-medium text-[var(--ink)]">{ctx.destinationName}</strong> as a stop along the way
+              {!demoteOldToStop && (
+                <span className="block text-xs text-[var(--ink-dim)]/80">
+                  Unchecked, it drops off this trip entirely — the pin stays on your globe.
+                </span>
+              )}
+            </span>
+          </label>
+        )}
 
         <label className="mt-3 flex items-center gap-2 text-sm text-[var(--ink-dim)]">
           <input
@@ -181,12 +249,31 @@ export default function TripFramePanel({
         </label>
         {!returnToOrigin && (
           <p className="mt-1 text-xs text-[var(--ink-dim)]/80">
-            One-way — the journey ends at {ctx.destinationName}; no return arc will draw.
+            One-way — the journey ends at {destinationLabel}; no return arc will draw.
           </p>
         )}
 
-        <label className="mt-4 block text-sm text-[var(--ink-dim)]">Trip title (optional)</label>
+        {/* The kind was chosen at capture, when the least was known about the
+            journey — the same reason the destination needed to become
+            editable (R5's destination-first capture). */}
+        <label htmlFor="trip-subtype" className="mt-4 block text-sm text-[var(--ink-dim)]">
+          What kind of trip was it?
+        </label>
+        <select
+          id="trip-subtype"
+          value={subtype}
+          onChange={(e) => setSubtype(e.target.value as TripSubtype)}
+          disabled={saving}
+          className="mt-1 w-full rounded-xl border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--ember-soft)]"
+        >
+          {TRIP_SUBTYPES.map((s) => (
+            <option key={s} value={s}>{TRIP_SUBTYPE_LABELS[s]}</option>
+          ))}
+        </select>
+
+        <label htmlFor="trip-title" className="mt-4 block text-sm text-[var(--ink-dim)]">Trip title (optional)</label>
         <input
+          id="trip-title"
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -197,8 +284,9 @@ export default function TripFramePanel({
 
         <div className="mt-4 flex gap-3">
           <div className="flex-1">
-            <label className="block text-sm text-[var(--ink-dim)]">When? (free text)</label>
+            <label htmlFor="trip-when" className="block text-sm text-[var(--ink-dim)]">When? (free text)</label>
             <input
+              id="trip-when"
               type="text"
               value={whenText}
               onChange={(e) => setWhenText(e.target.value)}
@@ -208,8 +296,9 @@ export default function TripFramePanel({
             />
           </div>
           <div className="w-32">
-            <label className="block text-sm text-[var(--ink-dim)]">Year (optional)</label>
+            <label htmlFor="trip-year" className="block text-sm text-[var(--ink-dim)]">Year (optional)</label>
             <input
+              id="trip-year"
               type="text"
               inputMode="numeric"
               value={yearHint}
