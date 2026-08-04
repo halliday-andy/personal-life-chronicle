@@ -4,6 +4,74 @@ description: What's been built so far in the Claude Code implementation of Life 
 type: project
 ---
 
+## Session handoff — 2026-08-04 (R22 BUILT + three agreed add-ons)
+
+**R22 SHIPPED.** `retarget_trip` finally has a caller: the framing panel
+offers **"Where did it end?"**, and the PATCH route calls `retarget_trip`
+before `frame_trip` with step-specific errors (two RPCs share no
+transaction, so "Failed to update trip" would have been a lie by omission
+once the destination had already moved). Commits `7001a12` (payload builder
++ proof, 10/10), `be38cc8` (API), `3f01cd4` (panel + PinSelect), `b55bbf0`
+(Relocation), `903a29c` (route-mode stop capture), `27c537e` (the trip-kind
+proof, which missed its own commit).
+
+**Andy approved three add-ons** beyond the spec, all built:
+1. **Trip-kind selector** — `frame_trip` has always taken `p_subtype` and
+   no caller ever sent one. The same gap R22 exists to close, one field over.
+2. **"Relocation"** — R6 part 1 removed the guard refusing a home as a
+   destination, but nothing ever said the word, so a one-way arrival at a
+   home read "Road trip" and looked like a data error. Derived once in
+   `lib/globe/trip-kind.ts`, used by the pin card, the Travel Journal and
+   the panel. `destination_type_code` is attached after `get_trips` by ONE
+   shared helper (`lib/trips/destination-types.ts`) called from both of its
+   callers — adding it to the RPC means DROP+CREATE, a gated migration.
+   **Fold it into `get_trips` when a gated migration next goes to Andy.**
+3. **Pin a stop from inside route mode** — an empty-globe click during
+   route-building now pins the place AND adds it to the leg. It used to do
+   nothing, costing a mode exit per waypoint.
+
+**Andy's premise was wrong and the data said so in one query.** He asked
+to reframe "the vacation trip to Wendy's Calgary apartment"; the trip is
+`road_trip` and was ALREADY `return_to_origin: false`. The word "vacation"
+belonged to the **pin** (`vacationed_at`, the code road-trip capture mints).
+One `db-query.mjs` call before building saved a wrong build — the 08-03
+handoff's own lesson, applied.
+
+**QA: `docs/qa/2026-08-04-r22-trip-destination-qa-checklist.md`** — §1 is
+the acceptance (the Fiat 128 remodel, still deliberately uncorrected), §6
+retypes Wendy's leftover pin, §7 is the RESTRICT/CASCADE asymmetry.
+
+**CLASS-OF-BUG (rule 21): reusing a control for a second field must be
+parameterised by what NULL MEANS there, not just by its label.** The spec
+said the destination selector should be "the same shape and the same pin
+list" as the origin's. Same shape, yes — but a null origin is a real state
+(a draft trip is exactly one without an origin) while
+`destination_relationship_id` is NOT NULL. Copied markup would have offered
+the user a state the database refuses. *The tell: "make another one like
+that one" where the two fields differ in nullability, domain, or the
+existence of the mode an escape-hatch option hands off to.*
+
+**REFINEMENT of rule 20 (rule 22): reading a mutable classification to
+DESCRIBE is fine; reading it to FORBID is not.** Rule 20 nearly stopped the
+Relocation label — the label reads the destination pin's type, exactly what
+the rule warns about. The difference is that a constraint freezes a past
+judgement the data can outgrow, while a label re-derives the instant the
+classification changes: retype the pin and the trip renames itself, nothing
+trapped. *Recorded because rule 20 is otherwise easy to over-apply into
+"never read a type", which would be wrong.*
+
+**Still open, unchanged:** destination == origin is forbidden by nothing
+(the other half of deferred F22 — flagged to Andy, no guard added); the
+four globe surfaces still lacking Escape; the curated-vs-raw label wording
+call.
+
+**NEXT: Loose-Ends L1–L3.** The design
+(`docs/plans/2026-07-30-loose-ends-surface-design.md`) still owes Andy a
+review — written before the pin card and trips changed underneath it — and
+the implementation plan has never been written.
+
+---
+
 ## Session handoff — 2026-07-30 (design day + live QA findings; NO code shipped)
 
 Andy WALKED the trip-from-here checklist to completion — nine findings

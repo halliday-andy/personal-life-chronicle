@@ -1,0 +1,196 @@
+# QA — the owner can change where a trip ended (R22, 2026-08-04)
+
+App: **http://localhost:3001/globe** (sign in first).
+
+Closes the gap R6 left: `retarget_trip` was applied and proven on
+2026-08-03 but **nothing called it**, so a trip's destination was
+changeable only by an agent running SQL. Spec:
+`../plans/2026-08-03-r22-trip-destination-ui-design.md`.
+
+Three add-ons shipped alongside, all agreed 2026-08-04: a **trip-kind
+selector** (`frame_trip` has always taken `p_subtype` and no caller ever
+sent one), the **"Relocation"** label, and **pinning a stop from inside
+route mode**.
+
+**The Fiat 128 trip was deliberately left uncorrected** as this feature's
+end-to-end fixture (Andy, 2026-08-03) — §1 IS the acceptance test.
+
+---
+
+## 0. Read this before you start — one premise was wrong
+
+The design doc and the session opening both described the Fiat trip as a
+**"vacation"**. It is not, and never was:
+
+| | as it stands right now |
+|---|---|
+| subtype | **`road_trip`** |
+| `return_to_origin` | **`false`** — already one-way |
+| title | The epic solo road trip in the overloaded Fiat 128 |
+| origin → destination | My Mt. Snow Chalet → **Wendy's shared apartment** |
+| stops | none |
+
+What *is* labelled "Vacation" is the **pin**: `Wendy's shared apartment`
+is typed `vacationed_at`, because that is the pin code the road-trip
+capture mints (`tripSubtypeDefaultPinCode.road_trip`). The word belongs to
+the place, not the journey — which is its own small finding, and §6 is
+where you fix it.
+
+So the trip needs **one** change, not three: the destination.
+
+---
+
+## 1. The acceptance walk — the correction Andy could not make himself
+
+- [ ] Select **Wendy's shared apartment**. Its trips open on their own
+      (destination pins auto-open).
+- [ ] The trip row reads **"Road trip · October 1978"**. *(Not
+      "Relocation" — not yet. It ends at a vacation pin.)*
+- [ ] Click **Edit frame**.
+- [ ] The heading reads **"The epic solo road trip in the overloaded Fiat
+      128"** — the title, as before.
+- [ ] **"Where did the trip start?"** is pre-selected to **My Mt. Snow
+      Chalet**.
+- [ ] **"Where did it end?"** is there, below it, pre-selected to
+      **Wendy's shared apartment**. *(This is the control that did not
+      exist.)*
+- [ ] It has **no "Decide later"** and **no "＋ pin a new one"**. Both are
+      deliberate: the column is `NOT NULL`, and origin capture only ever
+      sets an origin.
+- [ ] Change it to **SSV Day Lodge Room**. *(It is a **primary residence**
+      — it can only be offered at all because R6 part 1 removed the guard.)*
+- [ ] A checkbox appears: **"Keep Wendy's shared apartment as a stop along
+      the way"**, already **ticked**.
+- [ ] "Returned to the origin (round trip)" is **unticked** already, and
+      the line below now reads *"One-way — the journey ends at SSV Day
+      Lodge Room; **ending at a home makes this a relocation**…"*
+- [ ] **Save the frame.**
+
+Then check what landed:
+
+- [ ] The notice names both ends: *"The trip now ends at SSV Day Lodge Room
+      — Wendy's shared apartment is a stop along the way."*
+- [ ] The globe draws **chalet → Wendy's → SSV** as one outbound line,
+      **with no return arc**.
+- [ ] **The title survived.** "The epic solo road trip in the overloaded
+      Fiat 128" is Andy's sentence; `retarget_trip` protects it, but this
+      is the UI path and it needed proving too.
+- [ ] Open **SSV Day Lodge Room** → the trip is on its card, now reading
+      **"Relocation · October 1978"**.
+- [ ] Open **Wendy's shared apartment** → the same trip is still on its
+      card, now as a **stop**.
+- [ ] `/journey?mode=travel` → the Travel Journal row also reads
+      **"Relocation"**. *(If the two surfaces disagree, that is a finding —
+      they share one definition on purpose.)*
+
+## 2. The destination selector's own edges
+
+- [ ] Re-open **Edit frame** and save **without touching** the destination
+      → no stop is added, nothing is duplicated. *(The client withholds the
+      retarget when nothing moved; `retarget_trip` is idempotent too, but
+      the client should not ask for work it knows is pointless.)*
+- [ ] Retarget a trip to a pin that is **already one of its stops** → the
+      stop row disappears as the pin becomes the destination. It must never
+      be both.
+- [ ] On some other trip, retarget with the **checkbox unticked** → the old
+      destination drops off the trip entirely, **and its pin stays on the
+      globe**. The warning line under the checkbox says exactly this.
+- [ ] Retarget an **untitled** trip → its name follows the new destination
+      ("Trip to …"). A **titled** one keeps its title.
+
+## 3. The trip-kind selector *(add-on)*
+
+- [ ] The framing panel has **"What kind of trip was it?"**, pre-selected
+      to the trip's current kind.
+- [ ] Change one and save → the pin card and the Travel Journal both show
+      the new kind. *(Before today this was unreachable: the parameter
+      existed, the caller didn't.)*
+- [ ] Re-open the panel → the change **stuck** and pre-selects. *(Rule 19:
+      a form reused for CREATE and EDIT must load current values.)*
+
+## 4. "Relocation" only where it is true *(add-on)*
+
+- [ ] A **round trip** to a home still reads its subtype, not
+      "Relocation" — returning home from a visit is not moving house.
+- [ ] A **one-way** trip to a **non-home** (a ski hill, a convenience
+      store) still reads its subtype.
+- [ ] Untick "returned to the origin" on a trip ending at a home, save →
+      it becomes "Relocation". Re-tick → it reverts. **The label
+      re-derives; nothing is frozen.**
+
+## 5. Pinning a stop from route mode *(add-on — your "markers along the path")*
+
+- [ ] With the Fiat trip retargeted, open any of its three pins → **Route**.
+- [ ] The banner now reads *"…or click anywhere empty to pin a new place
+      and add it in one go."*
+- [ ] **Click empty globe somewhere between Vermont and Alberta** → the
+      draft pin appears with its confirm bar, exactly as a normal pin does.
+- [ ] Confirm it → the dialog says **"A stop along the way"** and *"…on The
+      epic solo road trip in the overloaded Fiat 128 — it joins the
+      outbound leg…"*, and its button reads **"Add this stop"**. *(The
+      route banner is covered while this is open, so the dialog has to
+      carry the mode itself — the F4 lesson.)*
+- [ ] Its type defaults to **Log**. Changeable, like every default here.
+- [ ] Save → the pin exists, it is **in the banner's outbound list**, the
+      route redraws through it, and **route mode is still open** so the
+      next click pins the next waypoint.
+- [ ] Add two or three in travel order, then use the **‹ ›** nudges to
+      reorder them.
+- [ ] **Recollections on the markers:** select one of the new stop pins →
+      **Edit** → write in the recollection field → save → it shows on the
+      card. *(This is the whole point of a marker; a waypoint that cannot
+      hold the memory of stopping there is half a marker.)*
+- [ ] In that dialog, switch the type to **Trip** → the stop framing stands
+      down and it behaves like an ordinary new pin. Deliberate: you have
+      said this place is a journey of its own, not a waypoint on one.
+- [ ] **Done** → route mode closes; the stops persist.
+
+## 6. The pin type left over from capture
+
+Retargeting does **not** retype anything, so Wendy's apartment is now a
+**"Vacation"-typed pin serving as a waypoint on a relocation**.
+
+- [ ] Select **Wendy's shared apartment** → **Edit** → change its type
+      (**Short-term stay** or **Log** — Andy's call, this is his history).
+- [ ] Save → the pin's colour changes on the globe and the trip is
+      unaffected.
+
+## 7. Deletion — the asymmetry that will surprise someone
+
+`destination_relationship_id` is `ON DELETE **RESTRICT**`;
+`trip_stops.relationship_id` is `ON DELETE **CASCADE**`. Retargeting
+therefore **frees the old pin and locks the new one**:
+
+- [ ] Try to delete **SSV Day Lodge Room** (now the destination) → it is
+      **refused**, and the message should be legible rather than a raw FK
+      error.
+- [ ] **Wendy's apartment is now deletable** — and deleting it would
+      **silently remove its stop** from the trip, with no warning. Don't
+      actually delete it; just confirm the asymmetry is understood.
+      *Flagged as a finding candidate: silent beats loud here in the wrong
+      direction.*
+
+## 8. Regressions — the paths R22 rewrote underneath
+
+- [ ] **Origin selection is unchanged**: "Decide later" still saves a trip
+      without an origin; "＋ Pin a new origin on the globe…" still hands off
+      to origin capture and the placed pin becomes the origin.
+- [ ] **A fresh trip still frames**: pin a new place → choose **Trip** →
+      the framing panel opens with the destination **pre-selected to the
+      pin you just placed**, and the origin suggestion intact.
+- [ ] **Keep as a draft / Discard** still behave as they did (draft-only,
+      two-step confirm, the pin survives a discard).
+- [ ] **Escape** still closes the framing panel without writing, and still
+      refuses mid-save.
+- [ ] The **title placeholder** quotes the **destination's** name, never
+      the trip's own title. *(F26's family — and the one-way sentence used
+      to name the trip instead of the place. If any sentence about where
+      the journey ends names a TRIP, that is a finding.)*
+
+---
+
+## Findings
+
+| # | What | Where | Severity |
+|---|------|-------|----------|
+| | | | |
