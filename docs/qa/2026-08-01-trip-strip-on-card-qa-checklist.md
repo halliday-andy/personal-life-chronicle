@@ -5,7 +5,7 @@ App: **http://localhost:3001/globe** (sign in first).
 Retires **F1** (strip occluded the search dropdown), **F2** ("Start a trip
 from here" was undiscoverable) and **F8** (a trip's jots were invisible from
 its destination pin). Design:
-[`../plans/2026-07-30-trip-strip-into-pin-card-design.md`](../plans/2026-07-30-trip-strip-into-pin-card-design.md) §3.
+`../plans/2026-07-30-trip-strip-into-pin-card-design.md` §3.
 
 **Nothing renders in the `top-20` band any more.** If you see a floating strip
 over the globe, that is a finding.
@@ -14,42 +14,42 @@ over the globe, that is a finding.
 
 ## 1. F1 — search is no longer occluded *(the blocker)*
 
-- [ ] Select **Wendy's shared apartment** (a pin WITH trips — this is the exact
+- [x] Select **Wendy's shared apartment** (a pin WITH trips — this is the exact
       case that failed).
-- [ ] Type `chalet` into the find box → **"My Mt. Snow Chalet" is visible**
+- [x] Type `chalet` into the find box → **"My Mt. Snow Chalet" is visible**
       under "Your pins". Previously the trip strip painted over it.
-- [ ] Try the same on two or three other trip-bearing pins.
+- [x] Try the same on two or three other trip-bearing pins.
 
 ## 2. F2 — the trip control is on the pin
 
-- [ ] Select **My Mt. Snow Chalet** → the chip row shows a **✈ trips** chip
+- [x] Select **My Mt. Snow Chalet** → the chip row shows a **✈ trips** chip
       (with a count once trips exist).
-- [ ] Open it → **Start a trip from here** is there, plus "N trips originated
+- [x] Open it → **Start a trip from here** is there, plus "N trips originated
       here", the **home base** chip where it applies, and **Travel Journal →**.
-- [ ] The same chip is present on the **edit panel** (Edit), not just the card
+- [x] The same chip is present on the **edit panel** (Edit), not just the card
       — one component, both surfaces.
-- [ ] Click **Start a trip from here** → the card closes and the armed banner
+- [x] Click **Start a trip from here** → the card closes and the armed banner
       appears at the top. *(The banner stays in chrome deliberately: it is a
       mode, and the whole globe is waiting on it.)*
 
 ## 3. F8 — a trip's jots are reachable from its pin
 
-- [ ] Select **Lake Winnipesaukee** → open **✈ trips** → the trip row has a
+- [x] Select **Lake Winnipesaukee** → open **✈ trips** → the trip row has a
       **✎ jots** chip carrying its count.
-- [ ] Open it → the jot you added ("The hope and anticipation of connection…")
+- [x] Open it → the jot you added ("The hope and anticipation of connection…")
       is there.
-- [ ] **The pin's own "✎ jot" chip still reads the PLACE's jots only** — the
+- [x] **The pin's own "✎ jot" chip still reads the PLACE's jots only** — the
       counts are deliberately NOT merged. A place's jot count means the
       place's own jots on every pin, never a mixture.
 
 ## 4. The three variants all survived the move
 
-- [ ] **Home** (any primary residence): summary + Start a trip from here.
-- [ ] **Marker with no trip** (e.g. **Matapédia**, **Trans Hotel**): reads
+- [x] **Home** (any primary residence): summary + Start a trip from here.
+- [x] **Marker with no trip** (e.g. **Matapédia**, **Trans Hotel**): reads
       *"This was a journey? Frame it as a trip:"* with three subtype buttons.
-- [ ] **Future Place** (`wants_to_visit`): reads *"Been there now? It becomes
+- [x] **Future Place** (`wants_to_visit`): reads *"Been there now? It becomes
       a real place + trip:"*.
-- [ ] **Marker with trips**: each trip shows title · subtype · when ·
+- [x] **Marker with trips**: each trip shows title · subtype · when ·
       **needs framing** badge where it applies, and Frame/Edit frame · Route ·
       Unframe · ✎ jots — plus **"Another trip here:"** beneath.
 
@@ -61,7 +61,7 @@ over the globe, that is a finding.
       *(Route editing stays a globe mode — it draws on the map.)*
 - [ ] **Unframe** → two-step confirm ("Really remove the trip? The pin
       stays."), then the trip goes and the pin remains.
-- [ ] Unframe's confirm **times out after ~4s** if you don't click it.
+- [ ] Unframe's confirm **times out after \~4s** if you don't click it.
 
 ## 6. Behaviour changes to judge, not bugs
 

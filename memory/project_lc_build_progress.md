@@ -190,6 +190,24 @@ class.** Two were obvious; the third only surfaced because a QA step described
 it wrongly. Remaining candidates of the same kind, NOT yet given Escape:
 route-building, origin capture, the armed trip banner, refine-location.
 
+**R21 BUILT (F26):** re-framing a trip showed an EMPTY title and year —
+`TripFramePanel` initialised both to `''` unconditionally, so the panel only
+ever behaved as if framing a FRESH draft and an edit never loaded saved
+values. Compounded by the placeholder `e.g. "The {destinationName}
+conference"` where `destinationName = t.title || t.destination_name`, so a
+titled trip had its own title quoted back inside the example — it looked like
+ghost text of his title in an empty field. **No data loss:** `frame_trip`
+COALESCEs both, so empty meant "unchanged". *Known limitation, unchanged: a
+title or when_text therefore cannot be CLEARED through the panel, only
+replaced.*
+
+**CLASS-OF-BUG (rule 19): a form reused for CREATE and EDIT must load current
+values on the edit path.** *The tell: state initialised to a literal `''`
+rather than from the record.* Cousin of rule 11 (a generic surface reused in a
+specific mode must state the mode) — same root, one component serving two
+jobs and only remembering one of them. Third such finding in this panel after
+F9b's exit labels and F5's anchor/origin conflation.
+
 **PRINCIPLE (rule 16): when a rule gates writing, check it also gates
 reading.** Three sightings now of the same shape — the pin-card
 reconciliation drift (edit panel showed LESS than the card), F15

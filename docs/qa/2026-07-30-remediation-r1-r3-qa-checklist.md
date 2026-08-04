@@ -42,47 +42,47 @@ it can be shown only when the query has no Places results either.
 
 ## 3. Both modals can be dismissed *(R1 / F9a)*
 
-- [ ] **The draft bar first.** Click the globe → the *"Drag the pin to the
+- [x] **The draft bar first.** Click the globe → the *"Drag the pin to the
       exact spot"* bar appears with Cancel / **Add this place**. Press
       **Escape** → the draft is discarded. *(This surface had no Escape until
       F25, 2026-08-01 — the original wording below sent Andy here by mistake,
       since clicking the globe does NOT open the modal.)*
-- [ ] **Then the modal.** From the draft bar click **Add this place** → the
+- [x] **Then the modal.** From the draft bar click **Add this place** → the
       pin placement modal opens → press **Escape** → it closes, nothing is
       created.
-- [ ] Open it again → click the **backdrop** → closes. (This already worked;
+- [x] Open it again → click the **backdrop** → closes. (This already worked;
       confirm it still does.)
-- [ ] Open the **framing panel** (Edit frame on any trip) → press **Escape** →
+- [x] Open the **framing panel** (Edit frame on any trip) → press **Escape** →
       closes, **nothing saved**.
-- [ ] Same panel → click the **backdrop** → closes.
-- [ ] Same panel → click the new **✕** top-right → closes.
-- [ ] Start a save and confirm Escape does **not** interrupt it mid-flight.
+- [x] Same panel → click the **backdrop** → closes.
+- [x] Same panel → click the new **✕** top-right → closes.
+- [x] Start a save and confirm Escape does **not** interrupt it mid-flight.
 
 ## 4. Dismissing keeps the armed origin *(R1 — the substantive half)*
 
-- [ ] Select **My Mt. Snow Chalet** → **Start a trip from here** → banner
+- [x] Select **My Mt. Snow Chalet** → **Start a trip from here** → banner
       appears.
-- [ ] Place a destination → the framing panel opens → press **Escape**.
-- [ ] **The banner is back and still armed.** *Before this change the armed
+- [x] Place a destination → the framing panel opens → press **Escape**.
+- [x] **The banner is back and still armed.** *Before this change the armed
       origin was silently consumed, leaving a draft trip with no origin and no
       route back to the intent.*
-- [ ] Frame a trip successfully instead → the banner is **gone** (a real frame
+- [x] Frame a trip successfully instead → the banner is **gone** (a real frame
       still consumes the armed origin).
-- [ ] The banner's ✕ still cancels arming deliberately.
+- [x] The banner's ✕ still cancels arming deliberately.
 
 ## 5. The exits say what they do *(R2 / F9b)*
 
-- [ ] **Edit frame** on an **already-framed** trip (e.g. the Fiat 128) → the
+- [x] **Edit frame** on an **already-framed** trip (e.g. the Fiat 128) → the
       buttons are **Cancel** and **Save the frame**. No "keep as a draft"
       language anywhere, including the intro line.
-- [ ] Open the framing panel on a **draft** trip → buttons are **Discard this
+- [x] Open the framing panel on a **draft** trip → buttons are **Discard this
       trip**, **Keep as a draft**, **Save the frame**.
-- [ ] Click **Discard this trip** → it becomes **"Really discard? The place
+- [x] Click **Discard this trip** → it becomes **"Really discard? The place
       stays on your globe."** Click elsewhere / dismiss without confirming →
       nothing is deleted.
-- [ ] Confirm the discard → the trip goes, **the pin remains**, and the notice
+- [x] Confirm the discard → the trip goes, **the pin remains**, and the notice
       reads "Trip removed — the pin and its recollections are untouched."
-- [ ] After discarding, the armed banner is **gone** — discard abandons the
+- [x] After discarding, the armed banner is **gone** — discard abandons the
       whole attempt, unlike dismissal which pauses it.
 
 **[decision for Andy]** Discard is **two-step**, deviating from the plan's
@@ -92,10 +92,10 @@ two-step confirm for the same deletion. Say if you want it one-click.
 
 ## 6. Nothing else moved
 
-- [ ] Placing a normal pin still works end to end.
-- [ ] Framing a trip still sets origin, when-text, year hint and the
+- [x] Placing a normal pin still works end to end.
+- [x] Framing a trip still sets origin, when-text, year hint and the
       round-trip checkbox as before.
-- [ ] The globe's route arcs are unchanged (R4–R6 untouched).
+- [x] The globe's route arcs are unchanged (R4–R6 untouched).
 
 ---
 
