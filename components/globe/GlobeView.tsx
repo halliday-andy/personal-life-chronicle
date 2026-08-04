@@ -1633,6 +1633,7 @@ export default function GlobeView() {
           originCapture={!!originCapture}
           defaultTypeCode={tripFromHere ? 'trip' : undefined}
           defaultAnchorId={tripFromHere?.relationshipId}
+          armedOriginName={tripFromHere?.name}
         />
       )}
 
