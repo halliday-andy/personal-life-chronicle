@@ -26,6 +26,7 @@ import { type TripCardContext } from './PinTrips'
 import { useUiChrome } from '../UiChromeContext'
 import { planPinArrival } from '@/lib/globe/cluster-frame'
 import { pinStackZ } from '@/lib/globe/pin-stack'
+import { attachChronicleInstaller } from '@/lib/globe/chronicle-layers'
 import { nextRegime, styleForRegime, chronicleLinePaint, NOCTURNE_STYLE, type GlobeRegime } from '@/lib/globe/style-regime'
 import { useEscapeKey } from '@/lib/ui/use-escape-key'
 import { buildCreatePinPayload } from '@/lib/globe/create-pin-payload'
@@ -732,6 +733,15 @@ export default function GlobeView() {
       }
     }
 
+    // The layers must come back after EVERY basemap swap, not just the ones
+    // that announce themselves with `style.load`. Hanging the rebuild on
+    // that one event cost Andy every line on the globe mid-QA (2026-08-04):
+    // the swap removed the chronicle's sources, `style.load` never came, and
+    // only a page reload restored them — while the DOM-marker pins sat there
+    // looking fine, because they are not part of the style and do not die
+    // with it.
+    const detachInstaller = attachChronicleInstaller(map, 'trip-tethers', installChronicleLayers)
+
     map.on('style.load', () => {
       map.setProjection('globe')
       // The ember-space atmosphere belongs to nocturne; daylight keeps the
@@ -745,7 +755,8 @@ export default function GlobeView() {
           'star-intensity': 0.5,
         })
       }
-      installChronicleLayers()
+      // The installer is attached to this event too; the explicit call is
+      // gone so there is exactly one path that rebuilds the layers.
     })
 
     map.on('load', () => {
@@ -805,6 +816,7 @@ export default function GlobeView() {
     })
 
     return () => {
+      detachInstaller()
       map.remove()
       mapRef.current = null
     }
