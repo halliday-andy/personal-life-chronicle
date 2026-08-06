@@ -60,6 +60,38 @@ classification changes: retype the pin and the trip renames itself, nothing
 trapped. *Recorded because rule 20 is otherwise easy to over-apply into
 "never read a type", which would be wrong.*
 
+**PIN OCCLUSION FIXED (`a6f2d88`), same session.** Andy's screenshots:
+searching for the **Dartmouth** primary residence and selecting it still
+left it under the label banner of a work-travel marker 508 m away. **Not
+density — the stacking order was inverted by construction.** Mapbox GL
+3.24 sets no marker z-index, so paint order is DOM insertion order = the
+`pins` array = `get_residence_pins`' `ORDER BY sort_order ASC NULLS LAST`.
+Sequenced primaries sort first → created first → painted at the BOTTOM;
+markers have NULL sort_order, sort last, paint on top.
+`lib/globe/pin-stack.ts` states the ladder (selected > hovered > spine >
+home types > markers, latitude tiebreak). `isolate` on the map container
+is load-bearing — `.mapboxgl-map` opens no stacking context.
+Second half: `clusterFrame` was ALREADY computing the right zoom (13.82)
+and handing it to `fitBounds` as a cap the 35 km cluster span never let
+bind (settled 10.81). **The 2026-07-10 "containment beats separation" rule
+is now conditional on who asked** — when the user names ONE pin, that
+pin's legibility outranks the tour of its neighbourhood. The J4 Queenstown
+case is held by the proof. Proofs: `verify-pin-stack.mjs` 15/15 new,
+`verify-cluster-frame.mjs` 8 → 15.
+
+**CLASS-OF-BUG (rule 23): DOM insertion order IS a z-order.** A list
+rendered in a query's order inherits that order as a painting policy, and
+an `ORDER BY` written to read "most important first" paints the most
+important thing at the BOTTOM. The two orderings want opposite things and
+nothing in either place says so. *The tell: a render loop over an array
+that came straight from a query, where things overlap on screen and no
+z-index is set anywhere.* Sibling to rule 21 — both are cases of one
+decision silently doubling as a second, unstated one.
+
+**Still unverified by me: the visual result.** tsc, lint, 15+15 proofs and
+a live-data ordering check all pass, but no browser walk was done — the
+globe needs Andy's session. §9 of the R22 checklist covers it.
+
 **Still open, unchanged:** destination == origin is forbidden by nothing
 (the other half of deferred F22 — flagged to Andy, no guard added); the
 four globe surfaces still lacking Escape; the curated-vs-raw label wording

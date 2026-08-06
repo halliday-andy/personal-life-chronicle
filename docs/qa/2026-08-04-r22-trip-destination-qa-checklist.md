@@ -187,6 +187,39 @@ therefore **frees the old pin and locks the new one**:
       to name the trip instead of the place. If any sentence about where
       the journey ends names a TRIP, that is a finding.)*
 
+## 9. Pin occlusion — the Hanover cluster *(separate fix, same session)*
+
+Not R22, but it lands in the same build and it is the one thing here I
+could **not** verify myself: the proofs and a live-data ordering check
+pass, but the globe needs your session, so this section is the only
+evidence that the screenshots are actually fixed.
+
+- [ ] Zoom to the **Dartmouth / Hanover** area as in the first screenshot.
+      **Dartmouth** (the primary residence) now paints **over** Dick's
+      House, the Flying Club, the Skiway and the Dunne Farm — its dot and
+      its "1974 to 1975" chip are both legible without zooming further.
+- [ ] Search **Dartmouth** in the find box → pick it under "Your pins".
+      The camera should land at roughly **z13.8**, close enough that
+      Dartmouth and Dick's House sit ~130 px apart. *(It used to settle
+      near z10.8, fitting the whole 35 km neighbourhood — the Skiway and
+      the farm will now be off-screen, which is the deliberate trade: you
+      asked for the pin, not the neighbourhood.)*
+- [ ] Hover a marker near a primary → it lifts above its neighbours.
+      **Hover a marker while a different pin is selected → the SELECTED
+      pin stays on top.** A passing cursor must not displace your choice.
+- [ ] **Chrome still wins over pins** — this is the regression to hunt.
+      With pins under the top banners, confirm the **route-building
+      banner**, the **armed-trip banner**, the **draft confirm bar** and
+      the **pin card** all still paint OVER the markers. If any pin now
+      floats above a panel, the map container's `isolate` is not holding
+      and that is a blocker.
+- [ ] Arriving at a pin with **no close neighbours** still flies the way
+      it always did.
+- [ ] A **tight** cluster (Queenstown — four pins in a few km) still
+      frames the whole cluster rather than diving onto one pin. *(The
+      2026-07-10 J4 behaviour is meant to survive; the proof asserts it,
+      but your eye is the real check.)*
+
 ---
 
 ## Findings
