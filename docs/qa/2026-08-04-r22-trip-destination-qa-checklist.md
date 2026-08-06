@@ -42,26 +42,26 @@ So the trip needs **one** change, not three: the destination.
 
 ## 1. The acceptance walk — the correction Andy could not make himself
 
-- [ ] Select **Wendy's shared apartment**. Its trips open on their own
+- [x] Select **Wendy's shared apartment**. Its trips open on their own
       (destination pins auto-open).
-- [ ] The trip row reads **"Road trip · October 1978"**. *(Not
+- [x] The trip row reads **"Road trip · October 1978"**. *(Not
       "Relocation" — not yet. It ends at a vacation pin.)*
-- [ ] Click **Edit frame**.
-- [ ] The heading reads **"The epic solo road trip in the overloaded Fiat
+- [x] Click **Edit frame**.
+- [x] The heading reads **"The epic solo road trip in the overloaded Fiat
       128"** — the title, as before.
-- [ ] **"Where did the trip start?"** is pre-selected to **My Mt. Snow
+- [x] **"Where did the trip start?"** is pre-selected to **My Mt. Snow
       Chalet**.
-- [ ] **"Where did it end?"** is there, below it, pre-selected to
+- [x] **"Where did it end?"** is there, below it, pre-selected to
       **Wendy's shared apartment**. *(This is the control that did not
       exist.)*
-- [ ] It has **no "Decide later"** and **no "＋ pin a new one"**. Both are
+- [x] It has **no "Decide later"** and **no "＋ pin a new one"**. Both are
       deliberate: the column is `NOT NULL`, and origin capture only ever
       sets an origin.
-- [ ] Change it to **SSV Day Lodge Room**. *(It is a **primary residence**
+- [x] Change it to **SSV Day Lodge Room**. *(It is a **primary residence**
       — it can only be offered at all because R6 part 1 removed the guard.)*
-- [ ] A checkbox appears: **"Keep Wendy's shared apartment as a stop along
+- [x] A checkbox appears: **"Keep Wendy's shared apartment as a stop along
       the way"**, already **ticked**.
-- [ ] "Returned to the origin (round trip)" is **unticked** already, and
+- [x] "Returned to the origin (round trip)" is **unticked** already, and
       the line below now reads *"One-way — the journey ends at SSV Day
       Lodge Room; **ending at a home makes this a relocation**…"*
 - [ ] **Save the frame.**
@@ -227,6 +227,41 @@ evidence that the screenshots are actually fixed.
       separation (z14), so arrival takes the **focus** branch. His
       screenshot is the new behaviour working. What it also exposed is
       genuine and separate — see the anchor-family finding below.
+
+- [ ] **Re-check Queenstown after the dive-ceiling fix (`8024267`).** Select
+      **Year 2 Coronet Peak, Queenstown NZ** from the search dropdown. It
+      should now land ~**z15.4** rather than z14, putting **Ramada
+      Queenstown 130 px away** instead of 49 px — its banner clear of the
+      residence's rather than touching it — with **Trans Hotel still on
+      screen** at ~456 px. *(If the dive now feels too deep, the ceiling is
+      the knob: `DIVE_CEILING` in `lib/globe/cluster-frame.ts`. Say so and
+      I'll tune it against your eye rather than guess.)*
+
+### Finding, recorded not fixed — the anchor family vs. the neighbourhood
+
+Your Queenstown screenshot exposed something the framing gets wrong, and it
+is **not** fixed by anything above. Arrival gathers "the cluster" as *every
+pin within 30 km* — a geometric proxy for a relation the schema already
+stores. For that residence:
+
+| pin | anchored to | distance |
+| --- | --- | --- |
+| **Coronet Peak Ski School** (`worked_at`) | **← the selected residence** | 12,964 m |
+| Ramada Queenstown | ← the Ski School | 164 m |
+| Trans Hotel | ← the Ski School | 575 m |
+| Motorcycle Trip to Sheep Station | ← *the other* Coronet Peak residence | 25,543 m |
+
+So the frame showed the **grandchildren**, dropped the **child**, and
+counted a **stranger**. Framing the anchor family instead lands at z12.12
+(Ski School on screen at 1041 px) but collapses Ramada to 13 px and Trans
+Hotel to 46 px — one occlusion traded for another. Neither is free, so
+nothing was built: the coherent answer is family framing **plus** collapsing
+colliding chips to bare dots, which is its own unit and needs a design pass
+on what arriving at a pin should show you.
+
+- [ ] Worth forming a view on while you walk this: **should selecting a
+      residence bring its workplace into frame**, even at the cost of the
+      close pins becoming a clump? Your call, and it is the whole question.
 
 ---
 

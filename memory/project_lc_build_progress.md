@@ -79,6 +79,41 @@ pin's legibility outranks the tour of its neighbourhood. The J4 Queenstown
 case is held by the proof. Proofs: `verify-pin-stack.mjs` 15/15 new,
 `verify-cluster-frame.mjs` 8 → 15.
 
+**OPEN DESIGN QUESTION — the anchor family vs. the geographic
+neighbourhood (Andy, 2026-08-04, from his Queenstown screenshot).** Arrival
+framing gathers "the cluster" as **every pin within 30 km**, which is a
+geometric proxy for a relation the schema already stores exactly. Selecting
+**Year 2 Coronet Peak, Queenstown NZ** showed Ramada (164 m) and Trans
+Hotel (575 m) — both anchored to the **Ski School**, i.e. *grandchildren* —
+while the one pin actually anchored to the selected residence, **Coronet
+Peak Ski School (12.96 km)**, was off screen. Motorcycle Trip to Sheep
+Station (25.5 km) counted as a neighbour despite belonging to a *different*
+residence. **So the framing showed the grandchildren, dropped the child,
+and counted a stranger.**
+
+Measured alternatives (his real coords, 2000×1450 viewport):
+- geometric cluster → `zoomToFit` z10.98 vs separation z15.42 → **focus**,
+  family off screen;
+- anchor-family frame (residence + its Ski School) → **z12.12**: Ski School
+  at 1041 px, but Ramada collapses to 13 px and Trans Hotel to 46 px — one
+  occlusion traded for another.
+
+Neither is free, which is why it was NOT built. The coherent answer is
+family framing **plus** collapsing colliding neighbours' chips to bare dots
+(the "focus dims its neighbours" option deferred earlier the same day) —
+its own unit, needing a real design pass on *what arriving at a pin should
+show you*. **Andy's instinct that the workplace belongs in frame is the
+open question; nothing here settles it.**
+
+**CLASS-OF-BUG (rule 24): a convenient proxy standing in for a relation the
+schema already stores.** "Within 30 km" was chosen because it needs no
+join; "anchored to" is the thing actually meant, and it is one column away.
+The proxy agrees with the relation often enough to look right and diverges
+exactly where the data is interesting. *The tell: a radius, a time window,
+or a name-prefix match doing the work of a foreign key that exists.*
+Sibling to rules 21 and 23 — all three are one decision quietly standing in
+for another that was never stated.
+
 **CLASS-OF-BUG (rule 23): DOM insertion order IS a z-order.** A list
 rendered in a query's order inherits that order as a painting policy, and
 an `ORDER BY` written to read "most important first" paints the most
@@ -88,9 +123,25 @@ that came straight from a query, where things overlap on screen and no
 z-index is set anywhere.* Sibling to rule 21 — both are cases of one
 decision silently doubling as a second, unstated one.
 
-**Still unverified by me: the visual result.** tsc, lint, 15+15 proofs and
-a live-data ordering check all pass, but no browser walk was done — the
-globe needs Andy's session. §9 of the R22 checklist covers it.
+**Dive ceiling split out (`8024267`), after Andy's Queenstown screenshot.**
+ONE clamp (`maxZoom: 14`) was capping both the fitBounds ceiling and the
+separation target, so the focus branch computed z15.42 and settled for 14 —
+his 164 m pair rendered 49 px apart, readable only because the new ladder
+put the primary on top. **The ladder was covering for a discarded number.**
+The two ceilings are now separate (`DIVE_CEILING = 16.5`), because "how far
+may fitBounds over-zoom a tiny cluster" is not "how far may the camera dive
+to make the named pin legible". Below ~70 m it stops: that is the deferred
+displacement problem, not a camera problem. 49 px → 130 px.
+
+**Still unverified by me: the visual result.** tsc, lint, 15+21 proofs and
+two live-data checks all pass, but no browser walk was done — the globe
+needs Andy's session. §9 of the R22 checklist covers it.
+
+**A checklist can be written from the model being replaced.** §9's
+Queenstown bullet told Andy to expect the old containment behaviour, so it
+would have "failed" against correct code and passed against the bug. He
+caught it by reading the screen instead of the checklist. *Write the
+expectation from the code as changed, not from the habit.*
 
 **Still open, unchanged:** destination == origin is forbidden by nothing
 (the other half of deferred F22 — flagged to Andy, no guard added); the
