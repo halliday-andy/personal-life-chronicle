@@ -22,8 +22,8 @@ end-to-end fixture (Andy, 2026-08-03) — §1 IS the acceptance test.
 The design doc and the session opening both described the Fiat trip as a
 **"vacation"**. It is not, and never was:
 
-| | as it stands right now |
-|---|---|
+|  | as it stands right now |
+| --- | --- |
 | subtype | **`road_trip`** |
 | `return_to_origin` | **`false`** — already one-way |
 | title | The epic solo road trip in the overloaded Fiat 128 |
@@ -194,36 +194,43 @@ could **not** verify myself: the proofs and a live-data ordering check
 pass, but the globe needs your session, so this section is the only
 evidence that the screenshots are actually fixed.
 
-- [ ] Zoom to the **Dartmouth / Hanover** area as in the first screenshot.
+- [x] Zoom to the **Dartmouth / Hanover** area as in the first screenshot.
       **Dartmouth** (the primary residence) now paints **over** Dick's
       House, the Flying Club, the Skiway and the Dunne Farm — its dot and
       its "1974 to 1975" chip are both legible without zooming further.
-- [ ] Search **Dartmouth** in the find box → pick it under "Your pins".
+- [x] Search **Dartmouth** in the find box → pick it under "Your pins".
       The camera should land at roughly **z13.8**, close enough that
       Dartmouth and Dick's House sit ~130 px apart. *(It used to settle
       near z10.8, fitting the whole 35 km neighbourhood — the Skiway and
       the farm will now be off-screen, which is the deliberate trade: you
       asked for the pin, not the neighbourhood.)*
-- [ ] Hover a marker near a primary → it lifts above its neighbours.
+- [x] Hover a marker near a primary → it lifts above its neighbours.
       **Hover a marker while a different pin is selected → the SELECTED
       pin stays on top.** A passing cursor must not displace your choice.
-- [ ] **Chrome still wins over pins** — this is the regression to hunt.
+- [x] **Chrome still wins over pins** — this is the regression to hunt.
       With pins under the top banners, confirm the **route-building
       banner**, the **armed-trip banner**, the **draft confirm bar** and
       the **pin card** all still paint OVER the markers. If any pin now
       floats above a panel, the map container's `isolate` is not holding
       and that is a blocker.
-- [ ] Arriving at a pin with **no close neighbours** still flies the way
+- [x] Arriving at a pin with **no close neighbours** still flies the way
       it always did.
-- [ ] A **tight** cluster (Queenstown — four pins in a few km) still
-      frames the whole cluster rather than diving onto one pin. *(The
-      2026-07-10 J4 behaviour is meant to survive; the proof asserts it,
-      but your eye is the real check.)*
+- [ ] A **tight** cluster still frames the whole cluster rather than diving
+      onto one pin — but only where containment costs nothing. *(The
+      2026-07-10 J4 behaviour survives ONLY in that case; where the two
+      conflict, the named pin now wins. The proof asserts both branches.)*
+
+      **Corrected 2026-08-04 — this bullet was wrong as first written.** It
+      described the pre-change rule and told Andy to expect Queenstown to
+      frame whole. It does not, and should not: with Ramada 164 m away and
+      the Ski School 13 km away, containment (z10.98) falls far below
+      separation (z14), so arrival takes the **focus** branch. His
+      screenshot is the new behaviour working. What it also exposed is
+      genuine and separate — see the anchor-family finding below.
 
 ---
 
 ## Findings
 
 | # | What | Where | Severity |
-|---|------|-------|----------|
-| | | | |
+| --- | --- | --- | --- |
