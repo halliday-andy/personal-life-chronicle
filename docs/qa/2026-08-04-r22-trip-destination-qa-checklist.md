@@ -206,15 +206,18 @@ which is exactly what made it look like a trip problem.
 - [ ] Do the same while the ✈ chip is open on a trip pin — the rose route
       should survive the swap too.
 
-**NOT FIXED — retargeting costs the old destination its auto-open.**
-R19/F23/F24 made a trip's *destination* auto-open its trips on selection,
-and R18/F21 made that chip the thing that paints routes. Wendy's is now a
-*stop*, so neither fires: selecting it used to draw the route on arrival
-and now doesn't. A real consequence of R22 the design didn't anticipate.
+**FIXED (`3ea57e9`) — a stop now auto-opens its trips, like a destination.**
+R19/F23/F24 gave destinations auto-open; R18/F21 made that chip the thing
+that paints routes. R22 made destinations movable, so Wendy's became a stop
+and silently lost both. Your call, 2026-08-04: a stop is a place the journey
+passed through, so the journey is still the point of the pin.
 
-- [ ] Decide whether a **stop** should auto-open its trips as a destination
-      does — or whether auto-open should follow "this trip is the point of
-      this pin" more loosely. Your call; it is a one-line change either way.
+- [ ] Select **Wendy's shared apartment** → its trips open on their own
+      again, and **the route paints on arrival** without touching the chip.
+- [ ] Select **SSV Day Lodge Room** (the destination) → still auto-opens.
+- [ ] Select **My Mt. Snow Chalet** (the origin) → **does NOT auto-open.**
+      *(F21: a home with many departures buries the map. This exclusion is
+      deliberate and proven — if it ever opens, that is a regression.)*
 
 ## 9. Pin occlusion — the Hanover cluster *(separate fix, same session)*
 

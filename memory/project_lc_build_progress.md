@@ -105,12 +105,39 @@ actually missing?"* — never by *"did the event I trust fire?"*. Now
 source's absence as the guard. Proof `verify-chronicle-installer.mjs` 10/10
 against a stub map, red first.
 
-**SMALLER FINDING, not yet fixed: retargeting silently costs the OLD
-destination its auto-open.** R19/F23/F24 made a trip's *destination*
-auto-open its trips on selection; R18/F21 made that chip the thing that
-paints routes. After R22 moves the destination, the old pin is a *stop*, so
-neither fires — selecting Wendy's used to draw the route on arrival and now
-does not. A real consequence of R22 the design did not anticipate.
+**FIXED (`3ea57e9`) — a STOP now auto-opens its trips too.** R19/F23/F24
+gave *destinations* auto-open; R18/F21 made that chip the thing that paints
+routes. R22 made destinations movable, so Wendy's became a stop and
+silently lost both — the route it drew on arrival ten minutes earlier
+stopped appearing. Andy's call: a stop is a place the journey passed
+THROUGH, so the journey is still the point of the pin. **Origins stay
+excluded (F21)** — a home with many departures buries the map — but origin-
+ness is not a veto: a pin that is both origin and stop opens. Extracted to
+`lib/globe/trip-auto-open.ts` with a proof (9/9) precisely because "any
+trip touching this pin" is the tidier-looking version and IS the F21 bug.
+*Second time in this session that a feature's reach was found by asking
+what ELSE changes when a field becomes editable — see rule 26.*
+
+**CLASS-OF-BUG (rule 26): making a field editable breaks whatever was
+keyed on its old value.** R22 turned `destination_relationship_id` into
+something the owner can move, and two behaviours keyed on "is this pin the
+destination" — auto-open, and the route painting gated behind it — silently
+stopped applying to a pin that had just been demoted to a stop. Nothing
+errored; a behaviour simply went missing. *The tell: shipping an edit path
+for a field, then grepping that field's name and finding read sites that
+assume it never moves.* Sibling to rule 16 (when a rule gates writing,
+check it also gates reading) — the same failure one step later.
+
+**The rule's own grep was then run.** Every other read site of
+`destination_relationship_id` re-derives correctly from the current value:
+the rose trip-destination halo + "trip to frame" flag (R11/R6) move to the
+new destination as they should, the `?trip=` deep link lands on the current
+one, and both the route gate and the `mine` filter already consider stops
+and origins. **autoOpen was the only site that assumed immutability.**
+*Observation, not built:* a STOP has no pin styling of its own, so a place
+a journey passed through looks like any unrelated pin — thinner than it was
+before R22 made stops common (retargeting demotes into them, and route mode
+now mints them).
 
 **OPEN DESIGN QUESTION — the anchor family vs. the geographic
 neighbourhood (Andy, 2026-08-04, from his Queenstown screenshot).** Arrival
