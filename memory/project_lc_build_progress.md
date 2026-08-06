@@ -79,6 +79,39 @@ pin's legibility outranks the tour of its neighbourhood. The J4 Queenstown
 case is held by the proof. Proofs: `verify-pin-stack.mjs` 15/15 new,
 `verify-cluster-frame.mjs` 8 → 15.
 
+**LATENT BUG FOUND BY ANDY'S WALK, FIXED (`49450c5`): every line on the
+globe could vanish until a page reload.** Crossing the reading-zoom
+threshold swaps the basemap via `setStyle`, which **wipes every source and
+layer the app added**. The rebuild hung on ONE event — `style.load` — which
+does not fire on every path `setStyle` takes; when it doesn't, the sources
+are gone (absent from the incoming style) and nothing restores them.
+**Latent since the 2026-07-18 style-regime feature**, not a regression from
+R22 or the occlusion work (git-verified: neither touched any arc/route/
+line/source/setData path).
+
+**What made it hard to see: the pins looked fine.** DOM markers are not
+part of the style and do not die with it, so the globe read as "the trip
+won't draw" rather than "the style was rebuilt without us" — and I spent
+several passes hunting the trip-visibility gate (`tripsPanelOpen`, the R18
+chip gate) before Andy's own phrasing, *"not displaying any lines at all"*,
+ruled it out. **The spine arcs have no gate; if they are missing too, no
+visibility logic can be the cause.** One reload settled it.
+
+**CLASS-OF-BUG (rule 25): rebuilding on ONE event when the thing you depend
+on can be destroyed by several.** State owned by a lifecycle you do not
+control must be re-asserted at every settle point, guarded by *"is it
+actually missing?"* — never by *"did the event I trust fire?"*. Now
+`style.load`, `styledata` and `idle` all re-assert, with the sentinel
+source's absence as the guard. Proof `verify-chronicle-installer.mjs` 10/10
+against a stub map, red first.
+
+**SMALLER FINDING, not yet fixed: retargeting silently costs the OLD
+destination its auto-open.** R19/F23/F24 made a trip's *destination*
+auto-open its trips on selection; R18/F21 made that chip the thing that
+paints routes. After R22 moves the destination, the old pin is a *stop*, so
+neither fires — selecting Wendy's used to draw the route on arrival and now
+does not. A real consequence of R22 the design did not anticipate.
+
 **OPEN DESIGN QUESTION — the anchor family vs. the geographic
 neighbourhood (Andy, 2026-08-04, from his Queenstown screenshot).** Arrival
 framing gathers "the cluster" as **every pin within 30 km**, which is a

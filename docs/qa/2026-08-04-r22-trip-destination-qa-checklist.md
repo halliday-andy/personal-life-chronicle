@@ -187,6 +187,35 @@ therefore **frees the old pin and locks the new one**:
       to name the trip instead of the place. If any sentence about where
       the journey ends names a TRIP, that is a finding.)*
 
+## 8b. Two findings your walk produced
+
+**FIXED (`49450c5`) — every line on the globe could vanish until reload.**
+You hit this right after saving the frame: no trip route, no spine arcs,
+nothing. Crossing the reading-zoom threshold swaps the basemap via
+`setStyle`, which wipes every source and layer the app added; the rebuild
+hung on `style.load` alone, which does not fire on every swap path. Latent
+since the 2026-07-18 style-regime feature — **not** caused by R22. The pins
+stayed healthy throughout because DOM markers aren't part of the style,
+which is exactly what made it look like a trip problem.
+
+- [ ] Zoom **in** past the basemap threshold (the map turns to the detailed
+      daylight style) and back **out** to nocturne, two or three times.
+      **The spine arcs and the trip route must still be there** every time,
+      with no reload. *(This is the whole fix; if any line disappears once,
+      it is a blocker.)*
+- [ ] Do the same while the ✈ chip is open on a trip pin — the rose route
+      should survive the swap too.
+
+**NOT FIXED — retargeting costs the old destination its auto-open.**
+R19/F23/F24 made a trip's *destination* auto-open its trips on selection,
+and R18/F21 made that chip the thing that paints routes. Wendy's is now a
+*stop*, so neither fires: selecting it used to draw the route on arrival
+and now doesn't. A real consequence of R22 the design didn't anticipate.
+
+- [ ] Decide whether a **stop** should auto-open its trips as a destination
+      does — or whether auto-open should follow "this trip is the point of
+      this pin" more loosely. Your call; it is a one-line change either way.
+
 ## 9. Pin occlusion — the Hanover cluster *(separate fix, same session)*
 
 Not R22, but it lands in the same build and it is the one thing here I
