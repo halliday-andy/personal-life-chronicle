@@ -27,6 +27,7 @@ import { useUiChrome } from '../UiChromeContext'
 import { planPinArrival } from '@/lib/globe/cluster-frame'
 import { pinStackZ } from '@/lib/globe/pin-stack'
 import { attachChronicleInstaller } from '@/lib/globe/chronicle-layers'
+import { tripAutoOpensFor } from '@/lib/globe/trip-auto-open'
 import { nextRegime, styleForRegime, chronicleLinePaint, NOCTURNE_STYLE, type GlobeRegime } from '@/lib/globe/style-regime'
 import { useEscapeKey } from '@/lib/ui/use-escape-key'
 import { buildCreatePinPayload } from '@/lib/globe/create-pin-payload'
@@ -1927,9 +1928,11 @@ export default function GlobeView() {
           isHome: sel.type_code === SPINE_CODE || sel.type_code === null,
           isHomeBase: homeBaseId === selectedId,
           isFuturePlace: sel.type_code === 'wants_to_visit',
-          // Destinations only — arriving at the place a trip went TO, the
-          // trip IS the pin's point. An origin may have many departures.
-          autoOpen: mine.some((t) => t.destination_relationship_id === selectedId),
+          // Destinations and STOPS — the places a journey went to or passed
+          // through. Origins are excluded on purpose (F21); the rule and its
+          // exception live in one proven place now, because "any trip
+          // touching this pin" is the tidier-looking version and is the bug.
+          autoOpen: tripAutoOpensFor(mine, selectedId),
           onStartTripFromHere: () => {
             setTripFromHere({ relationshipId: sel.relationship_id, name: sel.name })
             deselect()
