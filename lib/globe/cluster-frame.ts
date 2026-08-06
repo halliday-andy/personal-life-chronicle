@@ -46,6 +46,13 @@ export interface ClusterFrame {
   /** Cap for fitBounds so tiny clusters don't over-zoom past legibility. */
   maxZoom: number
   neighborCount: number
+  /** Distance from the TARGET to its closest neighbour — not the closest
+   *  pair anywhere in the cluster, which is what `maxZoom` uses. The
+   *  target's own crowding is what decides whether the pin the user asked
+   *  for will be legible when the camera stops. */
+  nearestNeighborMeters: number
+  /** Zoom at which the target clears its nearest neighbour by `labelSepPx`. */
+  separationZoom: number
 }
 
 /**
@@ -68,20 +75,96 @@ export function clusterFrame(
   if (cluster.length <= 1) return null
 
   let minPair = Infinity
+  let nearestToTarget = Infinity
   let west = Infinity, south = Infinity, east = -Infinity, north = -Infinity
   for (let i = 0; i < cluster.length; i++) {
     const p = cluster[i]
     west = Math.min(west, p.lng); east = Math.max(east, p.lng)
     south = Math.min(south, p.lat); north = Math.max(north, p.lat)
+    if (p.relationship_id !== target.relationship_id) {
+      nearestToTarget = Math.min(nearestToTarget, haversineMeters(p, target))
+    }
     for (let j = i + 1; j < cluster.length; j++) {
       minPair = Math.min(minPair, haversineMeters(p, cluster[j]))
     }
   }
 
-  const zoom = Math.min(zMax, Math.max(zMin, separationZoom(minPair, target.lat, sepPx)))
+  const clamp = (z: number) => Math.min(zMax, Math.max(zMin, z))
   return {
     bounds: [[west, south], [east, north]],
-    maxZoom: zoom,
+    maxZoom: clamp(separationZoom(minPair, target.lat, sepPx)),
     neighborCount: cluster.length - 1,
+    nearestNeighborMeters: nearestToTarget,
+    separationZoom: clamp(separationZoom(nearestToTarget, target.lat, sepPx)),
   }
+}
+
+export interface Viewport {
+  width: number
+  height: number
+  padTop: number
+  padLeft: number
+  padRight: number
+  padBottom: number
+}
+
+/**
+ * The zoom `fitBounds` will actually settle on for these bounds in this
+ * viewport. Needed because `maxZoom` is only a CAP: handing fitBounds a
+ * separation zoom does nothing whenever the cluster's own span forces a
+ * shallower one, and nothing in the call site revealed that.
+ */
+export function zoomToFit(
+  bounds: [[number, number], [number, number]],
+  view: Viewport,
+  lat: number,
+): number {
+  const [[w, s], [e, n]] = bounds
+  const spanX = haversineMeters({ lng: w, lat }, { lng: e, lat })
+  const spanY = haversineMeters({ lng: w, lat: s }, { lng: w, lat: n })
+  const usableW = Math.max(1, view.width - view.padLeft - view.padRight)
+  const usableH = Math.max(1, view.height - view.padTop - view.padBottom)
+  const mpp = Math.max(spanX / usableW, spanY / usableH)
+  if (!(mpp > 0)) return Infinity // degenerate bounds: nothing constrains the zoom
+  return Math.log2((78271.517 * Math.cos((lat * Math.PI) / 180)) / mpp)
+}
+
+export type ArrivalPlan =
+  /** Nothing nearby — the plain regional fly. */
+  | { kind: 'fly' }
+  /** The neighbourhood fits AND the target stays legible inside it. */
+  | { kind: 'fit'; bounds: [[number, number], [number, number]]; maxZoom: number }
+  /** Containment would bury the target: centre on it and separate instead. */
+  | { kind: 'focus'; zoom: number }
+
+/**
+ * How to land on a pin the user explicitly asked for (search result, ?pin=
+ * deep link).
+ *
+ * The 2026-07-10 J4 rule was "containment beats separation" — fit the local
+ * cluster, and accept that a tight pair inside a wide cluster may need one
+ * more manual zoom. Andy's 2026-08-04 screenshots are that compromise
+ * coming due: his Dartmouth primary residence sat 508 m from a work-travel
+ * marker inside a 35 km cluster, so fitBounds settled around z11.3 while
+ * separation needed z13.8, and the pin he had just searched for arrived
+ * underneath a neighbour's label.
+ *
+ * So the rule is now conditional, and the condition is who asked. **When
+ * the user named ONE pin, that pin's legibility outranks the tour of its
+ * neighbourhood** — the neighbours are context, the pin is the request.
+ * Containment still wins wherever it costs nothing, which is most of the
+ * time and includes the Queenstown case J4 was written for.
+ */
+export function planPinArrival(
+  target: ClusterPin,
+  pins: ClusterPin[],
+  view: Viewport,
+  opts?: Parameters<typeof clusterFrame>[2],
+): ArrivalPlan {
+  const frame = clusterFrame(target, pins, opts)
+  if (!frame) return { kind: 'fly' }
+  if (zoomToFit(frame.bounds, view, target.lat) < frame.separationZoom) {
+    return { kind: 'focus', zoom: frame.separationZoom }
+  }
+  return { kind: 'fit', bounds: frame.bounds, maxZoom: frame.maxZoom }
 }

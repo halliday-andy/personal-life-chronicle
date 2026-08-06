@@ -24,7 +24,8 @@ import PinEditPanel from './PinEditPanel'
 import PinDetailCard from './PinDetailCard'
 import { type TripCardContext } from './PinTrips'
 import { useUiChrome } from '../UiChromeContext'
-import { clusterFrame } from '@/lib/globe/cluster-frame'
+import { planPinArrival } from '@/lib/globe/cluster-frame'
+import { pinStackZ } from '@/lib/globe/pin-stack'
 import { nextRegime, styleForRegime, chronicleLinePaint, NOCTURNE_STYLE, type GlobeRegime } from '@/lib/globe/style-regime'
 import { useEscapeKey } from '@/lib/ui/use-escape-key'
 import { buildCreatePinPayload } from '@/lib/globe/create-pin-payload'
@@ -93,19 +94,35 @@ const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? ''
 // local cluster, zoomed toward label separation; a lone target gets the
 // plain regional fly. Either way the pin lands above the bottom card.
 function framePinOnMap(map: mapboxgl.Map, target: Pin, pins: Pin[]) {
-  const frame = clusterFrame(target, pins)
-  if (frame) {
-    map.fitBounds(frame.bounds, {
-      padding: {
-        top: 110,
-        left: 110,
-        right: 110,
-        // Keep the cluster above the bottom-anchored card.
-        bottom: 110 + Math.round(window.innerHeight * 0.2),
-      },
-      maxZoom: frame.maxZoom,
+  // Keep the subject above the bottom-anchored card.
+  const bottomPad = 110 + Math.round(window.innerHeight * 0.2)
+  const cardOffset: [number, number] = [0, -Math.round(window.innerHeight * 0.18)]
+  const plan = planPinArrival(target, pins, {
+    width: window.innerWidth,
+    height: window.innerHeight,
+    padTop: 110,
+    padLeft: 110,
+    padRight: 110,
+    padBottom: bottomPad,
+  })
+
+  if (plan.kind === 'fit') {
+    map.fitBounds(plan.bounds, {
+      padding: { top: 110, left: 110, right: 110, bottom: bottomPad },
+      maxZoom: plan.maxZoom,
       speed: 0.9,
       essential: true,
+    })
+  } else if (plan.kind === 'focus') {
+    // Containment would have settled shallower than the zoom that separates
+    // this pin from its nearest neighbour — so the neighbourhood is given up
+    // for the pin that was actually asked for (Andy, 2026-08-04).
+    map.flyTo({
+      center: [target.lng, target.lat],
+      zoom: plan.zoom,
+      speed: 0.9,
+      essential: true,
+      offset: cardOffset,
     })
   } else {
     map.flyTo({
@@ -115,8 +132,7 @@ function framePinOnMap(map: mapboxgl.Map, target: Pin, pins: Pin[]) {
       zoom: Math.max(map.getZoom(), 8),
       speed: 0.9,
       essential: true,
-      // Land the pin above the bottom-anchored card, not behind it.
-      offset: [0, -Math.round(window.innerHeight * 0.18)],
+      offset: cardOffset,
     })
   }
 }
@@ -832,6 +848,12 @@ export default function GlobeView() {
         (p.relationship_id === selectedId ? ' globe-pin-selected' : '')
       // Selection ring/glow read this var so they match the pin's type hue.
       el.style.setProperty('--pin-ring', pinTypeMeta(p.type_code).color)
+      // Explicit stacking (2026-08-04). Mapbox sets no marker z-index, so
+      // without this the paint order is the `pins` array order — which puts
+      // sequenced primaries FIRST and therefore at the BOTTOM, under every
+      // marker near them. Contained by `isolation: isolate` on the map.
+      const restingZ = pinStackZ(p, { selected: p.relationship_id === selectedId })
+      el.style.zIndex = String(restingZ)
       el.title = p.name
       el.addEventListener('click', (ev) => {
         ev.stopPropagation()
@@ -885,10 +907,18 @@ export default function GlobeView() {
         const pt = map.project([p.lng, p.lat])
         setHovered({ name: p.name, description: p.description, x: pt.x, y: pt.y })
         setHoverPreview(p.relationship_id)
+        // Lift on hover by mutating the element, NOT by adding hover to the
+        // effect's deps — that would rebuild every marker on every mouse
+        // move across the globe. The selected pin keeps its own height: a
+        // cursor passing over a neighbour is not a choice.
+        if (p.relationship_id !== selectedId) {
+          el.style.zIndex = String(pinStackZ(p, { hovered: true }))
+        }
       })
       el.addEventListener('mouseleave', () => {
         setHovered((h) => (h?.name === p.name ? null : h))
         setHoverPreview((cur) => (cur === p.relationship_id ? null : cur))
+        el.style.zIndex = String(restingZ)
       })
       const marker = new mapboxgl.Marker({ element: el, draggable: isSel }).setLngLat([p.lng, p.lat]).addTo(map)
       if (isSel) {
@@ -1465,7 +1495,13 @@ export default function GlobeView() {
       {/* h-full (not absolute inset-0): mapbox-gl.css forces
           .mapboxgl-map { position: relative }, which overrides Tailwind's
           .absolute and collapses an inset-0 container to height 0. */}
-      <div ref={containerRef} className="h-full w-full" />
+      {/* `isolate` is load-bearing, not decoration: pin markers now carry
+          real z-indexes (up to PIN_STACK_CEILING), and .mapboxgl-map is
+          `position: relative; z-index: auto`, which does NOT open a
+          stacking context. Without this, a marker would compete with the
+          globe's own chrome — the draft bar (z-20) and the mode banners
+          (z-40) — and win. */}
+      <div ref={containerRef} className="isolate h-full w-full" />
 
       {/* Find Location — search-first entry */}
       <div className="absolute left-1/2 top-6 z-20 w-[min(440px,90vw)] -translate-x-1/2">
