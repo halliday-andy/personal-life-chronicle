@@ -59,15 +59,41 @@ export interface ClusterFrame {
  * Frame the target's local cluster, or null when the target stands alone
  * (caller keeps its plain flyTo). Neighbors = pins within `radiusMeters`.
  */
+/**
+ * How deep the camera may DIVE to separate the pin the user named.
+ *
+ * Deliberately not the same number as `maxZoom` (2026-08-04). They answer
+ * different questions: `maxZoom` asks "how far may fitBounds over-zoom a
+ * tiny cluster before containment stops being useful", while this asks
+ * "how far may the camera go to make the requested pin legible". Sharing
+ * one clamp meant the focus branch computed the zoom it needed — z15.4 for
+ * Andy's Year 2 Coronet Peak, 164 m from the Ramada — and then silently
+ * settled for 14, rendering the pair 49 px apart with the banners still
+ * touching.
+ *
+ * The ceiling still exists because below roughly 70 m two pins are the
+ * same place as far as a camera is concerned. Separating THOSE is a
+ * displacement problem (see the deferred pin-separation design), and no
+ * amount of zoom is the right answer to it.
+ */
+const DIVE_CEILING = 16.5
+
 export function clusterFrame(
   target: ClusterPin,
   pins: ClusterPin[],
-  opts?: { radiusMeters?: number; labelSepPx?: number; minZoom?: number; maxZoom?: number },
+  opts?: {
+    radiusMeters?: number
+    labelSepPx?: number
+    minZoom?: number
+    maxZoom?: number
+    separationMaxZoom?: number
+  },
 ): ClusterFrame | null {
   const radius = opts?.radiusMeters ?? 30000
   const sepPx = opts?.labelSepPx ?? 130
   const zMin = opts?.minZoom ?? 8
   const zMax = opts?.maxZoom ?? 14
+  const zDive = opts?.separationMaxZoom ?? DIVE_CEILING
 
   const cluster = pins.filter(
     (p) => p.relationship_id === target.relationship_id || haversineMeters(p, target) <= radius,
@@ -89,13 +115,12 @@ export function clusterFrame(
     }
   }
 
-  const clamp = (z: number) => Math.min(zMax, Math.max(zMin, z))
   return {
     bounds: [[west, south], [east, north]],
-    maxZoom: clamp(separationZoom(minPair, target.lat, sepPx)),
+    maxZoom: Math.min(zMax, Math.max(zMin, separationZoom(minPair, target.lat, sepPx))),
     neighborCount: cluster.length - 1,
     nearestNeighborMeters: nearestToTarget,
-    separationZoom: clamp(separationZoom(nearestToTarget, target.lat, sepPx)),
+    separationZoom: Math.min(zDive, Math.max(zMin, separationZoom(nearestToTarget, target.lat, sepPx))),
   }
 }
 

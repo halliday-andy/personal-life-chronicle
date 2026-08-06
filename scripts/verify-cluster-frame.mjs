@@ -141,6 +141,54 @@ if (planPinArrival(farAway, [farAway], viewport).kind === 'fly')
   ok('a lone target still plans a plain fly')
 else bad('lone target did not plan a fly')
 
+// ── 8. The two ceilings are different jobs (Andy's Queenstown, 2026-08-04) ──
+// The focus branch was computing the zoom it needed and then silently
+// settling for less: ONE clamp (maxZoom 14) capped both the fitBounds cap
+// AND the separation target. Selecting "Year 2 Coronet Peak" with Ramada
+// 164m away needs z15.4 for a label-width; it got 14, so the pair rendered
+// 49px apart and the banners still touched. The clamps now differ because
+// they answer different questions: "how far in may fitBounds over-zoom a
+// tiny cluster" is not "how far in may the camera dive to separate the pin
+// you asked for".
+const yr2 = P('yr2', 168.665986, -45.032481)     // Year 2 Coronet Peak (residence)
+const ramada = P('ramada', 168.666037, -45.033955) // 164m
+const transH = P('trans', 168.658679, -45.032796)  // 575m
+const qtSkiSchool = P('qtschool', 168.736721, -44.927178) // 12.96km, its worked_at child
+const qtCluster = [yr2, ramada, transH, qtSkiSchool]
+
+const qtFrame = clusterFrame(yr2, qtCluster)
+if (!qtFrame) { bad('no frame for the Queenstown cluster'); process.exit(1) }
+if (qtFrame.separationZoom > 14.01)
+  ok('the separation target is no longer capped at the fitBounds cap (z' + qtFrame.separationZoom.toFixed(2) + ')')
+else bad('separation still clamped to the old ceiling: ' + qtFrame.separationZoom)
+
+const qtPlan = planPinArrival(yr2, qtCluster, viewport)
+if (qtPlan.kind === 'focus') ok('Queenstown still plans focus (containment is far below separation)')
+else bad('expected focus, got ' + qtPlan.kind)
+if (qtPlan.kind === 'focus') {
+  const mppQ = (78271.517 * Math.cos((yr2.lat * Math.PI) / 180)) / 2 ** qtPlan.zoom
+  const px = haversineMeters(ramada, yr2) / mppQ
+  if (px >= 129.5) ok('the 164m pair finally renders ' + px.toFixed(0) + 'px apart (was 49px)')
+  else bad('still short of a label width: ' + px.toFixed(0) + 'px')
+  // The other close pin should come along rather than be flown past.
+  const pxT = haversineMeters(transH, yr2) / mppQ
+  if (pxT < viewport.width / 2) ok('Trans Hotel stays on screen at ' + pxT.toFixed(0) + 'px')
+  else bad('Trans Hotel flown off screen: ' + pxT.toFixed(0) + 'px')
+}
+
+// The fitBounds cap keeps its OWN, lower ceiling — raising the dive must
+// not let containment over-zoom a tiny cluster past legibility.
+if (dupFrame && dupFrame.maxZoom <= 14)
+  ok('the fitBounds cap is still 14 \\u2014 the two ceilings did not get merged again')
+else bad('fitBounds cap moved with the separation ceiling: ' + JSON.stringify(dupFrame))
+
+// And the dive is still bounded: coincident pins are a DISPLACEMENT problem,
+// not a camera problem, so no zoom should chase them to infinity.
+const coincident = clusterFrame(yr2, [yr2, P('same', yr2.lng, yr2.lat)])
+if (coincident && Number.isFinite(coincident.separationZoom) && coincident.separationZoom <= 16.5)
+  ok('coincident pins stop at the dive ceiling (z' + coincident.separationZoom.toFixed(2) + '), not infinity')
+else bad('unbounded dive: ' + JSON.stringify(coincident))
+
 console.log(failures === 0 ? '\\nPASS' : '\\nFAIL (' + failures + ')')
 process.exit(failures === 0 ? 0 : 1)
 `
