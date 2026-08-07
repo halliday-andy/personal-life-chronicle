@@ -24,17 +24,32 @@
  *
  * So: re-assert on every settle point, guarded by "is it actually missing?"
  * rather than by "did the event I trust fire?".
+ *
+ * With one correction learned immediately afterwards, at Andy's cost: the
+ * settle point must also be SAFE to mutate from. The first version of this
+ * listened to `styledata` as well, which fires inside the render/placement
+ * cycle, and adding symbol layers from there crashed mapbox's placement
+ * engine. Re-asserting broadly is right; re-asserting mid-render is not.
  */
 
 /**
- * Every point at which the style may have just been rebuilt without us.
+ * Every point at which it is both NECESSARY and SAFE to rebuild.
  *
- * `style.load` is the announced path. `styledata` covers the swap paths
- * that never announce one. `idle` is the backstop — whatever happened, the
- * map has finished doing it, so if the layers are missing now they are
- * missing for good.
+ * `style.load` is the announced path. `idle` is the catch-all: the map has
+ * finished everything it was doing, so if the layers are missing at that
+ * moment they are missing for good — this is what covers the swap paths
+ * that never announce a style load, and it is why the list still recovers.
+ *
+ * **`styledata` is deliberately NOT here.** It was, for one commit, and it
+ * crashed mapbox: `TypeError: Cannot read properties of undefined (reading
+ * 'get')` inside `Placement.continuePlacement` ← `_updatePlacement` ←
+ * `Map._render` (Andy, 2026-08-04). `styledata` fires *during* the render
+ * and placement cycle, and adding sources and SYMBOL layers — the arc
+ * chevrons — from inside it mutates the style out from under the placement
+ * engine mid-pass. Necessary and safe are different questions: a settle
+ * point that fires mid-render answers only the first.
  */
-export const STYLE_REINSTALL_EVENTS = ['style.load', 'styledata', 'idle'] as const
+export const STYLE_REINSTALL_EVENTS = ['style.load', 'idle'] as const
 
 /** The slice of mapbox's Map this needs — kept tiny so it can be stubbed. */
 export interface StyleSwapMap {

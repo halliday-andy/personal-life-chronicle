@@ -27,7 +27,9 @@
  *   2. Does NOT install while the style is still loading (addSource would
  *      throw), and does NOT install when the layers are already present.
  *   3. **Recovers from a style swap that never fires `style.load`** — the
- *      bug itself. `styledata` or `idle` alone must be enough.
+ *      bug itself. `idle` alone must be enough.
+ *   3b. But NEVER from `styledata`, which fires mid-render: mutating the
+ *      style from there crashed mapbox's placement engine outright.
  *   4. Repeated events after a successful install do nothing (idempotent —
  *      these events fire constantly during interaction).
  *   5. Survives many swaps in a row (Andy crossed the threshold repeatedly).
@@ -100,22 +102,46 @@ function stubMap() {
 }
 
 // 3. THE BUG: a swap that never fires style.load must still recover.
-for (const ev of ['styledata', 'idle']) {
+{
   const s = stubMap()
   attachChronicleInstaller(s.map, 'trip-tethers', s.install)
   s.fire('style.load')                 // initial install
   s.state.hasSource = false            // setStyle wipes the custom sources
-  s.fire(ev)                           // ...and style.load never comes
-  if (s.state.installs === 2) ok('recovers from a swap announced only by "' + ev + '" (the bug)')
-  else bad('lines stayed dead after a "' + ev + '"-only swap: ' + s.state.installs)
+  s.fire('idle')                       // ...and style.load never comes
+  if (s.state.installs === 2) ok('recovers from a swap announced only by "idle" (the bug)')
+  else bad('lines stayed dead after an idle-only swap: ' + s.state.installs)
 }
+
+// 3b. ...but NOT from styledata, which fires mid-render.
+// Adding sources and symbol layers from inside the render/placement cycle
+// crashed mapbox outright: "Cannot read properties of undefined (reading
+// 'get')" in Placement.continuePlacement (Andy, 2026-08-04). Recovery has
+// to happen at a point that is safe to mutate from, not merely at the
+// earliest point that would work.
+{
+  const s = stubMap()
+  attachChronicleInstaller(s.map, 'trip-tethers', s.install)
+  s.fire('style.load')
+  s.state.hasSource = false
+  s.fire('styledata')
+  if (s.state.installs === 1)
+    ok('styledata never triggers an install \\u2014 mutating mid-render crashes the placement engine')
+  else bad('installed from styledata: ' + s.state.installs + ' (this crashed mapbox once)')
+  // idle still follows and repairs it, so nothing is lost by ignoring styledata.
+  s.fire('idle')
+  if (s.state.installs === 2) ok('the following idle still repairs it \\u2014 recovery is only deferred, not dropped')
+  else bad('idle failed to repair after a styledata: ' + s.state.installs)
+}
+if (!(STYLE_REINSTALL_EVENTS as readonly string[]).includes('styledata'))
+  ok('styledata is absent from the event list by construction')
+else bad('styledata is back in STYLE_REINSTALL_EVENTS')
 
 // 4. Idempotent under event spam
 {
   const s = stubMap()
   attachChronicleInstaller(s.map, 'trip-tethers', s.install)
   for (let i = 0; i < 50; i++) for (const ev of STYLE_REINSTALL_EVENTS) s.fire(ev)
-  if (s.state.installs === 1) ok('150 events produce exactly one install')
+  if (s.state.installs === 1) ok('100 events produce exactly one install')
   else bad('event spam caused ' + s.state.installs + ' installs')
 }
 
@@ -124,7 +150,7 @@ for (const ev of ['styledata', 'idle']) {
   const s = stubMap()
   attachChronicleInstaller(s.map, 'trip-tethers', s.install)
   s.fire('style.load')
-  for (let i = 0; i < 5; i++) { s.state.hasSource = false; s.fire('styledata') }
+  for (let i = 0; i < 5; i++) { s.state.hasSource = false; s.fire('idle') }
   if (s.state.installs === 6) ok('five further swaps rebuild five times')
   else bad('rebuild count wrong across repeated swaps: ' + s.state.installs)
 }
@@ -139,7 +165,7 @@ for (const ev of ['styledata', 'idle']) {
   if (s.listenerCount() === 0) ok('detach removes every listener')
   else bad('leaked listeners: ' + s.listenerCount())
   s.state.hasSource = false
-  s.fire('styledata')
+  s.fire('idle')
   if (s.state.installs === 0) ok('a detached installer stays silent')
   else bad('detached installer still fired')
 }
