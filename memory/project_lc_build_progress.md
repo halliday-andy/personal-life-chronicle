@@ -100,10 +100,25 @@ visibility logic can be the cause.** One reload settled it.
 **CLASS-OF-BUG (rule 25): rebuilding on ONE event when the thing you depend
 on can be destroyed by several.** State owned by a lifecycle you do not
 control must be re-asserted at every settle point, guarded by *"is it
-actually missing?"* — never by *"did the event I trust fire?"*. Now
-`style.load`, `styledata` and `idle` all re-assert, with the sentinel
-source's absence as the guard. Proof `verify-chronicle-installer.mjs` 10/10
-against a stub map, red first.
+actually missing?"* — never by *"did the event I trust fire?"*.
+
+**Rule 25 needed an immediate correction, at Andy's cost (`1ed7577`).** The
+first fix listened on `style.load`, **`styledata`** and `idle`. `styledata`
+fires *inside* the render/placement cycle, so adding sources and SYMBOL
+layers (the arc chevrons) from it mutated the style out from under mapbox's
+placement engine: `TypeError: Cannot read properties of undefined (reading
+'get')` at `Placement.continuePlacement` ← `_updatePlacement` ←
+`Map._render`. **The completed rule: re-assert broadly, but only at points
+that are SAFE to mutate from — necessary and safe are different questions,
+and a settle point that fires mid-render answers only the first.** Now
+`style.load` + `idle`; recovery is deferred one settle, never dropped.
+
+*Also a lesson about the proof:* the original 10/10 asserted that
+`styledata` recovery WORKED, so it would have passed the code that crashed.
+A proof written from the fix's intent, not from the constraint it must
+respect, is a proof that endorses the next bug. It now pins the exclusion —
+`styledata` must trigger no install and must stay out of the event list —
+12/12.
 
 **FIXED (`3ea57e9`) — a STOP now auto-opens its trips too.** R19/F23/F24
 gave *destinations* auto-open; R18/F21 made that chip the thing that paints

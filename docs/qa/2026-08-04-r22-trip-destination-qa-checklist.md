@@ -205,6 +205,13 @@ which is exactly what made it look like a trip problem.
       it is a blocker.)*
 - [ ] Do the same while the ✈ chip is open on a trip pin — the rose route
       should survive the swap too.
+- [ ] **No runtime crash while panning or zooming.** The first version of
+      this fix rebuilt the layers from `styledata`, which fires mid-render,
+      and that crashed mapbox's placement engine outright (*"Cannot read
+      properties of undefined (reading 'get')"* at
+      `Placement.continuePlacement`). Corrected in `1ed7577` — the rebuild
+      now happens only at `style.load` and `idle`. If any such error
+      appears while navigating, stop and report it.
 
 **FIXED (`3ea57e9`) — a stop now auto-opens its trips, like a destination.**
 R19/F23/F24 gave destinations auto-open; R18/F21 made that chip the thing
