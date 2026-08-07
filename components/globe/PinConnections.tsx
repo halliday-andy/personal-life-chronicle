@@ -86,8 +86,27 @@ export default function PinConnections({
 }) {
   // Seeded, not forced: keyed by pin, so this re-evaluates on every
   // selection and the user can still close it. Only a trip's DESTINATION
-  // opens itself (see TripCardContext.autoOpen).
+  // or STOP opens itself (see TripCardContext.autoOpen).
   const [openChip, setOpenChip] = useState<OpenChip>(tripCtx?.autoOpen ? 'trips' : null)
+  // ...but a useState initialiser runs ONCE, and `autoOpen` is derived from
+  // trips, which arrive in their own fetch. Arriving by `?pin=` deep link
+  // from Journey, the card mounts while `trips` is still empty, so the seed
+  // reads false and the chip never opens — and because the chip is what
+  // paints routes (R18/F21), the trip's arc never draws either. Andy hit
+  // exactly this clicking Wendy's from the Mt. Snow Chalet stop list
+  // (2026-08-04); hovering still drew the line, which is the tell that the
+  // data was fine and only the disclosure was wrong.
+  //
+  // Rule 19's family: state seeded from something that isn't ready yet. So
+  // the seed gets a second chance when the data lands — once per card, and
+  // never over a chip the user has already opened, so it stays a seed
+  // rather than becoming a force.
+  const autoOpenedRef = useRef(false)
+  useEffect(() => {
+    if (autoOpenedRef.current || !tripCtx?.autoOpen) return
+    autoOpenedRef.current = true
+    setOpenChip((current) => current ?? 'trips')
+  }, [tripCtx?.autoOpen])
   const [tripCount, setTripCount] = useState(0)
   const disclosureRef = useRef<HTMLDivElement>(null)
 
