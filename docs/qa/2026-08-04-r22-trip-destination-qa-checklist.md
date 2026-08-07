@@ -64,38 +64,38 @@ So the trip needs **one** change, not three: the destination.
 - [x] "Returned to the origin (round trip)" is **unticked** already, and
       the line below now reads *"One-way — the journey ends at SSV Day
       Lodge Room; **ending at a home makes this a relocation**…"*
-- [ ] **Save the frame.**
+- [x] **Save the frame.**
 
 Then check what landed:
 
 - [ ] The notice names both ends: *"The trip now ends at SSV Day Lodge Room
       — Wendy's shared apartment is a stop along the way."*
-- [ ] The globe draws **chalet → Wendy's → SSV** as one outbound line,
+- [x] The globe draws **chalet → Wendy's → SSV** as one outbound line,
       **with no return arc**.
-- [ ] **The title survived.** "The epic solo road trip in the overloaded
+- [x] **The title survived.** "The epic solo road trip in the overloaded
       Fiat 128" is Andy's sentence; `retarget_trip` protects it, but this
       is the UI path and it needed proving too.
-- [ ] Open **SSV Day Lodge Room** → the trip is on its card, now reading
+- [x] Open **SSV Day Lodge Room** → the trip is on its card, now reading
       **"Relocation · October 1978"**.
-- [ ] Open **Wendy's shared apartment** → the same trip is still on its
+- [x] Open **Wendy's shared apartment** → the same trip is still on its
       card, now as a **stop**.
-- [ ] `/journey?mode=travel` → the Travel Journal row also reads
+- [x] `/journey?mode=travel` → the Travel Journal row also reads
       **"Relocation"**. *(If the two surfaces disagree, that is a finding —
       they share one definition on purpose.)*
 
 ## 2. The destination selector's own edges
 
-- [ ] Re-open **Edit frame** and save **without touching** the destination
+- [x] Re-open **Edit frame** and save **without touching** the destination
       → no stop is added, nothing is duplicated. *(The client withholds the
       retarget when nothing moved; `retarget_trip` is idempotent too, but
       the client should not ask for work it knows is pointless.)*
-- [ ] Retarget a trip to a pin that is **already one of its stops** → the
+- [x] Retarget a trip to a pin that is **already one of its stops** → the
       stop row disappears as the pin becomes the destination. It must never
       be both.
-- [ ] On some other trip, retarget with the **checkbox unticked** → the old
+- [x] On some other trip, retarget with the **checkbox unticked** → the old
       destination drops off the trip entirely, **and its pin stays on the
       globe**. The warning line under the checkbox says exactly this.
-- [ ] Retarget an **untitled** trip → its name follows the new destination
+- [x] Retarget an **untitled** trip → its name follows the new destination
       ("Trip to …"). A **titled** one keeps its title.
 
 ## 3. The trip-kind selector *(add-on)*
@@ -225,6 +225,36 @@ passed through, so the journey is still the point of the pin.
 - [ ] Select **My Mt. Snow Chalet** (the origin) → **does NOT auto-open.**
       *(F21: a home with many departures buries the map. This exclusion is
       deliberate and proven — if it ever opens, that is a regression.)*
+
+## 8c. A stop looks like a stop, and arrives drawing its route
+
+Both from your Wendy's screenshots.
+
+- [ ] From **Journey → My Mt. Snow Chalet → Wendy's shared apartment**, the
+      globe now arrives with **the trip arc drawn**, no hover needed. *(The
+      chip that gates route painting was seeded once at mount, before the
+      trips fetch returned. `d9171d7`.)*
+- [ ] **Wendy's now wears a thin rose collar** — the "stop along a trip"
+      mark. Compare with **SSV Day Lodge Room**, which keeps the brighter,
+      glowing destination halo. *A destination is where the journey was
+      going; a stop is somewhere it went through, and the ring weights say
+      which.*
+- [ ] **Legend & filters** lists both marks now.
+- [ ] **My Mt. Snow Chalet** (the origin) still wears **neither** — it is a
+      home, and the spine already speaks for it (F21).
+- [ ] Add a stop through **Route** mode → it gets the same collar. *(The
+      mark is derived from trip membership, not from how the stop was
+      made — so both paths agree by construction.)*
+- [ ] Retarget a trip and watch the marks **swap** — the old destination
+      drops to a collar, the new one picks up the halo, immediately.
+
+**On the pin-type dropdown having no "stop on a trip":** deliberate, and I
+would keep it that way. Stop-ness lives on the trip↔pin relationship
+(`trip_stops`), not on the place — a pin can be a stop on one trip and a
+destination on another, which a single `type_code` cannot express. **Log
+remains the right answer to "what kind of place is this"**, which is why
+route mode defaults to it; it just should not be how the app knows the
+place is on a journey. What was missing was the drawing, not the word.
 
 ## 9. Pin occlusion — the Hanover cluster *(separate fix, same session)*
 

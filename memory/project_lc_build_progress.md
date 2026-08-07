@@ -149,10 +149,43 @@ the rose trip-destination halo + "trip to frame" flag (R11/R6) move to the
 new destination as they should, the `?trip=` deep link lands on the current
 one, and both the route gate and the `mine` filter already consider stops
 and origins. **autoOpen was the only site that assumed immutability.**
-*Observation, not built:* a STOP has no pin styling of its own, so a place
-a journey passed through looks like any unrelated pin — thinner than it was
-before R22 made stops common (retargeting demotes into them, and route mode
-now mints them).
+*Was an observation; now BUILT (`c14a704`).* A STOP had no pin styling, so
+a place a journey passed through looked like any unrelated pin. Andy asked
+whether **"stop on a trip" should be a pin TYPE**. **Answered no, and the
+reasoning is a standing one:** a pin can be a stop on one trip and a
+destination on another (one `type_code` cannot hold that, a role SET can);
+`trip_stops` already stores the fact, so a type duplicates a relation one
+join away (rule 24); and *place = entity + dimension + relationship* puts
+trip membership on the **relationship** shelf, not the type vocabulary.
+**The gap was never taxonomic — nothing DREW the relation.** `logged_at`
+remains the right answer to "what kind of place is this", which is why
+route mode still defaults to it. Roles derived in
+`lib/globe/trip-pin-roles.ts` (proof 13/13) so a retarget re-styles both
+ends instantly with no second source of truth. Stop mark is deliberately
+quieter than the destination halo — **CSS order is load-bearing**, stop
+before destination, so a pin holding both roles keeps the louder mark.
+Both marks added to the legend.
+
+**BUG, same walk (`d9171d7`): the trips chip never opened on a deep-link
+arrival.** Clicking Wendy's from the Journey stop list drew no arc, though
+HOVERING it did — the tell that the data was fine and only the disclosure
+was wrong (hover paints routes independently of the chip; selection goes
+through it, R18/F21). `PinConnections` seeded `openChip` with a `useState`
+INITIALISER, which runs once at mount, from `autoOpen`, which derives from
+trips — and the `?pin=` deep-link branch, unlike the `?trip=` branch beside
+it, does not wait for `tripsLoaded`. So the card mounted while `trips` was
+empty and the chip never opened. **Rule 19's family: state seeded from
+something not ready yet.** Not a retarget artifact and not stop-specific —
+any pin whose trips arrived after its card mounted.
+
+**PROOF GAP, stated plainly: `d9171d7` shipped with NO test.** It is React
+mount-order timing and this repo has no component test runner — the whole
+suite is `scripts/verify-*.mjs`, pure functions and DB proofs. Extracting a
+predicate would not have caught it, because the bug was WHEN the value was
+read, not what it computed. **A component harness (Vitest + Testing
+Library) is the real fix and is an open decision, not an oversight** — see
+the same-day discussion with Andy. Until then this class is guarded only by
+rule 19 and a QA step, which is weaker than everything around it.
 
 **OPEN DESIGN QUESTION — the anchor family vs. the geographic
 neighbourhood (Andy, 2026-08-04, from his Queenstown screenshot).** Arrival

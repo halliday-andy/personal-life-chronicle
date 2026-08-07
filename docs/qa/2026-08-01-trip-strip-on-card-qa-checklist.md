@@ -55,7 +55,7 @@ over the globe, that is a finding.
 
 ## 5. The actions still work
 
-- [ ] **Frame / Edit frame** → the framing panel opens with the right origin
+- [x] **Frame / Edit frame** → the framing panel opens with the right origin
       suggestion (armed origin wins, then the anchor, then Home Base).
 - [x] **Route** → the route-building banner opens and drawing still works.
       *(Route editing stays a globe mode — it draws on the map.)*
