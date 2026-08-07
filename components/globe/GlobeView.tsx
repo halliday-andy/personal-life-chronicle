@@ -28,6 +28,7 @@ import { planPinArrival } from '@/lib/globe/cluster-frame'
 import { pinStackZ } from '@/lib/globe/pin-stack'
 import { attachChronicleInstaller } from '@/lib/globe/chronicle-layers'
 import { tripAutoOpensFor } from '@/lib/globe/trip-auto-open'
+import { tripPinRoles } from '@/lib/globe/trip-pin-roles'
 import { nextRegime, styleForRegime, chronicleLinePaint, NOCTURNE_STYLE, type GlobeRegime } from '@/lib/globe/style-regime'
 import { useEscapeKey } from '@/lib/ui/use-escape-key'
 import { buildCreatePinPayload } from '@/lib/globe/create-pin-payload'
@@ -835,25 +836,29 @@ export default function GlobeView() {
     // position #1, not a semantic "birth" field. Calm "infancy" treatment.
     const originId = spine[0]?.relationship_id ?? null
 
-    // Trip destination markers (R11) + draft "needs framing" flags (R6).
-    const tripDest = new Map<string, boolean>() // relationship_id → any draft?
-    for (const t of trips) {
-      tripDest.set(t.destination_relationship_id,
-        (tripDest.get(t.destination_relationship_id) ?? false) || t.is_draft)
-    }
+    // What each pin IS to the trips that touch it — destination (R11),
+    // draft destination (R6), and now stop. Derived from the trips rather
+    // than stored on the pin, so a retarget re-styles both ends the moment
+    // it lands, and one pin can hold two roles at once.
+    const roles = tripPinRoles(trips)
 
     pinMarkersRef.current.forEach((m) => m.remove())
     pinMarkersRef.current = []
     pins.forEach((p) => {
       const isSel = p.relationship_id === selectedId && (editMode || refining) // draggable while editing or refining
-      const isTripDest = tripDest.has(p.relationship_id)
-      const isTripDraft = tripDest.get(p.relationship_id) === true
+      const role = roles.get(p.relationship_id)
+      const isTripDest = role?.isDestination === true
+      const isTripDraft = role?.isDraftDestination === true
+      const isTripStop = role?.isStop === true
       const isUnplaced = p.type_code === SPINE_CODE && p.sort_order === null
       const el = document.createElement('div')
       el.className =
         'globe-pin' +
         pinTypeClass(p.type_code) +
         (p.relationship_id === originId ? ' globe-pin-origin' : '') +
+        // Stop before destination: both can apply to one pin, and the CSS
+        // is ordered so the louder halo wins that tie.
+        (isTripStop ? ' globe-pin-trip-stop' : '') +
         (isTripDest ? ' globe-pin-trip-dest' : '') +
         (isTripDraft ? ' globe-pin-trip-draft' : '') +
         (isUnplaced ? ' globe-pin-unplaced' : '') +
@@ -1633,6 +1638,28 @@ export default function GlobeView() {
                   <div className="flex items-center gap-2.5">
                     <span className="inline-block h-0 w-6 border-t-2" style={{ borderColor: TRIP_ROUTE_COLOR }} />
                     <span>Trip route (out / ⌁ back)</span>
+                  </div>
+                  {/* The two rose pin marks. Listed because a mark nobody can
+                      look up is decoration — and because "went to" vs "passed
+                      through" is exactly the distinction the ring weights
+                      encode (2026-08-04). */}
+                  <div className="flex items-center gap-2.5">
+                    <span className="inline-flex w-6 justify-center">
+                      <span
+                        className="inline-block h-2.5 w-2.5 rounded-full bg-[var(--ember)]"
+                        style={{ boxShadow: `0 0 0 2px rgba(7,11,24,0.85), 0 0 0 3.5px ${TRIP_ROUTE_COLOR}` }}
+                      />
+                    </span>
+                    <span>Trip destination</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <span className="inline-flex w-6 justify-center">
+                      <span
+                        className="inline-block h-2.5 w-2.5 rounded-full bg-[var(--ember)]"
+                        style={{ boxShadow: '0 0 0 2px rgba(7,11,24,0.85), 0 0 0 3px rgba(224,112,155,0.55)' }}
+                      />
+                    </span>
+                    <span>Stop along a trip</span>
                   </div>
                 </div>
               </div>

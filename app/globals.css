@@ -222,6 +222,27 @@ body {
   box-shadow: 0 0 0 2px rgba(7, 11, 24, 0.85), 0 0 10px 1px rgba(125, 211, 168, 0.45);
 }
 
+/* Trip STOP (2026-08-04, Andy's Wendy's-apartment finding): a place the
+   journey passed THROUGH. Until now stops drew nothing at all, so a
+   waypoint looked exactly like a pin with no journey near it — and R22
+   made that worse in two directions at once, since retargeting DEMOTES
+   destinations into stops and route mode MINTS new ones.
+
+   Deliberately quieter than the destination halo below. A destination is
+   where a journey was GOING; a stop is somewhere it went through, and the
+   weight has to say which is which at a glance — so: a thin rose collar,
+   no glow, no second ring.
+
+   ORDER IS LOAD-BEARING. This sits BEFORE .globe-pin-trip-dest so that a
+   pin which is a stop on one trip and a destination on another keeps the
+   louder halo: both classes apply, equal specificity, last rule wins. Move
+   this below the halo and every such pin quietly demotes itself. */
+.globe-pin-trip-stop {
+  box-shadow:
+    0 0 0 2px rgba(7, 11, 24, 0.85),
+    0 0 0 3px rgba(224, 112, 155, 0.55);
+}
+
 /* Trip destination (Trips & Travel U4, R11) — the turnaround of a framed
    journey wears a rose halo ring over its type styling, so a destination
    reads as distinct from ordinary point markers and from the origin.
