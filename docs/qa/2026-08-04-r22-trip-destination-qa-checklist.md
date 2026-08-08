@@ -375,6 +375,33 @@ on what arriving at a pin should show you.
 
 ---
 
+## Queued after this checklist — stop reordering where the itinerary is read
+
+**Not a missing capability; a misplaced one.** Reordering works today: any
+trip pin → ✈ trips → **Route** → each stop chip carries **‹ ›**, backed by
+`moveToIndex` and `PATCH /api/trips/[tripId]/stops`. Andy could not find it,
+and the reasons are the finding:
+
+1. **Its debut is inert.** With one stop, `‹` and `›` are both disabled at
+   once (`i === 0` and `i === stops.length - 1` are simultaneously true), so
+   the first sighting of the control is a pair of greyed arrows.
+2. **Unlabelled glyphs**, explained only by an `aria-label` — which rule 14
+   already calls effectively hidden.
+3. **It lives only inside route mode.** The Travel Journal renders
+   `FROM / VIA / TO` — where you *read* an itinerary and notice it is wrong —
+   and cannot change it. The pin card's trip row lists no stops at all.
+
+(3) is **rule 10** again: a control scoped to an object belongs on that
+object's surface — the same reasoning that moved the trip strip onto the pin
+card at F2.
+
+**The unit:** put ‹ › on the Travel Journal's `VIA` list, and give the route
+banner's chips visible wording instead of bare chevrons. Endpoint and pure
+reorder already exist, so this is surfacing, not plumbing. Andy's call,
+2026-08-04: **queued behind the completion of this checklist.**
+
+---
+
 ## Findings
 
 | # | What | Where | Severity |

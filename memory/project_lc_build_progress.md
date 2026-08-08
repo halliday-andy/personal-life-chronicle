@@ -283,6 +283,20 @@ Library) is the real fix and is an open decision, not an oversight** — see
 the same-day discussion with Andy. Until then this class is guarded only by
 rule 19 and a QA step, which is weaker than everything around it.
 
+**QUEUED (Andy, 2026-08-04, behind the R22 checklist): stop reordering on
+the surface where the itinerary is READ.** He asked for "a way to reorder
+stops" — one exists (Route mode → ‹ › per stop chip, `moveToIndex` +
+`PATCH /api/trips/[tripId]/stops`), so **the defect is discoverability, not
+capability.** Three causes, all fair: (a) with ONE stop both chevrons are
+disabled at once, so the control's first appearance is inert; (b) they are
+unlabelled glyphs explained only by `aria-label`, which rule 14 calls
+effectively hidden; (c) **they live only inside route mode, while the Travel
+Journal shows `FROM / VIA / TO` — where you read an itinerary and notice it
+is wrong — and cannot change it.** (c) is **rule 10** again, the same
+reasoning that moved the trip strip onto the pin card at F2. Unit: ‹ › on
+the Journal's VIA list + visible wording on the banner chips. Surfacing,
+not plumbing.
+
 **OPEN — long place-pickers are already unwieldy at 48 pins (Andy,
 2026-08-04).** Writing a stop for the Fiat 128 he hit "Associated with
 which place?" showing **every pin he owns, unsorted**, and had to hunt a
