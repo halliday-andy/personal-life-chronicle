@@ -4,7 +4,7 @@ Two suites, two jobs. Neither replaces the other.
 
 | | `scripts/verify-*.mjs` | `test/*.test.tsx` |
 |---|---|---|
-| run with | `npm run verify` | `npm test` |
+| run with | `node scripts/verify-<name>.mjs` | `npm test` |
 | answers | *is this VALUE right?* | *does this happen at the right TIME?* |
 | covers | pure functions, DB behaviour in a rolled-back transaction | mount order, late-arriving props, conditional rendering, what the user can read and click |
 | **cannot** see | anything involving React | **geometry — layout, z-order, occlusion, scroll position** |
@@ -50,3 +50,15 @@ because it converts "we should look at this" into "the tests pass".
   removing the fix and watching exactly one test go red.
 - `fetch` is stubbed globally to resolve `{}`; override locally when a test
   genuinely cares about a response.
+
+## Why there is no `npm run verify`
+
+There was, for one commit, and it was wrong. `scripts/verify-*.mjs` is a
+mixed bag: most are deterministic proofs, but a few (`verify-6d-tools`,
+some diagnostics) need live data or a running orchestrator and exit
+non-zero without it. A loop over the glob therefore halts on the first of
+those and reports failure for a healthy tree — a gate that cries wolf gets
+ignored, which is worse than no gate.
+
+Run proofs individually, by name. If a single command becomes worth having,
+it needs an explicit list of the deterministic ones, not a glob.

@@ -11,8 +11,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "verify": "for f in scripts/verify-*.mjs; do echo \"— $f\"; node $f || exit 1; done"
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.1",
