@@ -1807,7 +1807,18 @@ export default function GlobeView() {
           // marking on the map", which is what a stop is. Still changeable,
           // like every other default here.
           defaultTypeCode={tripFromHere ? 'trip' : draftStop ? 'logged_at' : undefined}
-          defaultAnchorId={tripFromHere?.relationshipId}
+          // A stop anchors to the trip's DESTINATION. It used to land on
+          // primaries[0] — the first home on the spine, decades away and
+          // unrelated — which meant scrolling an unsorted list of every pin
+          // to find a place the app already knew (Andy, 2026-08-04). A trip
+          // is about reaching its destination; the origin is what it left
+          // behind, so the destination is the era this waypoint belongs to.
+          defaultAnchorId={
+            tripFromHere?.relationshipId
+            ?? (draftStop
+              ? trips.find((t) => t.trip_id === draftStop.tripId)?.destination_relationship_id
+              : undefined)
+          }
           armedOriginName={tripFromHere?.name}
           stopCaptureFor={draftStop && !tripFromHere
             ? {

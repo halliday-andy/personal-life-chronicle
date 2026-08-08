@@ -361,7 +361,11 @@ export default function PinModal({
             <p className="mt-1 text-xs text-[var(--ink-dim)]/80">
               {isTrip
                 ? 'Which home era does this belong to? It draws a dashed line to that home — the trip’s origin is a separate question, asked next.'
-                : 'Connects this with a dashed line to that home.'}
+                : capturingStop
+                  // "that home" is not safe here: a stop anchors to the
+                  // trip's destination, which may be a hotel or a hillside.
+                  ? 'Pre-set to where the trip was heading. Change it if this belongs to somewhere else.'
+                  : 'Connects this with a dashed line to that home.'}
             </p>
           </>
         )}
