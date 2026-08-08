@@ -62,26 +62,32 @@ body {
     0 0 0 4.5px rgba(7, 11, 24, 0.9),
     0 0 14px 3px rgba(224, 112, 155, 0.5);
 
-  /* Selection, and the trip marks pushed OUTSIDE it.
+  /* Selection.
      `box-shadow` is one property carrying five independent meanings on
      these pins — type hue, trip role, selection, draft, bloom — and the
      last rule to write it erases every other. `.globe-pin-selected` is
      declared last, so selecting a pin silently deleted its trip ring:
      arriving by search or deep link, the one pin guaranteed NOT to show
      its trip role was the one you had just asked for (Andy, 2026-08-04).
-     Composed explicitly instead, concentric — dark, selection ring, glow,
-     then the rose ring beyond it. */
+
+     The first repair stacked the rose ring OUTSIDE the selection ring.
+     That restored the meaning and produced a pin wearing four concentric
+     bands, two of which were separators meaning nothing and only one of
+     which the legend explained — Andy, reasonably, asked what it was
+     supposed to signify. A mark needing a paragraph to decode has failed
+     more expensively than the one it replaced.
+
+     So the two meanings ride SEPARATE CHANNELS instead of adjacent rings:
+       RING  = trip role — identical selected or not, so the mark you
+               learn in the legend is the mark you see in both states.
+       GLOW + scale = selected.
+     The type hue still reaches the glow through --pin-ring, so nothing is
+     lost by dropping the opaque selection ring on trip pins. */
+  --pin-selected-glow: 0 0 20px 6px var(--pin-ring, var(--ember-soft));
   --pin-selected-shadow:
     0 0 0 2px var(--night),
     0 0 0 4px var(--pin-ring, var(--ember-soft)),
-    0 0 20px 6px var(--pin-ring, var(--ember-soft));
-  --pin-trip-stop-outer:
-    0 0 0 6px rgba(224, 112, 155, 0.9),
-    0 0 0 7px rgba(7, 11, 24, 0.9);
-  --pin-trip-dest-outer:
-    0 0 0 6px rgba(224, 112, 155, 0.85),
-    0 0 0 7px rgba(7, 11, 24, 0.9),
-    0 0 16px 4px rgba(224, 112, 155, 0.5);
+    var(--pin-selected-glow);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
   color: var(--ink);
   background:
@@ -367,15 +373,16 @@ body {
   transform: scale(1.2);
   box-shadow: var(--pin-selected-shadow);
 }
-/* Selection COMPOSES with the trip mark rather than replacing it. Two
-   classes, so these win over `.globe-pin-selected` on specificity and no
-   longer depend on declaration order — the ordering rule above governs
-   stop-vs-destination, and this governs selected-vs-not. */
+/* A selected TRIP pin keeps its ring exactly as it is unselected and takes
+   only the glow (plus the scale above). Two classes, so these win on
+   specificity rather than declaration order — the ordering rule further up
+   governs stop-vs-destination, this governs selected-vs-not, and the two
+   never have to agree about anything. */
 .globe-pin-selected.globe-pin-trip-stop {
-  box-shadow: var(--pin-selected-shadow), var(--pin-trip-stop-outer);
+  box-shadow: var(--pin-trip-stop-shadow), var(--pin-selected-glow);
 }
 .globe-pin-selected.globe-pin-trip-dest {
-  box-shadow: var(--pin-selected-shadow), var(--pin-trip-dest-outer);
+  box-shadow: var(--pin-trip-dest-shadow), var(--pin-selected-glow);
 }
 .globe-pin-selected:active {
   cursor: grabbing;
