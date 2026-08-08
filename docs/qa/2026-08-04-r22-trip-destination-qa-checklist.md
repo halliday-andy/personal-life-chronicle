@@ -441,6 +441,35 @@ the recollection field → save"*, which verifies a marker can HOLD its
 memory but implies it can be given a new one. The step tested what exists
 and promised what does not.
 
+## Queued 4th — write down the z-index bands
+
+**Four occlusions in one day, all the same shape**: a surface rendered
+behind another in the same band, invisible rather than obviously broken.
+
+| | surface | hidden by | fix |
+|---|---|---|---|
+| F1 *(2026-07-30)* | search dropdown `z-20` | trip strip `z-30` | emptied the `top-20` band |
+| 1 | draft confirm bar `z-20` | pin card `z-30` | → `z-40` (`4bd75d2`) |
+| 2 | PinModal's mode header `z-40` | route banner `z-40`, later in DOM | banner stands down (`dff4fa8`) |
+| 3 | error strip `z-30` | edit panel `z-30`, later in DOM | → `z-50` (`9bfc099`) |
+
+Each was fixed by picking a number that beat whatever it collided with.
+**38 z-index literals across the globe components, five distinct values, and
+nothing anywhere says what any band is FOR** — the only record is the
+archaeology left in comments while fixing them. So the next surface added
+collides too, and the fix is again "pick a bigger number".
+
+**The unit:** name the bands — globe chrome, cards/panels, transient
+confirms, modals, errors — as tokens, replace the literals, and state the
+rule the day proved: *a transient confirm outranks a persistent card; an
+error outranks everything including modals, because it is usually ABOUT the
+thing on top.* Replacing literals with named bands, not a visual redesign.
+
+**jsdom cannot see any of this** (`test/README.md`), so the guard has to be
+the naming, not a test. That is exactly why it is worth doing.
+
+Andy's call, 2026-08-04: queued 4th.
+
 ---
 
 ## Findings

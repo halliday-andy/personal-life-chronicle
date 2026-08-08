@@ -306,6 +306,20 @@ long details wrap. *Running tally today: draft bar under the pin card, route
 banner over the dialog header, this. The z-index bands are not written down
 anywhere — that is the actual missing artifact.*
 
+**QUEUED 4th (Andy, 2026-08-04): write down the z-index bands.** Four
+occlusions in one day (F1 2026-07-30, then `4bd75d2`, `dff4fa8`, `9bfc099`),
+every one a surface rendering behind another in the same band — **invisible
+rather than obviously broken**, which is what makes the class expensive.
+Each was fixed by picking a number that beat the collision. **38 z-index
+literals across the globe components, five distinct values, and nothing
+states what any band is FOR** — the only record is the archaeology left in
+comments while fixing them. Unit: name the bands (chrome / cards / transient
+confirms / modals / errors) as tokens, replace the literals, and state the
+two rules the day proved — *a transient confirm outranks a persistent card;
+an error outranks everything including modals, because it is usually ABOUT
+the thing on top*. **jsdom sees no layout, so the guard must be the naming,
+not a test** — which is precisely the argument for doing it.
+
 **QUEUED 2nd (Andy, 2026-08-04, behind the reorder unit): can a pin author a
 SECOND recollection?** Confirmed against the code, NOT a bug: the pin's
 Recollection field is exactly one memory (`capture_mode='globe_onboarding'`
