@@ -283,6 +283,21 @@ Library) is the real fix and is an open decision, not an oversight** — see
 the same-day discussion with Andy. Until then this class is guarded only by
 rule 19 and a QA step, which is weaker than everything around it.
 
+**CLASS-OF-BUG (rule 33): stacking a second mark to preserve a meaning can
+cost more than the erasure it fixed (`e5bf60c`).** Rule 32's first repair
+put the rose ring OUTSIDE the selection ring — meaning restored, and the pin
+now wore **four concentric bands, two of them separators carrying nothing,
+one of them in the legend.** Andy asked what the composition signified; the
+honest answer was *nothing coherent*. **A mark needing a paragraph to decode
+has failed more expensively than the mark that was missing.** The fix: put
+the two meanings on **separate CHANNELS, not adjacent rings** — RING = trip
+role (identical selected or not, so the mark learned from the legend is the
+mark seen in both states), GLOW + scale = selected. *The tell that it is now
+the right shape: **no legend change was needed.** If restoring a meaning
+forces a new legend row, the composition is wrong, not the legend.* One
+inconsistency accepted deliberately: selection reads differently on a trip
+pin (glow only) than an ordinary one (ring + glow).
+
 **CLASS-OF-BUG (rule 32): when several independent meanings share ONE CSS
 property, the last rule to write it erases the rest (`6c2d613`).** On a
 globe pin, `box-shadow` carries **five** meanings — type hue, trip role,

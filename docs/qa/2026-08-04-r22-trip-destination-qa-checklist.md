@@ -308,13 +308,20 @@ Both from your Wendy's screenshots.
       globe does, so it cannot drift from what it explains.
 - [ ] Retype a stop pin (Log → Short-term stay → Vacation) → **the ring
       survives every time.** This is the check that failed before.
-- [ ] **Search for Wendy's shared apartment and arrive on it (`6c2d613`).
-      The rose ring is visible WHILE the pin is selected** — outside the
-      amber selection ring, concentric with it. It used to vanish on
-      selection, so the pin you had just navigated to was the one that
+- [ ] **Search for Wendy's shared apartment and arrive on it. The rose ring
+      is visible WHILE the pin is selected** (`6c2d613`) — it used to vanish
+      on selection, so the pin you had just navigated to was the one that
       would not tell you it was on a trip.
-- [ ] Same for **SSV Day Lodge Room**: selected, it shows the selection
-      ring *and* its destination ring + glow.
+- [ ] **A selected trip pin looks like an unselected one plus a glow and a
+      size bump** (`e5bf60c`) — **one** rose ring, not a stack. The first
+      repair gave it four concentric bands, two of them meaningless
+      separators; ring now means trip role and glow means selected, on
+      separate channels.
+- [ ] Same for **SSV Day Lodge Room**: its destination ring is unchanged by
+      selection; only the glow is added.
+- [ ] **The legend still matches** — its two swatches should look like the
+      pins in *both* states. *(If a state needs a legend row the legend
+      hasn't got, the composition is wrong, not the legend.)*
 - [ ] Deselect → both fall back to the plain marks. Nothing double-draws.
 - [ ] **Legend & filters** lists both marks now.
 - [ ] **My Mt. Snow Chalet** (the origin) still wears **neither** — it is a
