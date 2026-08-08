@@ -294,11 +294,20 @@ Both from your Wendy's screenshots.
       globe now arrives with **the trip arc drawn**, no hover needed. *(The
       chip that gates route painting was seeded once at mount, before the
       trips fetch returned. `d9171d7`.)*
-- [ ] **Wendy's now wears a thin rose collar** — the "stop along a trip"
-      mark. Compare with **SSV Day Lodge Room**, which keeps the brighter,
-      glowing destination halo. *A destination is where the journey was
-      going; a stop is somewhere it went through, and the ring weights say
-      which.*
+- [ ] **Re-walk after `d149e94`.** Every stop on the Fiat trip wears a rose
+      ring — **including Wendy's**, whatever pin type you have given it. The
+      first version was a 1px ring at 55% opacity with no outer edge, which
+      read on the violet Log pins and vanished on the amber Short-term-stay
+      one, so the mark depended on what kind of place it was.
+- [ ] **SSV Day Lodge Room** wears the same ring **plus a glow**. That is
+      the whole distinction now, and it is structural rather than a matter
+      of degree: *ring = on a journey; ring + glow = where the journey
+      ended.*
+- [ ] **Legend & filters** shows both swatches, and they should look exactly
+      like the pins — the legend reads the same two custom properties the
+      globe does, so it cannot drift from what it explains.
+- [ ] Retype a stop pin (Log → Short-term stay → Vacation) → **the ring
+      survives every time.** This is the check that failed before.
 - [ ] **Legend & filters** lists both marks now.
 - [ ] **My Mt. Snow Chalet** (the origin) still wears **neither** — it is a
       home, and the spine already speaks for it (F21).

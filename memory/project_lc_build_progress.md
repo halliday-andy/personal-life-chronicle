@@ -283,6 +283,24 @@ Library) is the real fix and is an open decision, not an oversight** — see
 the same-day discussion with Andy. Until then this class is guarded only by
 rule 19 and a QA step, which is weaker than everything around it.
 
+**CLASS-OF-BUG (rule 31): a mark that means one thing must not depend on
+what it is drawn ON (`d149e94`).** Andy retyped Wendy's to Short-term stay
+and the stop collar vanished, while the Log stops kept theirs. **Not a
+missing class** — the cascade was clean and both pins took the identical
+code path. The MARK was wrong: a 1px rose ring at 55% opacity with no outer
+edge, which reads over the violet Log pin (`#aa9bd0`) and disappears over
+the amber Short-term-stay pin (`#d99b46`). **So whether a stop looked like a
+stop depended on what kind of PLACE it was** — the wrong property entirely
+for a mark meaning "on a journey". I aimed for "quieter than the halo" and
+overshot into colour-dependent. *The tell: a mark defined only by a
+difference in degree (thinner, dimmer) from the thing it must be
+distinguished from, with nothing structural separating it from the
+BACKGROUND.* Both marks are now rings bounded by dark on the outside too,
+and differ structurally: **ring = on a journey, ring + glow = where it
+ended**. Held in `--pin-trip-stop-shadow` / `--pin-trip-dest-shadow` on
+`.nocturne` because the legend duplicated the literals inline — **a legend
+that drifts from what it explains teaches the wrong thing**.
+
 **CLASS-OF-BUG (rule 29): a confirmation must not overstate the stakes of an
 action that will be REFUSED (`9bfc099`).** Deleting a trip's destination is
 blocked by `ON DELETE RESTRICT`, and the refusal was already translated into
