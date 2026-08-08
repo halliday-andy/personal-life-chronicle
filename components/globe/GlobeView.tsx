@@ -29,6 +29,7 @@ import { pinStackZ } from '@/lib/globe/pin-stack'
 import { attachChronicleInstaller } from '@/lib/globe/chronicle-layers'
 import { tripAutoOpensFor } from '@/lib/globe/trip-auto-open'
 import { tripPinRoles } from '@/lib/globe/trip-pin-roles'
+import { tripRouteVisible } from '@/lib/globe/trip-route-visibility'
 import { nextRegime, styleForRegime, chronicleLinePaint, NOCTURNE_STYLE, type GlobeRegime } from '@/lib/globe/style-regime'
 import { useEscapeKey } from '@/lib/ui/use-escape-key'
 import { buildCreatePinPayload } from '@/lib/globe/create-pin-payload'
@@ -486,11 +487,17 @@ export default function GlobeView() {
     setStagedCoords(null)
     setHovered(null)
     setHoverPreview(null)
+    setFocusedTripId(null) // the arrival's reason ends with the arrival
   }, [])
 
   // Compact detail card on J4 arrival (2026-07-10): geography first, the
   // full card one click away. Any ordinary selection path resets it.
   const [compactCard, setCompactCard] = useState(false)
+  // Arrived by `?trip=` — this trip is the reason the globe is open, so its
+  // route paints without waiting on a chip the compact card never renders
+  // (Andy, 2026-08-04). Cleared on deselect like every other transient
+  // reveal: it is why we ARRIVED, not a mode to be stuck in.
+  const [focusedTripId, setFocusedTripId] = useState<string | null>(null)
 
   // Select an existing pin — opens the detail card (and clears any
   // in-progress new pin).
@@ -531,12 +538,20 @@ export default function GlobeView() {
     if (wanted) {
       target = pins.find((p) => p.relationship_id === wanted)
     } else {
-      // ?trip= handoff (U5): arrive on the trip's destination pin —
-      // selection reveals the trip strip and its complete route (U4).
+      // ?trip= handoff (U5): arrive on the trip's destination pin.
       // Trips load in their own fetch; wait for it before resolving.
+      //
+      // This used to rest on "selection reveals the trip strip and its
+      // complete route", which stopped being true without anyone touching
+      // this line: F21/R18 put routes behind the trips CHIP, and J4 made
+      // deep links arrive on the COMPACT card, which never renders a chip
+      // row. "Show on globe →" then landed on a bare destination with no
+      // sign of the trip at all (Andy, 2026-08-04). The intent is stated
+      // outright now instead of inferred from a chain of disclosures.
       if (!tripsLoaded) return
       const t = trips.find((x) => x.trip_id === wantedTrip)
       target = t ? pins.find((p) => p.relationship_id === t.destination_relationship_id) : undefined
+      if (t) setFocusedTripId(t.trip_id)
     }
     deepLinkDoneRef.current = true
     if (!target) return
@@ -545,9 +560,14 @@ export default function GlobeView() {
       // "Edit on globe →" from a Journey stop (2026-07-10): straight into
       // the pin edit panel — no compact strip, no extra click.
       setEditMode(true)
-    } else {
+    } else if (!wantedTrip) {
       setCompactCard(true) // after selectPin — selection paths reset it
     }
+    // A `?trip=` arrival stays FULL. J4's compact card puts geography first,
+    // which is right when the request was a place — but here the request
+    // was a journey, and the trip row (with Edit frame) is the thing being
+    // asked for. Same reasoning as the cluster-framing call earlier today:
+    // when the user names one thing, that thing outranks its surroundings.
     // The map may still be initializing on a cold load — retry the fly
     // briefly rather than racing it.
     let tries = 0
@@ -1042,20 +1062,21 @@ export default function GlobeView() {
     const map = mapRef.current
     // Selection alone no longer paints — the trips CHIP does. Hover stays a
     // transient peek that dismisses itself when the pointer leaves.
-    const peeked = (id: string | null) =>
-      id !== null && ((id === selectedId && tripsPanelOpen) || id === hoverPreview)
-    const touches = (t: TripRow) =>
-      peeked(t.destination_relationship_id) ||
-      peeked(t.origin_relationship_id) ||
-      t.stops.some((s) => peeked(s.relationship_id)) ||
-      t.trip_id === routeEdit?.tripId
-    const visible = trips.filter((t) => tripsVisible || touches(t))
+    const visible = trips.filter((t) =>
+      tripRouteVisible(t, {
+        tripsVisible,
+        selectedId,
+        tripsPanelOpen,
+        hoverPreview,
+        routeEditTripId: routeEdit?.tripId ?? null,
+        focusedTripId,
+      }))
     const routeData = tripRouteFeatures(visible, routeEdit?.tripId ?? null)
     lineDataRef.current.tripRoutes = routeData // before the src guard — a mid-swap update must survive
     const src = map?.getSource('trip-routes') as mapboxgl.GeoJSONSource | undefined
     if (!src) return
     src.setData(routeData)
-  }, [trips, tripsVisible, selectedId, tripsPanelOpen, hoverPreview, routeEdit, ready])
+  }, [trips, tripsVisible, selectedId, tripsPanelOpen, hoverPreview, routeEdit, focusedTripId, ready])
 
   // Route building: a pin click appends a stop to the active leg. Kept in
   // a ref so the once-bound marker click handlers never go stale.
