@@ -345,6 +345,12 @@ export default function GlobeView() {
   // Home Base (U7/KTD8): the reusable default origin suggestion.
   const [homeBaseId, setHomeBaseId] = useState<string | null>(null)
   const [routeEdit, setRouteEdit] = useState<{ tripId: string; leg: TripLeg } | null>(null)
+  // The trip+leg a PENDING DRAFT is destined for, captured when the draft is
+  // placed rather than read back from `routeEdit` at save time. Clicking Done
+  // while a draft was pending used to strand it: route mode had ended, so the
+  // save saw no route in progress and quietly made an ordinary pin instead of
+  // the stop the user was placing (Andy, 2026-08-04).
+  const [draftStop, setDraftStop] = useState<{ tripId: string; leg: TripLeg } | null>(null)
   // Refs mirror route-edit state for the once-bound map/marker handlers.
   const routeEditRef = useRef<{ tripId: string; leg: TripLeg } | null>(null)
   useEffect(() => { routeEditRef.current = routeEdit }, [routeEdit])
@@ -469,6 +475,7 @@ export default function GlobeView() {
     draftMarkerRef.current?.remove()
     setDraft(null)
     setModalOpen(false)
+    setDraftStop(null)
   }, [])
 
   // Escape backs out of the DRAFT bar too (F25, Andy 2026-08-01). R1 gave
@@ -827,11 +834,23 @@ export default function GlobeView() {
       // While building a trip route, an empty-globe click PINS a new stop
       // (R22 add-on). It used to do nothing, so every waypoint that wasn't
       // already on the globe cost a mode exit: Done → click → create the
-      // pin → reopen Route → click it. Straight to the draft rather than
-      // deselecting first, because in this mode the banner promises the
-      // click will pin something, and spending it on closing a card would
-      // make the banner lie on the first try.
-      if (routeEditRef.current) { setDraftAt(e.lngLat.lng, e.lngLat.lat, ''); return }
+      // pin → reopen Route → click it.
+      //
+      // It still pins on the FIRST click — the banner promises that — but it
+      // also closes any open card in the same gesture. Skipping the deselect
+      // was a bug: the draft's confirm bar lives at the bottom centre and the
+      // pin card sits on top of it, so the draft appeared with no way to
+      // confirm it (Andy, 2026-08-04). F1 again, in the other band.
+      //
+      // The trip and leg are captured HERE, not read back at save time, so
+      // leaving route mode with a draft pending cannot silently turn the
+      // stop the user was placing into an ordinary pin.
+      if (routeEditRef.current) {
+        if (selectedIdRef.current) deselect()
+        setDraftStop({ tripId: routeEditRef.current.tripId, leg: routeEditRef.current.leg })
+        setDraftAt(e.lngLat.lng, e.lngLat.lat, '')
+        return
+      }
       // Clicking empty globe: deselect an open pin, else drop a new draft.
       if (selectedIdRef.current) { deselect(); return }
       setDraftAt(e.lngLat.lng, e.lngLat.lat, '')
@@ -1293,7 +1312,7 @@ export default function GlobeView() {
       // persists — the next click can pin the next waypoint. Skipped when
       // the user changed the type to Trip, which says they meant a journey
       // of its own rather than a waypoint on one.
-      const routing = routeEditRef.current
+      const routing = draftStop
       if (routing && !data.trip) {
         const stopRes = await fetch(`/api/trips/${routing.tripId}/stops`, {
           method: 'POST',
@@ -1349,7 +1368,7 @@ export default function GlobeView() {
     } finally {
       setSaving(false)
     }
-  }, [draft, clearDraft, loadPins, loadTrips, homeBaseId, originCapture, tripFromHere])
+  }, [draft, clearDraft, loadPins, loadTrips, homeBaseId, originCapture, tripFromHere, draftStop])
 
   const handlePanelSave = useCallback(async (fields: { name: string; whenText: string; body: string; typeCode: string; anchorId: string | null; description: string }) => {
     if (!selectedId) return
@@ -1702,9 +1721,18 @@ export default function GlobeView() {
         </div>
       )}
 
-      {/* Draft confirm bar */}
+      {/* Draft confirm bar.
+
+          z-40, not z-20: this shares the bottom-centre band with the pin
+          card (z-30, up to 55vh), and at z-20 it rendered BEHIND it — a
+          draft you could place and never confirm. Deselecting on the
+          route-mode click fixes today's path; this makes the class of
+          failure impossible, because a transient confirm should always
+          outrank a persistent card. Second sighting of F1's shape: two
+          surfaces in one band, and the loser is invisible rather than
+          obviously broken. */}
       {draft && !modalOpen && (
-        <div className="glass absolute bottom-8 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3 rounded-2xl px-4 py-3">
+        <div className="glass absolute bottom-8 left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-2xl px-4 py-3">
           <span className="text-sm text-[var(--ink-dim)]">
             Drag the pin to the exact spot{draft.label ? ` — ${draft.label}` : ''}
           </span>
@@ -1764,14 +1792,14 @@ export default function GlobeView() {
           // A waypoint defaults to a Log — the type built for "a place worth
           // marking on the map", which is what a stop is. Still changeable,
           // like every other default here.
-          defaultTypeCode={tripFromHere ? 'trip' : routeEdit ? 'logged_at' : undefined}
+          defaultTypeCode={tripFromHere ? 'trip' : draftStop ? 'logged_at' : undefined}
           defaultAnchorId={tripFromHere?.relationshipId}
           armedOriginName={tripFromHere?.name}
-          stopCaptureFor={routeEdit && !tripFromHere
+          stopCaptureFor={draftStop && !tripFromHere
             ? {
-                tripName: trips.find((t) => t.trip_id === routeEdit.tripId)?.title
-                  || `the trip to ${trips.find((t) => t.trip_id === routeEdit.tripId)?.destination_name ?? 'this place'}`,
-                leg: routeEdit.leg,
+                tripName: trips.find((t) => t.trip_id === draftStop.tripId)?.title
+                  || `the trip to ${trips.find((t) => t.trip_id === draftStop.tripId)?.destination_name ?? 'this place'}`,
+                leg: draftStop.leg,
               }
             : undefined}
         />
