@@ -400,6 +400,38 @@ banner's chips visible wording instead of bare chevrons. Endpoint and pure
 reorder already exist, so this is surfacing, not plumbing. Andy's call,
 2026-08-04: **queued behind the completion of this checklist.**
 
+## Queued after that — can a pin author a SECOND recollection?
+
+**Confirmed, not a bug (Andy, 2026-08-04).** The pin's Recollection field is
+exactly one memory — `capture_mode = 'globe_onboarding'` AND
+`role = 'location'`, `created_at asc`, `limit 1`. Editing it replaces that
+record's `content_raw`. **No "add another recollection" affordance exists on
+any pin surface.**
+
+The model does hold many per place: the **"N recollections"** chip lists
+every *other* memory referencing the place entity — explicitly *"read-only
+context on the detail card"*. So a pin **reads** many and **authors** one.
+`memories.title` exists as a column and is **null on all 65 memories**;
+nothing writes it, so "titled recollection" is not a thing the app produces
+anywhere yet.
+
+The designed on-pin route for *"another distinct memory of this stop"* is
+the **jot** — "Memories to write — jot now, recollect later" — with the
+Hopper 5b loop checking a stub off one-for-one against the recollection it
+becomes. One step removed rather than absent.
+
+**The open question:** should a pin be able to author a second recollection
+directly, or does jot-then-write stay the only path? It touches invariant 1
+(the Raw Vault is append-only; `content_raw` is never modified after
+creation — note the current edit path already sits close to that line), the
+capture-assistant boundary, and whether recollections should carry titles at
+all. A design question, not a missing button.
+
+**Also fix when this is picked up:** §5's recollection step reads *"write in
+the recollection field → save"*, which verifies a marker can HOLD its
+memory but implies it can be given a new one. The step tested what exists
+and promised what does not.
+
 ---
 
 ## Findings

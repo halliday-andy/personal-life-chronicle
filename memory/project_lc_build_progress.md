@@ -283,6 +283,24 @@ Library) is the real fix and is an open decision, not an oversight** — see
 the same-day discussion with Andy. Until then this class is guarded only by
 rule 19 and a QA step, which is weaker than everything around it.
 
+**QUEUED 2nd (Andy, 2026-08-04, behind the reorder unit): can a pin author a
+SECOND recollection?** Confirmed against the code, NOT a bug: the pin's
+Recollection field is exactly one memory (`capture_mode='globe_onboarding'`
+AND `role='location'`, `created_at asc`, `limit 1`); editing replaces that
+record's `content_raw`, and **no "add another" affordance exists on any pin
+surface**. The model holds many per place — the "N recollections" chip lists
+every other memory referencing the entity, explicitly *"read-only context on
+the detail card"* — so **a pin READS many and AUTHORS one**. `memories.title`
+exists as a column and is **null on all 65 memories**; nothing writes it, so
+titled recollections are not produced anywhere yet. The designed on-pin route
+for another distinct memory is the **jot** (Hopper 5b consumes a stub
+one-for-one against the recollection it becomes) — one step removed, not
+absent. **Open question:** should a pin author a second recollection
+directly, or does jot-then-write stay the only path? Touches **invariant 1**
+(Raw Vault append-only, `content_raw` never modified after creation — the
+existing edit path already sits close to that line), the capture-assistant
+boundary, and whether recollections should carry titles at all.
+
 **QUEUED (Andy, 2026-08-04, behind the R22 checklist): stop reordering on
 the surface where the itinerary is READ.** He asked for "a way to reorder
 stops" — one exists (Route mode → ‹ › per stop chip, `moveToIndex` +
