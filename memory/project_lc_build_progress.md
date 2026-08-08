@@ -431,6 +431,18 @@ displacement problem, not a camera problem. 49 px → 130 px.
 two live-data checks all pass, but no browser walk was done — the globe
 needs Andy's session. §9 of the R22 checklist covers it.
 
+**CLASS-OF-BUG (rule 30): a QA step written from the implementer's model,
+not the walker's path.** THREE steps misled Andy in one day: §9's Queenstown
+bullet described the behaviour the same commit removed; §5's recollection
+step verified a marker can HOLD its memory while implying it could be given
+a new one; and §8b said "while the ✈ chip is open on a trip pin", which he
+reasonably read as *Edit frame* — a dialog that blocks the map, so the check
+was impossible as written. *Every one of them named a piece of internal
+state ("the chip", "the recollection field", "still frames the cluster")
+instead of the gesture that produces it.* The tell: a step a stranger could
+not execute without knowing the component tree. **Name the click, then the
+expected result; mention the mechanism only as the reason.**
+
 **A checklist can be written from the model being replaced.** §9's
 Queenstown bullet told Andy to expect the old containment behaviour, so it
 would have "failed" against correct code and passed against the bug. He

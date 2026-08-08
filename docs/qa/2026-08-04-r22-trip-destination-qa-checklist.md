@@ -253,8 +253,18 @@ which is exactly what made it look like a trip problem.
       **The spine arcs and the trip route must still be there** every time,
       with no reload. *(This is the whole fix; if any line disappears once,
       it is a blocker.)*
-- [ ] Do the same while the ✈ chip is open on a trip pin — the rose route
-      should survive the swap too.
+- [ ] Do the same with a **rose trip route on screen**, since it comes from
+      a different source than the spine arcs and could fail separately.
+      Getting one on screen, precisely: **select a trip pin → open the
+      ✈ trips chip on its card** (the disclosure that lists the trip rows —
+      **not** *Edit frame*, which opens a dialog over the globe and blocks
+      the map by design). That chip is what paints the route (R18/F21).
+      Leave the card open, zoom across the threshold and back, and the rose
+      line must still be drawn.
+
+      *Equivalent and quicker if you prefer: hover a trip pin, which peeks
+      the route without any chip, or turn on Legend → Trip routes and skip
+      the selection entirely.*
 - [ ] **No runtime crash while panning or zooming.** The first version of
       this fix rebuilt the layers from `styledata`, which fires mid-render,
       and that crashed mapbox's placement engine outright (*"Cannot read
