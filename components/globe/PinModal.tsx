@@ -160,7 +160,11 @@ export default function PinModal({
         onClick={saving ? undefined : onCancel}
         aria-hidden
       />
-      <div className="glass relative z-10 w-full max-w-lg rounded-2xl p-6 text-[var(--ink)]">
+      {/* max-h + scroll: the mode statement lives at the TOP, so anything
+          that pushes this dialog past the viewport pushes the one line that
+          says which mode you are in out of reach. Same guard TripFramePanel
+          took when its own content grew (R22). */}
+      <div className="glass relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl p-6 text-[var(--ink)]">
         <p className="text-xs uppercase tracking-[0.18em] text-[var(--ink-dim)]">
           {settingTripDestination
             ? 'Where did the trip go?'

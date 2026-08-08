@@ -1731,25 +1731,39 @@ export default function GlobeView() {
           outrank a persistent card. Second sighting of F1's shape: two
           surfaces in one band, and the loser is invisible rather than
           obviously broken. */}
-      {draft && !modalOpen && (
-        <div className="glass absolute bottom-8 left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-2xl px-4 py-3">
-          <span className="text-sm text-[var(--ink-dim)]">
-            Drag the pin to the exact spot{draft.label ? ` — ${draft.label}` : ''}
-          </span>
-          <button
-            onClick={clearDraft}
-            className="rounded-lg px-3 py-1.5 text-sm text-[var(--ink-dim)] hover:text-[var(--ink)]"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => setModalOpen(true)}
-            className="rounded-lg bg-[var(--ember)] px-4 py-1.5 text-sm font-medium text-[#241500] hover:bg-[var(--ember-soft)]"
-          >
-            Add this place
-          </button>
-        </div>
-      )}
+      {draft && !modalOpen && (() => {
+        // A draft placed FOR a route says so, and its primary action says
+        // what it will actually do. "Add this place" was the only honest
+        // label while every draft was a plain pin; once a draft can be a
+        // stop, the generic word makes the user guess which one they are
+        // doing (Andy, 2026-08-04 — rule 11, a generic surface reused in a
+        // specific mode must state the mode in its own title and action).
+        const stopTrip = draftStop ? trips.find((t) => t.trip_id === draftStop.tripId) : undefined
+        const stopName = stopTrip ? (stopTrip.title || `the trip to ${stopTrip.destination_name}`) : null
+        return (
+          <div className="glass absolute bottom-8 left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-2xl px-4 py-3">
+            <span className="text-sm text-[var(--ink-dim)]">
+              {draftStop && stopName ? (
+                <>Drag the pin to the exact spot — it joins <strong className="font-medium text-[var(--ink)]">{stopName}</strong> as a {draftStop.leg} stop</>
+              ) : (
+                <>Drag the pin to the exact spot{draft.label ? ` — ${draft.label}` : ''}</>
+              )}
+            </span>
+            <button
+              onClick={clearDraft}
+              className="rounded-lg px-3 py-1.5 text-sm text-[var(--ink-dim)] hover:text-[var(--ink)]"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => setModalOpen(true)}
+              className="rounded-lg bg-[var(--ember)] px-4 py-1.5 text-sm font-medium text-[#241500] hover:bg-[var(--ember-soft)]"
+            >
+              {draftStop ? 'Add this stop' : 'Add this place'}
+            </button>
+          </div>
+        )
+      })()}
 
       {error && (
         <div className="absolute bottom-6 right-6 z-30 rounded-lg bg-rose-900/70 px-3 py-2 text-sm text-rose-100">
@@ -1890,7 +1904,17 @@ export default function GlobeView() {
           F1 cannot recur by someone re-tuning a z-index. */}
 
       {/* Route-building banner (U4): click pins in travel order. */}
-      {routeEdit && (() => {
+      {/* Stands down while a draft or its dialog is up — the same `!modalOpen`
+          guard the origin-capture banner has always carried, and for the
+          mirror of F4's reason. F4 was "the banner is hidden, so the dialog
+          must state the mode itself"; this was the inverse — the dialog DID
+          state it ("A stop along the way", with the trip named), and the
+          banner sat on top of exactly that line, both at z-40 with the
+          banner later in the DOM. Also drops while a draft is pending, so
+          "Done" is not offered as an alternative to finishing the stop the
+          user is in the middle of placing (Andy, 2026-08-04). One mode
+          surface at a time. */}
+      {routeEdit && !modalOpen && !draft && (() => {
         const t = trips.find((x) => x.trip_id === routeEdit.tripId)
         if (!t) return null
         const legStops = (leg: TripLeg) => t.stops.filter((s) => s.leg === leg).sort((a, b) => a.position - b.position)
