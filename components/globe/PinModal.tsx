@@ -185,9 +185,10 @@ export default function PinModal({
             It becomes a place of its own too, so it can carry its own recollection.
           </p>
         )}
-        <label className="mt-1 block text-xs text-[var(--ink-dim)]">Name on the pin</label>
+        <label htmlFor="pin-name" className="mt-1 block text-xs text-[var(--ink-dim)]">Name on the pin</label>
         <input
-          value={name}
+          id="pin-name"
+value={name}
           onChange={(e) => setName(e.target.value)}
           disabled={saving}
           autoFocus
@@ -238,9 +239,10 @@ export default function PinModal({
           </p>
         )}
 
-        <label className="mt-5 block text-sm text-[var(--ink-dim)]">What kind of place?</label>
+        <label htmlFor="pin-type" className="mt-5 block text-sm text-[var(--ink-dim)]">What kind of place?</label>
         <select
-          value={typeCode}
+          id="pin-type"
+value={typeCode}
           onChange={(e) => setTypeCode(e.target.value)}
           disabled={saving}
           className="mt-1 w-full rounded-xl border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--ember-soft)]"
@@ -258,9 +260,10 @@ export default function PinModal({
 
         {isTrip && (
           <>
-            <label className="mt-4 block text-sm text-[var(--ink-dim)]">What kind of trip?</label>
+            <label htmlFor="pin-trip-subtype" className="mt-4 block text-sm text-[var(--ink-dim)]">What kind of trip?</label>
             <select
-              value={tripSubtype}
+              id="pin-trip-subtype"
+value={tripSubtype}
               onChange={(e) => setTripSubtype(e.target.value as TripSubtype)}
               disabled={saving}
               className="mt-1 w-full rounded-xl border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--ember-soft)]"
@@ -272,8 +275,9 @@ export default function PinModal({
           </>
         )}
 
-        <label className="mt-4 block text-sm text-[var(--ink-dim)]">Your memory of it</label>
+        <label htmlFor="pin-body" className="mt-4 block text-sm text-[var(--ink-dim)]">Your memory of it</label>
         <textarea
+          id="pin-body"
           autoFocus
           value={body}
           onChange={(e) => setBody(e.target.value)}
@@ -284,8 +288,9 @@ export default function PinModal({
           className="mt-1 w-full resize-none rounded-xl border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm leading-relaxed text-[var(--ink)] placeholder-[var(--ink-dim)]/70 outline-none focus:border-[var(--ember-soft)]"
         />
 
-        <label className="mt-4 block text-sm text-[var(--ink-dim)]">When? (optional)</label>
+        <label htmlFor="pin-when" className="mt-4 block text-sm text-[var(--ink-dim)]">When? (optional)</label>
         <input
+          id="pin-when"
           type="text"
           value={whenText}
           onChange={(e) => setWhenText(e.target.value)}
@@ -294,8 +299,9 @@ export default function PinModal({
           className="mt-1 w-full rounded-xl border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] placeholder-[var(--ink-dim)]/70 outline-none focus:border-[var(--ember-soft)]"
         />
 
-        <label className="mt-4 block text-sm text-[var(--ink-dim)]">Placard (optional)</label>
+        <label htmlFor="pin-placard" className="mt-4 block text-sm text-[var(--ink-dim)]">Placard (optional)</label>
         <input
+          id="pin-placard"
           type="text"
           value={placard}
           onChange={(e) => setPlacard(e.target.value)}
@@ -308,9 +314,10 @@ export default function PinModal({
         {/* Contextual placement: spine → sequence slot; markers → anchor. */}
         {isSpine && (primaries.length > 0 || originCapture) && (
           <>
-            <label className="mt-4 block text-sm text-[var(--ink-dim)]">Where does this fall in your life?</label>
+            <label htmlFor="pin-position" className="mt-4 block text-sm text-[var(--ink-dim)]">Where does this fall in your life?</label>
             <select
-              value={position}
+              id="pin-position"
+value={position}
               onChange={(e) => setPosition(Number(e.target.value))}
               disabled={saving}
               className="mt-1 w-full rounded-xl border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--ember-soft)]"
@@ -337,7 +344,7 @@ export default function PinModal({
 
         {!isSpine && anchorOptions.length > 0 && (
           <>
-            <label className="mt-4 block text-sm text-[var(--ink-dim)]">{meta.anchorPrompt}</label>
+            <label htmlFor="pin-anchor" className="mt-4 block text-sm text-[var(--ink-dim)]">{meta.anchorPrompt}</label>
             {settingTripDestination && (
               <p className="mt-0.5 text-xs text-[var(--ink-dim)]/80">
                 This is the era the pin belongs to, not the trip&apos;s origin —
@@ -346,7 +353,8 @@ export default function PinModal({
               </p>
             )}
             <select
-              value={anchorId}
+              id="pin-anchor"
+value={anchorId}
               onChange={(e) => setAnchorId(e.target.value)}
               disabled={saving}
               className="mt-1 w-full rounded-xl border border-[var(--glass-border)] bg-black/20 px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--ember-soft)]"
