@@ -283,6 +283,29 @@ Library) is the real fix and is an open decision, not an oversight** — see
 the same-day discussion with Andy. Until then this class is guarded only by
 rule 19 and a QA step, which is weaker than everything around it.
 
+**CLASS-OF-BUG (rule 29): a confirmation must not overstate the stakes of an
+action that will be REFUSED (`9bfc099`).** Deleting a trip's destination is
+blocked by `ON DELETE RESTRICT`, and the refusal was already translated into
+a readable sentence — but only after the user accepted *"Delete permanently
+— can't be undone"*. Andy declined to click, correctly: he was asked to
+accept an irreversible-sounding risk in order to discover a refusal. *A
+confirm that cries wolf spends trust on a non-event, and the next genuinely
+destructive confirm gets read less carefully.* The card already held the
+trips, so the obstacle is named up front now — Delete disabled with a
+VISIBLE reason (not a `title`; a disabled control with no stated reason is a
+dead control). `isTripDestination` is a named predicate because it encodes
+WHICH fk blocks: destination `RESTRICT`, origin `SET NULL`, stop `CASCADE` —
+all three asserted so it cannot drift either way.
+
+**FOURTH occlusion of the day, same shape:** the translated refusal rendered
+UNDER the edit panel — both `z-30`, both right-anchored, error lost on DOM
+order and was cut off mid-sentence. Now `z-50`: **an error outranks
+everything including modals, because it is usually ABOUT the thing on top,
+and a message you cannot read is the same as no message.** Width-capped so
+long details wrap. *Running tally today: draft bar under the pin card, route
+banner over the dialog header, this. The z-index bands are not written down
+anywhere — that is the actual missing artifact.*
+
 **QUEUED 2nd (Andy, 2026-08-04, behind the reorder unit): can a pin author a
 SECOND recollection?** Confirmed against the code, NOT a bug: the pin's
 Recollection field is exactly one memory (`capture_mode='globe_onboarding'`

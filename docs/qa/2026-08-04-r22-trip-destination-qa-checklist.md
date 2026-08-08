@@ -202,9 +202,18 @@ Retargeting does **not** retype anything, so Wendy's apartment is now a
 `trip_stops.relationship_id` is `ON DELETE **CASCADE**`. Retargeting
 therefore **frees the old pin and locks the new one**:
 
-- [ ] Try to delete **SSV Day Lodge Room** (now the destination) → it is
-      **refused**, and the message should be legible rather than a raw FK
-      error.
+- [ ] **Re-walk after `9bfc099`.** Open **SSV Day Lodge Room** → Edit. The
+      **Delete button is disabled**, with a sentence beneath it: *"Delete is
+      blocked while this is a trip's destination. Unframe or retarget the
+      trip first…"* You should no longer have to accept a "can't be undone"
+      confirm in order to discover a refusal.
+- [ ] Open a pin that is **not** a destination (Wendy's, now a stop; or the
+      Mt. Snow Chalet origin) → **Delete is enabled**, as before. Only the
+      destination FK is `RESTRICT`; origin is `SET NULL`, stop is `CASCADE`.
+- [ ] Force the server-side refusal anyway if you want to see it — the
+      translated message still exists as the backstop, and now renders at
+      **z-50, fully readable**, instead of underneath the edit panel where
+      it was cut off mid-sentence.
 - [ ] **Wendy's apartment is now deletable** — and deleting it would
       **silently remove its stop** from the trip, with no warning. Don't
       actually delete it; just confirm the asymmetry is understood.
