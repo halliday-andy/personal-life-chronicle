@@ -61,6 +61,27 @@ body {
     0 0 0 3.5px rgba(224, 112, 155, 0.85),
     0 0 0 4.5px rgba(7, 11, 24, 0.9),
     0 0 14px 3px rgba(224, 112, 155, 0.5);
+
+  /* Selection, and the trip marks pushed OUTSIDE it.
+     `box-shadow` is one property carrying five independent meanings on
+     these pins — type hue, trip role, selection, draft, bloom — and the
+     last rule to write it erases every other. `.globe-pin-selected` is
+     declared last, so selecting a pin silently deleted its trip ring:
+     arriving by search or deep link, the one pin guaranteed NOT to show
+     its trip role was the one you had just asked for (Andy, 2026-08-04).
+     Composed explicitly instead, concentric — dark, selection ring, glow,
+     then the rose ring beyond it. */
+  --pin-selected-shadow:
+    0 0 0 2px var(--night),
+    0 0 0 4px var(--pin-ring, var(--ember-soft)),
+    0 0 20px 6px var(--pin-ring, var(--ember-soft));
+  --pin-trip-stop-outer:
+    0 0 0 6px rgba(224, 112, 155, 0.9),
+    0 0 0 7px rgba(7, 11, 24, 0.9);
+  --pin-trip-dest-outer:
+    0 0 0 6px rgba(224, 112, 155, 0.85),
+    0 0 0 7px rgba(7, 11, 24, 0.9),
+    0 0 16px 4px rgba(224, 112, 155, 0.5);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
   color: var(--ink);
   background:
@@ -344,10 +365,17 @@ body {
 .globe-pin-selected {
   cursor: grab;
   transform: scale(1.2);
-  box-shadow:
-    0 0 0 2px var(--night),
-    0 0 0 4px var(--pin-ring, var(--ember-soft)),
-    0 0 20px 6px var(--pin-ring, var(--ember-soft));
+  box-shadow: var(--pin-selected-shadow);
+}
+/* Selection COMPOSES with the trip mark rather than replacing it. Two
+   classes, so these win over `.globe-pin-selected` on specificity and no
+   longer depend on declaration order — the ordering rule above governs
+   stop-vs-destination, and this governs selected-vs-not. */
+.globe-pin-selected.globe-pin-trip-stop {
+  box-shadow: var(--pin-selected-shadow), var(--pin-trip-stop-outer);
+}
+.globe-pin-selected.globe-pin-trip-dest {
+  box-shadow: var(--pin-selected-shadow), var(--pin-trip-dest-outer);
 }
 .globe-pin-selected:active {
   cursor: grabbing;
