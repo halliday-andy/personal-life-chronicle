@@ -105,31 +105,31 @@ saving correctly and neither surface showing it: the derived "Relocation"
 label was returned *instead of* the subtype, so a relocation could never
 say what kind of journey it was. Fixed — the reading now rides alongside.
 
-- [ ] The framing panel has **"What kind of trip was it?"**, pre-selected
+- [x] The framing panel has **"What kind of trip was it?"**, pre-selected
       to the trip's current kind.
-- [ ] Change one and save → the pin card and the Travel Journal both show
+- [x] Change one and save → the pin card and the Travel Journal both show
       the new kind. *(Before today this was unreachable: the parameter
       existed, the caller didn't.)*
-- [ ] Re-open the panel → the change **stuck** and pre-selects. *(Rule 19:
+- [x] Re-open the panel → the change **stuck** and pre-selects. *(Rule 19:
       a form reused for CREATE and EDIT must load current values.)*
-- [ ] The Fiat 128 trip reads **"Road trip"** with *"reads as a
+- [x] The Fiat 128 trip reads **"Road trip"** with *"reads as a
       relocation"* beside it — italic, dimmer, unboxed — on **both** the pin
       card and the Travel Journal. **The two must never look like peers**:
       the kind is your claim, the relocation is the chronicle's reading of
       it (rule 15, the same distinction as "● yours").
-- [ ] Set it to **Professional travel** and back → both words change
+- [x] Set it to **Professional travel** and back → both words change
       together and the relocation reading stays put. *This is the case that
       exposed the eviction.*
-- [ ] A chronology of road trips would now find it: four trips read "Road
+- [x] A chronology of road trips would now find it: four trips read "Road
       trip", the Fiat among them.
 
 ## 4. "Relocation" only where it is true *(add-on)*
 
-- [ ] A **round trip** to a home still reads its subtype, not
+- [x] A **round trip** to a home still reads its subtype, not
       "Relocation" — returning home from a visit is not moving house.
-- [ ] A **one-way** trip to a **non-home** (a ski hill, a convenience
+- [x] A **one-way** trip to a **non-home** (a ski hill, a convenience
       store) still reads its subtype.
-- [ ] Untick "returned to the origin" on a trip ending at a home, save →
+- [x] Untick "returned to the origin" on a trip ending at a home, save →
       it becomes "Relocation". Re-tick → it reverts. **The label
       re-derives; nothing is frozen.**
 
@@ -140,6 +140,15 @@ say what kind of journey it was. Fixed — the reading now rides alongside.
       and add it in one go."*
 - [ ] **Click empty globe somewhere between Vermont and Alberta** → the
       draft pin appears with its confirm bar, exactly as a normal pin does.
+      **Re-walk after `4bd75d2`:** your first pass got the draft and no
+      confirm bar — it was rendering *behind* the open pin card. The click
+      now closes the card and drafts in one gesture, and the bar sits above
+      the card regardless. **Do this with a pin card open**, which is the
+      state that failed.
+- [ ] With a draft pending, click **Done** on the route banner, then
+      confirm the draft → it **still becomes a stop on that trip**, not an
+      ordinary pin. *(The trip and leg are captured when the draft is
+      placed; Done used to strand it.)*
 - [ ] Confirm it → the dialog says **"A stop along the way"** and *"…on The
       epic solo road trip in the overloaded Fiat 128 — it joins the
       outbound leg…"*, and its button reads **"Add this stop"**. *(The

@@ -134,6 +134,26 @@ trip touching this pin" is the tidier-looking version and IS the F21 bug.
 *Second time in this session that a feature's reach was found by asking
 what ELSE changes when a field becomes editable — see rule 26.*
 
+**CLASS-OF-BUG (rule 28): removing a step can remove the side effect that
+was holding a surface visible (`4bd75d2`).** Route mode's empty-globe click
+skipped the usual deselect — deliberately, so the first click would pin
+something as the banner promised. But that deselect had been closing the
+pin card, and the card (`bottom-6 z-30`, up to 55vh) sits on top of the
+draft's confirm bar (`bottom-8 z-20`). So the draft appeared with no way to
+confirm it. **The removed step was doing two jobs and only one was named.**
+*The tell: "this path skips X because…", where X also had a second,
+undocumented effect.* Fixed both ways — the click now closes the card AND
+drafts, and the bar moved to `z-40` so a transient confirm outranks a
+persistent card however it was opened. **Second sighting of F1's shape**
+(two surfaces in one band, loser invisible rather than broken); F1 was
+retired by EMPTYING the `top-20` band, and nobody emptied the bottom one.
+
+**Same report, second finding:** clicking Done with a draft pending turned
+the pending stop into an ordinary pin — the save read trip+leg back from
+live route state that Done had just cleared. **Intent is now captured when
+the draft is PLACED.** *Sibling of rule 26: state read back later from a
+source that can change in between.*
+
 **CLASS-OF-BUG (rule 27): a DERIVED label must never replace an
 OWNER-ASSERTED one (`79ac2bd`).** The Relocation reading was returned
 *instead of* the trip's subtype, so a relocation could not say what kind of
@@ -203,6 +223,14 @@ it, does not wait for `tripsLoaded`. So the card mounted while `trips` was
 empty and the chip never opened. **Rule 19's family: state seeded from
 something not ready yet.** Not a retarget artifact and not stop-specific —
 any pin whose trips arrived after its card mounted.
+
+**PROOF GAP — now TWO commits (`d9171d7`, `4bd75d2`), which is the argument
+for the harness rather than a coincidence.** `4bd75d2` is worse for the
+harness case, not better: half of it is **z-order**, which jsdom cannot
+observe at all, so a component harness would have caught the state half
+(intent captured at draft time) and NOT the occlusion half. **Any harness
+decision should be made knowing it covers timing and state, never layout.**
+Layout stays with Andy's eye and the QA checklist.
 
 **PROOF GAP, stated plainly: `d9171d7` shipped with NO test.** It is React
 mount-order timing and this repo has no component test runner — the whole
