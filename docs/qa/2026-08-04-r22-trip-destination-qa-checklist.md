@@ -135,8 +135,8 @@ say what kind of journey it was. Fixed — the reading now rides alongside.
 
 ## 5. Pinning a stop from route mode *(add-on — your "markers along the path")*
 
-- [ ] With the Fiat trip retargeted, open any of its three pins → **Route**.
-- [ ] The banner now reads *"…or click anywhere empty to pin a new place
+- [x] With the Fiat trip retargeted, open any of its three pins → **Route**.
+- [x] The banner now reads *"…or click anywhere empty to pin a new place
       and add it in one go."*
 - [ ] **Click empty globe somewhere between Vermont and Alberta** → the
       draft pin appears with its confirm bar, exactly as a normal pin does.
@@ -145,10 +145,23 @@ say what kind of journey it was. Fixed — the reading now rides alongside.
       now closes the card and drafts in one gesture, and the bar sits above
       the card regardless. **Do this with a pin card open**, which is the
       state that failed.
-- [ ] With a draft pending, click **Done** on the route banner, then
-      confirm the draft → it **still becomes a stop on that trip**, not an
-      ordinary pin. *(The trip and leg are captured when the draft is
-      placed; Done used to strand it.)*
+- [ ] **Re-walk after `dff4fa8`.** With the draft placed, the confirm bar
+      now reads *"…it joins **The epic solo road trip in the overloaded Fiat
+      128** as an outbound stop"* and its button says **"Add this stop"**,
+      not "Add this place". **The route banner stands down** while a draft
+      or its dialog is up, so "Done" is no longer offered as an alternative
+      to finishing the stop you are placing.
+- [ ] Click **Add this stop** → the dialog's own header is **visible**,
+      reading **"A stop along the way"** and naming the trip. *(It was
+      always there; the route banner was sitting on top of it — both z-40,
+      banner later in the DOM. That header is the whole F4 contract.)*
+- [ ] On a short window, the dialog **scrolls** rather than pushing its
+      header off screen.
+- [ ] With a draft pending, cancel it → the route banner returns, still in
+      the same leg, with its outbound list intact.
+- [ ] Place a draft, then confirm it after leaving route mode → it **still
+      becomes a stop on that trip**, not an ordinary pin. *(The trip and leg
+      are captured when the draft is placed; Done used to strand it.)*
 - [ ] Confirm it → the dialog says **"A stop along the way"** and *"…on The
       epic solo road trip in the overloaded Fiat 128 — it joins the
       outbound leg…"*, and its button reads **"Add this stop"**. *(The

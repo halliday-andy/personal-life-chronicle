@@ -148,6 +148,23 @@ persistent card however it was opened. **Second sighting of F1's shape**
 (two surfaces in one band, loser invisible rather than broken); F1 was
 retired by EMPTYING the `top-20` band, and nobody emptied the bottom one.
 
+**Third pass on the same flow (`dff4fa8`), two more surface collisions.**
+(a) The draft confirm bar still said **"Add this place"** while placing a
+stop, so the only two visible actions were that and the banner's **Done** —
+which, as Andy put it, makes no sense before the thing even has a name.
+Rule 11 again: the bar had been left generic when drafts became able to be
+stops. It now names the trip and leg, and reads "Add this stop".
+(b) **F4 IN REVERSE.** F4's contract is "the banner is hidden while the
+dialog is open, so the dialog must state the mode itself" — and the dialog
+does. But the ROUTE banner never took the `!modalOpen` guard the
+origin-capture banner has always carried, and both are `z-40` with the
+banner later in the DOM, **so it covered the very line F4 exists to
+guarantee.** *The tell: a rule stated as "X is hidden, therefore Y must
+speak" — check that X is actually hidden on every path, not just the one it
+was written for.* Banner now also drops while a draft is pending: one mode
+surface at a time. PinModal capped at 90vh + scroll, since its mode
+statement is at the top and any content growth pushes it out of reach.
+
 **Same report, second finding:** clicking Done with a draft pending turned
 the pending stop into an ordinary pin — the save read trip+leg back from
 live route state that Done had just cleared. **Intent is now captured when
