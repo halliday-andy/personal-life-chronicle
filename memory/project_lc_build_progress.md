@@ -241,8 +241,33 @@ empty and the chip never opened. **Rule 19's family: state seeded from
 something not ready yet.** Not a retarget artifact and not stop-specific —
 any pin whose trips arrived after its card mounted.
 
-**PROOF GAP — now TWO commits (`d9171d7`, `4bd75d2`), which is the argument
-for the harness rather than a coincidence.** `4bd75d2` is worse for the
+**COMPONENT TEST HARNESS BUILT (`cd15868`) — Vitest + Testing Library +
+jsdom, ALONGSIDE `scripts/verify-*.mjs`, not replacing it.** `npm test` for
+timing and rendering; the proofs stay for pure logic and DB behaviour. 8
+tests over the two contracts worth pinning: the trips chip opening when
+trips ARRIVE (and never reopening over a chip the user closed), and
+PinModal stating its mode. **Proved it catches its own bug** — removing the
+`d9171d7` fix turns exactly one test red.
+
+**THE BOUNDARY MATTERS MORE THAN THE COVERAGE, and is documented in
+`test/README.md` + `vitest.config.ts`: jsdom computes NO geometry.** The
+z-order halves of `4bd75d2` and `dff4fa8` are invisible to it, and always
+will be. Layout stays with Andy's eye and the QA checklists. *A harness
+believed to cover more than it does is worse than none — it turns "we
+should look at this" into "the tests pass".* (The first thing setup hit was
+`scrollIntoView` not existing: the boundary announcing itself.)
+
+**Two side effects worth knowing:** the first run surfaced **eight
+unlabelled inputs in `PinModal`** (no `htmlFor`/`id`, so `getByLabelText`
+could not find them) — fixed rather than routed around, per the standing
+"take the accessible path whenever a feature makes it cheap". And I added
+an `npm run verify` glob that **reported failure on a healthy tree**
+(`verify-6d-tools` needs live data and exits non-zero), removed in
+`57ccfdb`; `verify-*` is a mixed bag and a one-command gate would need an
+explicit list, not a glob.
+
+**PROOF GAP — was TWO commits (`d9171d7`, `4bd75d2`), then three
+(`dff4fa8`); the argument for the harness rather than a coincidence.** `4bd75d2` is worse for the
 harness case, not better: half of it is **z-order**, which jsdom cannot
 observe at all, so a component harness would have caught the state half
 (intent captured at draft time) and NOT the occlusion half. **Any harness
