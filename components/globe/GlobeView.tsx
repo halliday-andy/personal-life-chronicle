@@ -1765,8 +1765,18 @@ export default function GlobeView() {
         )
       })()}
 
+      {/* z-50 and bounded. At z-30 this tied with the edit panel (also z-30,
+          also right-anchored) and lost on DOM order, so the refusal message
+          rendered UNDERNEATH the panel and was cut off mid-sentence — Andy
+          got "This pin is a trip's destination. Unframe or remove" and no
+          more (2026-08-04). Third sighting of F1's shape today.
+
+          An error outranks everything, including modals at z-40: it is
+          usually ABOUT the thing on top, and a message you cannot read is
+          the same as no message. Width-capped so a long detail wraps
+          instead of running off the viewport. */}
       {error && (
-        <div className="absolute bottom-6 right-6 z-30 rounded-lg bg-rose-900/70 px-3 py-2 text-sm text-rose-100">
+        <div className="absolute bottom-6 right-6 z-50 max-w-[min(30rem,calc(100vw-3rem))] rounded-lg bg-rose-900/90 px-3 py-2 text-sm leading-relaxed text-rose-100 shadow-lg">
           {error}
         </div>
       )}

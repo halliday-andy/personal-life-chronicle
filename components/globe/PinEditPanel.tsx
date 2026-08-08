@@ -18,6 +18,7 @@ import { spineSlotOptions } from '@/lib/globe/reorder'
 import PhotoLightbox from './PhotoLightbox'
 import PinHopper from './PinHopper'
 import type { TripCardContext } from './PinTrips'
+import { isTripDestination } from '@/lib/globe/trip-pin-roles'
 import PinConnections, { type LinkedRecollection, type AnchoredPin, type ContextEntry } from './PinConnections'
 import PinFactsEditor, { type PinFactsValue } from './PinFactsEditor'
 import Markdown from '../Markdown'
@@ -136,6 +137,11 @@ export default function PinEditPanel({
   const [loadError, setLoadError] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  // The trips FK blocks deleting a destination pin by design (2026-07-15).
+  // Falls back to FALSE when this surface has no trips context — better to
+  // let the server refuse with its readable message than to disable a
+  // control on a guess.
+  const deleteBlocked = tripCtx ? isTripDestination(tripCtx.trips, pin.relationship_id) : false
   const [images, setImages] = useState<GalleryImage[]>([])
   const [linked, setLinked] = useState<LinkedRecollection[]>([])
   const [context, setContext] = useState<ContextEntry[]>([])
@@ -645,7 +651,7 @@ export default function PinEditPanel({
               onDelete()
             }
           }}
-          disabled={saving}
+          disabled={saving || deleteBlocked}
           className={`ml-auto rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50 ${
             confirmDelete
               ? 'bg-rose-600 text-white hover:bg-rose-700'
@@ -655,6 +661,25 @@ export default function PinEditPanel({
           {confirmDelete ? 'Delete permanently — can’t be undone' : 'Delete'}
         </button>
       </div>
+
+      {/* Name the obstacle BEFORE the ceremony, not after it. The database
+          refuses this delete (`trips.destination_relationship_id` is ON
+          DELETE RESTRICT) and the refusal is already translated into a
+          sentence — but only once the user has accepted a confirm reading
+          "can't be undone". Andy declined to click it, correctly: he was
+          being asked to accept an irreversible-sounding risk in order to
+          discover a refusal. A confirm that overstates the stakes of an
+          action that will be refused spends trust on a non-event, and the
+          next genuinely destructive confirm gets read less carefully.
+
+          Visible text, not a `title` — a disabled control with no stated
+          reason is a dead control (rule 14, and F10's lesson). */}
+      {deleteBlocked && (
+        <p className="mt-2 text-right text-xs leading-relaxed text-[var(--ink-dim)]">
+          Delete is blocked while this is a trip’s destination. Unframe or retarget
+          the trip first, from its row in the ✈ trips chip above.
+        </p>
+      )}
 
       {lightbox && <PhotoLightbox url={lightbox} onClose={() => setLightbox(null)} />}
     </aside>

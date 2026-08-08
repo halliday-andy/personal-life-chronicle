@@ -45,6 +45,27 @@ export interface TripPinRole {
   isStop: boolean
 }
 
+/**
+ * Can this pin be deleted, as far as trips are concerned?
+ *
+ * `trips.destination_relationship_id` is **ON DELETE RESTRICT**, so the
+ * database refuses to delete a pin that any trip ends at. That refusal is
+ * translated into a readable sentence when it happens — but only AFTER the
+ * user has accepted a confirm that says "can't be undone". Andy declined to
+ * click it (2026-08-04), which was the right response to what it told him:
+ * he was being asked to accept an irreversible-sounding risk in order to
+ * discover a refusal.
+ *
+ * The card already holds the trips. So the obstacle can be named BEFORE the
+ * ceremony instead of after it.
+ *
+ * Origins are `ON DELETE SET NULL` and stops are `ON DELETE CASCADE` —
+ * neither blocks, so neither belongs here. Only the destination.
+ */
+export function isTripDestination(trips: TripRoleTrip[], relationshipId: string): boolean {
+  return trips.some((t) => t.destination_relationship_id === relationshipId)
+}
+
 export function tripPinRoles(trips: TripRoleTrip[]): Map<string, TripPinRole> {
   const roles = new Map<string, TripPinRole>()
   const at = (id: string): TripPinRole => {

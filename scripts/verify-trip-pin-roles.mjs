@@ -39,7 +39,7 @@ import { fileURLToPath } from 'node:url'
 const projectRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 const runnerSrc = `
-import { tripPinRoles } from '${projectRoot}/lib/globe/trip-pin-roles'
+import { tripPinRoles, isTripDestination } from '${projectRoot}/lib/globe/trip-pin-roles'
 
 let failures = 0
 const ok = (m: string) => console.log('  \\u2713 ' + m)
@@ -105,6 +105,26 @@ const shared = tripPinRoles([
 if (shared.get(WENDYS)?.isStop && shared.size === 3)
   ok('a stop on two trips is one entry, not two')
 else bad('shared stop mishandled: size ' + shared.size)
+
+// 7 — the deletion block, which is the DESTINATION fk and nothing else.
+// trips.destination_relationship_id is ON DELETE RESTRICT; origins are SET
+// NULL and stops are CASCADE, so neither blocks. Getting this wrong in
+// either direction is bad: too broad and the app refuses a delete the
+// database would allow, too narrow and the user meets a raw refusal after
+// accepting a "can't be undone" confirm.
+const fiatTrip = [trip(CHALET, SSV, [{ relationship_id: WENDYS, leg: 'outbound' }])]
+if (isTripDestination(fiatTrip, SSV)) ok('a destination blocks deletion (RESTRICT)')
+else bad('destination did not block deletion')
+if (!isTripDestination(fiatTrip, CHALET)) ok('an origin does NOT block \\u2014 that fk is SET NULL')
+else bad('origin wrongly blocked deletion')
+if (!isTripDestination(fiatTrip, WENDYS)) ok('a stop does NOT block \\u2014 that fk is CASCADE')
+else bad('stop wrongly blocked deletion')
+if (!isTripDestination([], SSV)) ok('with no trips, nothing blocks')
+else bad('blocked with no trips at all')
+// Destination of ANY trip blocks, not just the first.
+if (isTripDestination([trip(CHALET, 'other'), ...fiatTrip], SSV))
+  ok('being any trip\\u2019s destination is enough')
+else bad('only the first trip was checked')
 
 console.log(failures === 0 ? '\\nPASS' : '\\nFAIL (' + failures + ')')
 process.exit(failures === 0 ? 0 : 1)
