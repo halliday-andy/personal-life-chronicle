@@ -46,15 +46,32 @@ function homeRank(p: AnchorCandidate): number {
   return p.type_code === 'owned_residence_at' ? 2 : 3
 }
 
+/** Homes among themselves: spine order, then unplaced, second, short stay. */
+const byHomeOrder = (a: AnchorCandidate, b: AnchorCandidate) =>
+  homeRank(a) - homeRank(b) ||
+  (a.sort_order ?? Infinity) - (b.sort_order ?? Infinity) ||
+  a.name.localeCompare(b.name)
+
 export function anchorCandidates<T extends AnchorCandidate>(pins: T[], forTypeCode: string): T[] {
-  if (forTypeCode === 'logged_at') return pins
-  return pins
-    .filter((p) => HOME_TYPES.has(p.type_code ?? ''))
-    .sort((a, b) =>
-      homeRank(a) - homeRank(b) ||
-      (a.sort_order ?? Infinity) - (b.sort_order ?? Infinity) ||
-      a.name.localeCompare(b.name),
-    )
+  // A Log can anchor to ANY place, so this branch is the long one — and it
+  // used to return the raw array, the only branch that did not sort. Log is
+  // also what route mode mints for a trip stop, so the one unordered list
+  // was the one the newest flow put in front of people: at 48 pins Andy was
+  // scanning past the bottom of the screen for a place the app already knew
+  // (2026-08-04). Homes lead, since an anchor usually IS a home and they
+  // must appear in the same order as everywhere else; the long tail is
+  // alphabetical, which is the only order that helps when scanning.
+  //
+  // Copied before sorting: `pins` is React state at every call site.
+  if (forTypeCode === 'logged_at') {
+    return [...pins].sort((a, b) => {
+      const aHome = HOME_TYPES.has(a.type_code ?? '')
+      const bHome = HOME_TYPES.has(b.type_code ?? '')
+      if (aHome !== bHome) return aHome ? -1 : 1
+      return aHome ? byHomeOrder(a, b) : a.name.localeCompare(b.name)
+    })
+  }
+  return pins.filter((p) => HOME_TYPES.has(p.type_code ?? '')).sort(byHomeOrder)
 }
 
 /** Drives the "· not yet placed" option suffix. */

@@ -9,7 +9,10 @@
  * excludes unsequenced homes from ORDER logic, never from being homes.
  *
  * Asserts:
- *   1. A Log offers every pin, input order preserved (unchanged behavior).
+ *   1. A Log offers every pin — homes first, in the same order every other
+ *      type sees them, then the rest alphabetically. It used to return the
+ *      raw input array, the only branch that did not sort, and Log is what
+ *      route mode mints for a trip stop (Andy, 2026-08-04).
  *   2. Any other marker offers HOMES only: primary (sequenced AND
  *      unsequenced), second residence, short-term stay — never
  *      vacations/travel/workplaces/future places.
@@ -54,10 +57,26 @@ const pins = [
 
 const ids = (r: { relationship_id: string }[]) => r.map((p) => p.relationship_id)
 
-// 1. Log: everything, untouched order
-if (JSON.stringify(ids(anchorCandidates(pins, 'logged_at'))) === JSON.stringify(ids(pins)))
-  ok('Log offers every pin in input order')
-else bad('Log list changed: ' + JSON.stringify(ids(anchorCandidates(pins, 'logged_at'))))
+// 1. Log: everything, HOMES FIRST then the rest alphabetically.
+//
+// It used to hand back the raw input array — the only branch that did not
+// sort — and Log is exactly what route mode mints for a trip stop. At 48
+// pins Andy was scanning an unordered list that ran off the screen to find
+// a place the app already knew (2026-08-04).
+const log = ids(anchorCandidates(pins, 'logged_at'))
+if (JSON.stringify(log) === JSON.stringify(['home1', 'home2', 'la', 'second', 'short', 'vac', 'trav', 'log', 'work', 'fut']))
+  ok('Log offers every pin: homes in home order, then the rest by name')
+else bad('Log ordering wrong: ' + JSON.stringify(log))
+if (log.length === pins.length) ok('Log still offers ALL pins \\u2014 sorting is not filtering')
+else bad('Log dropped pins while sorting: ' + log.length + ' of ' + pins.length)
+// The home block must match what every other type gets, or the two lists
+// disagree about home order depending on which pin you happen to be adding.
+if (JSON.stringify(log.slice(0, 5)) === JSON.stringify(ids(anchorCandidates(pins, 'worked_at'))))
+  ok('the home block is identical to the homes-only list')
+else bad('Log orders homes differently from the homes-only list')
+// Input must not be mutated: the caller passes React state straight in.
+if (ids(pins)[0] === 'vac') ok('the caller\\u2019s array is left untouched')
+else bad('anchorCandidates sorted its input in place')
 
 // 2 + 3. Workplace: homes only, grouped and ordered
 const work = ids(anchorCandidates(pins, 'worked_at'))
