@@ -37,7 +37,17 @@ export interface TripKindFacts {
   destination_type_code?: string | null
 }
 
-export const RELOCATION_LABEL = 'Relocation'
+/**
+ * How the relocation reading is worded, in one place so two surfaces cannot
+ * word it differently and imply two different facts.
+ *
+ * Phrased as a READING, not as a label. It is the chronicle's inference
+ * from `return_to_origin` and the destination's type — not something the
+ * owner asserted — and the app's existing idiom for that distinction is
+ * "the chronicle's reading · not yours to edit", against "● yours" for what
+ * the owner set.
+ */
+export const RELOCATION_READING = 'reads as a relocation'
 
 /**
  * One-way, and it ended somewhere you lived. `isHomeType` is the standing
@@ -50,6 +60,40 @@ export function isRelocation(trip: TripKindFacts): boolean {
   return !trip.return_to_origin && isHomeType(trip.destination_type_code)
 }
 
-export function tripKindLabel(trip: TripKindFacts): string {
-  return isRelocation(trip) ? RELOCATION_LABEL : TRIP_SUBTYPE_LABELS[trip.subtype]
+export interface TripKind {
+  /** The OWNER's choice of what kind of journey this was. Always shown. */
+  label: string
+  /** The chronicle's reading. Shown ALONGSIDE the label, never instead. */
+  relocation: boolean
+}
+
+/**
+ * The two things a trip's kind consists of — deliberately returned
+ * together, because they were briefly collapsed into one and the collapse
+ * silently ate the owner's answer.
+ *
+ * `tripKindLabel` used to return "Relocation" INSTEAD of the subtype. Andy
+ * changed the Fiat 128 to Professional travel to test the new kind selector
+ * and neither surface would show it: the write had worked, the label had
+ * eaten it. His example for why it matters — assembling a chronology of the
+ * major road trips of his life, that trip belongs in it, and it had stopped
+ * saying so.
+ *
+ * The two are ORTHOGONAL AXES. "Road trip" describes the character of the
+ * journey; "relocation" describes what it accomplished. A relocation can be
+ * driven, or flown for a job, or neither, and a road trip stays a road trip
+ * whether or not you came home. One label cannot hold both, and whichever
+ * one wins, the other is destroyed.
+ *
+ * Which is also why relocation is NOT a subtype option, though the dropdown
+ * would happily hold one: it would force a false choice between two true
+ * things, duplicate a fact derivable from `return_to_origin` and the
+ * destination's type (rule 24), and freeze a reading that should re-derive
+ * the moment either input changes (rule 22).
+ */
+export function tripKind(trip: TripKindFacts): TripKind {
+  return {
+    label: TRIP_SUBTYPE_LABELS[trip.subtype],
+    relocation: isRelocation(trip),
+  }
 }

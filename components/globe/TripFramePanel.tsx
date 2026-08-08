@@ -259,7 +259,10 @@ export default function TripFramePanel({
         {!returnToOrigin && (
           <p className="mt-1 text-xs text-[var(--ink-dim)]/80">
             One-way — the journey ends at {destinationLabel}; no return arc will draw.
-            {relocating && ' Ending at a home makes this a relocation, and it will be named one.'}
+            {/* "will be named one" was true when the reading replaced the
+                kind. It rides alongside now, so the sentence has to say so —
+                the kind above stays whatever you chose. */}
+            {relocating && ' Ending at a home also reads as a relocation — noted alongside the kind you chose, not instead of it.'}
           </p>
         )}
 

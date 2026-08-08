@@ -1,32 +1,37 @@
 #!/usr/bin/env node
 /**
- * Proof for the trip-kind label (lib/globe/trip-kind.ts). Pure — no DB.
+ * Proof for the trip-kind rendering (lib/globe/trip-kind.ts). Pure — no DB.
  *
  * Origin (R22 add-on, Andy 2026-08-03): the guard forbidding a home as a
- * trip destination was removed in R6 part 1, because a trip may end where
- * you then lived — that is a RELOCATION, and `return_to_origin` carries
- * the distinction. But nothing ever said the word. Andy's Fiat 128 drive
- * from Mt. Snow to the SSV Day Lodge Room would render "Road trip", and a
- * one-way road trip terminating at a primary residence looks like a data
- * error rather than the move it was.
+ * trip destination was removed in R6, because a trip may end where you then
+ * lived — that is a RELOCATION, and `return_to_origin` carries the
+ * distinction. But nothing ever said the word, so his Mt. Snow → SSV Day
+ * Lodge Room drive read "Road trip" and looked like a data error.
  *
- * The label READS a mutable classification (the destination pin's type)
- * and that is fine — rule 20 forbids a CONSTRAINT keyed on one, because a
- * constraint freezes a past judgement, while a label re-derives the moment
- * the classification changes. Retyping the pin retitles the trip; nothing
- * is trapped.
+ * **Corrected 2026-08-04, and this file exists to keep it corrected.** The
+ * first version made "Relocation" REPLACE the subtype. Andy changed the
+ * Fiat 128 to Professional travel to test the new kind selector and neither
+ * surface would show it — the write had worked, the label had eaten it. His
+ * example for why it matters: assembling a chronology of the major road
+ * trips of his life, this one is among them, and it had stopped saying so.
+ *
+ * **Rule 15: owner-asserted and machine-read must never render as peers.**
+ * The subtype is Andy's own claim; "relocation" is the chronicle's reading
+ * of it. The reading had not merely become a peer — it had EVICTED the
+ * claim. They are also orthogonal: a relocation can be driven (a road
+ * trip), flown for a job (professional travel), or neither. Collapsing two
+ * axes into one label destroys whichever one loses.
  *
  * Asserts:
- *   1. One-way + destination is a home → "Relocation".
- *   2. Round trip to a home → the subtype label. Returning home from a
- *      visit is not moving house; return_to_origin is the whole difference.
- *   3. One-way to a non-home → the subtype label. A one-way road trip to a
- *      ski hill is still a road trip.
- *   4. Every home TYPE counts, not just the spine — the standing guard is
- *      "home-ness is the TYPE, not the spine slot" (2026-07-18), so this
- *      defers to isHomeType rather than testing 'lived_at'.
- *   5. An unknown/absent destination type never invents a relocation.
- *   6. Every subtype still round-trips to its own label.
+ *   1. The owner's subtype label ALWAYS survives — the eviction, in every
+ *      combination that used to hide it.
+ *   2. `relocation` is a separate flag, not a substitute label.
+ *   3. One-way + a home = relocation; a round trip to a home is not;
+ *      one-way to a non-home is not.
+ *   4. Every home TYPE counts, not just the spine slot (2026-07-18).
+ *   5. An unknown destination type never invents a relocation.
+ *   6. The reading's wording is shared, so surfaces cannot word it
+ *      differently and imply two different facts.
  *
  * Run: node scripts/verify-trip-kind.mjs
  */
@@ -39,54 +44,68 @@ import { fileURLToPath } from 'node:url'
 const projectRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 const runnerSrc = `
-import { tripKindLabel, isRelocation } from '${projectRoot}/lib/globe/trip-kind'
+import { tripKind, isRelocation, RELOCATION_READING } from '${projectRoot}/lib/globe/trip-kind'
 import { TRIP_SUBTYPES, TRIP_SUBTYPE_LABELS } from '${projectRoot}/lib/globe/trip-types'
 
 let failures = 0
 const ok = (m: string) => console.log('  \\u2713 ' + m)
 const bad = (m: string) => { console.error('  \\u2717 ' + m); failures++ }
 
-// The Fiat 128 as it should read after R22's retarget.
+// The Fiat 128 after R22's retarget: one-way, ending at a primary residence.
 const fiat = { subtype: 'road_trip' as const, return_to_origin: false, destination_type_code: 'lived_at' }
 
-// 1
-if (tripKindLabel(fiat) === 'Relocation') ok('one-way to a home reads "Relocation" (Mt. Snow \\u2192 SSV Day Lodge Room)')
-else bad('expected Relocation, got ' + tripKindLabel(fiat))
-if (isRelocation(fiat)) ok('isRelocation agrees')
-else bad('isRelocation disagrees with the label')
+// 1 + 2 — THE EVICTION. The owner's word survives; the reading rides along.
+const k = tripKind(fiat)
+if (k.label === 'Road trip') ok('a relocation still says "Road trip" \\u2014 the owner\\u2019s word survives')
+else bad('the reading evicted the subtype again: ' + k.label)
+if (k.relocation) ok('...and carries relocation as a SEPARATE flag, not as the label')
+else bad('relocation flag lost')
 
-// 2
-const roundTrip = { ...fiat, return_to_origin: true }
-if (tripKindLabel(roundTrip) === 'Road trip') ok('round trip to a home stays "Road trip" \\u2014 returning is not moving')
-else bad('round trip mislabelled: ' + tripKindLabel(roundTrip))
+// The case that exposed it: Andy set Professional travel and saw neither.
+const professional = tripKind({ ...fiat, subtype: 'professional' })
+if (professional.label === 'Professional travel' && professional.relocation)
+  ok('Professional travel + relocation shows BOTH (Andy\\u2019s \\u00a73 test case)')
+else bad('professional relocation still hides one of the two: ' + JSON.stringify(professional))
 
-// 3
-const oneWayToHill = { ...fiat, destination_type_code: 'vacationed_at' }
-if (tripKindLabel(oneWayToHill) === 'Road trip') ok('one-way to a non-home stays "Road trip"')
-else bad('one-way to a vacation pin mislabelled: ' + tripKindLabel(oneWayToHill))
+// EVERY subtype must survive being a relocation — the eviction was total.
+for (const s of TRIP_SUBTYPES) {
+  const r = tripKind({ ...fiat, subtype: s })
+  if (r.label === TRIP_SUBTYPE_LABELS[s] && r.relocation) ok('"' + s + '" survives relocation as "' + r.label + '"')
+  else bad('"' + s + '" lost its label to the reading: ' + JSON.stringify(r))
+}
+
+// 3 — when the reading is true
+if (isRelocation(fiat)) ok('one-way to a home IS a relocation (Mt. Snow \\u2192 SSV Day Lodge Room)')
+else bad('the relocation reading failed on the real case')
+const roundTrip = tripKind({ ...fiat, return_to_origin: true })
+if (!roundTrip.relocation && roundTrip.label === 'Road trip')
+  ok('a round trip to a home is NOT a relocation \\u2014 returning is not moving')
+else bad('round trip mislabelled: ' + JSON.stringify(roundTrip))
+const toHill = tripKind({ ...fiat, destination_type_code: 'vacationed_at' })
+if (!toHill.relocation && toHill.label === 'Road trip') ok('one-way to a non-home is not a relocation')
+else bad('one-way to a vacation pin mislabelled: ' + JSON.stringify(toHill))
 
 // 4 — home-ness is the TYPE, not the spine slot
 for (const code of ['lived_at', 'owned_residence_at', 'lived_briefly_at']) {
-  if (tripKindLabel({ ...fiat, destination_type_code: code }) === 'Relocation') ok('"' + code + '" counts as a home')
+  if (tripKind({ ...fiat, destination_type_code: code }).relocation) ok('"' + code + '" counts as a home')
   else bad('"' + code + '" was not treated as a home')
 }
 for (const code of ['worked_at', 'logged_at', 'wants_to_visit', 'traveled_for_work_to']) {
-  if (tripKindLabel({ ...fiat, destination_type_code: code }) !== 'Relocation') ok('"' + code + '" is not a home')
+  if (!tripKind({ ...fiat, destination_type_code: code }).relocation) ok('"' + code + '" is not a home')
   else bad('"' + code + '" wrongly counted as a home')
 }
 
-// 5 — unknown type invents nothing
+// 5 — unknown type invents nothing, and still shows the owner's word
 for (const code of [null, undefined]) {
-  if (tripKindLabel({ ...fiat, destination_type_code: code }) === 'Road trip') ok('destination type ' + String(code) + ' falls back to the subtype')
+  const r = tripKind({ ...fiat, destination_type_code: code })
+  if (!r.relocation && r.label === 'Road trip') ok('destination type ' + String(code) + ' reads no relocation, keeps the subtype')
   else bad('missing destination type invented a relocation')
 }
 
-// 6 — no subtype loses its label
-for (const s of TRIP_SUBTYPES) {
-  const label = tripKindLabel({ subtype: s, return_to_origin: true, destination_type_code: 'vacationed_at' })
-  if (label === TRIP_SUBTYPE_LABELS[s]) ok('subtype "' + s + '" still renders "' + label + '"')
-  else bad('subtype "' + s + '" rendered "' + label + '"')
-}
+// 6 — one wording, so two surfaces cannot imply two different facts
+if (typeof RELOCATION_READING === 'string' && RELOCATION_READING.length > 0)
+  ok('the reading\\u2019s wording is shared: \\u201c' + RELOCATION_READING + '\\u201d')
+else bad('no shared wording for the reading')
 
 console.log(failures === 0 ? '\\nPASS' : '\\nFAIL (' + failures + ')')
 process.exit(failures === 0 ? 0 : 1)

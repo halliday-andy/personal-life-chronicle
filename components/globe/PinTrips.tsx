@@ -32,7 +32,7 @@
 import { useEffect, useRef, useState } from 'react'
 import PinHopper from './PinHopper'
 import { TRIP_SUBTYPE_LABELS, type TripRow, type TripSubtype } from '@/lib/globe/trip-types'
-import { tripKindLabel } from '@/lib/globe/trip-kind'
+import { tripKind, RELOCATION_READING } from '@/lib/globe/trip-kind'
 
 export const TRIP_ROUTE_COLOR = '#e0709b'
 
@@ -159,13 +159,17 @@ export default function PinTrips({
           <div className="flex flex-wrap items-center gap-2">
             <span style={{ color: TRIP_ROUTE_COLOR }}>✈</span>
             <span className="font-medium">{t.title || `Trip to ${t.destination_name}`}</span>
-            {/* "Relocation" when it went one way and ended somewhere he
-                lived — the word that makes R6's removed destination guard
-                legible instead of looking like a data error (R22). */}
+            {/* The owner's chosen kind, then the chronicle's reading of it.
+                Never the reading INSTEAD (rule 15): "Relocation" briefly
+                replaced the subtype, and a trip the owner had called a road
+                trip stopped saying so anywhere. */}
             <span className="text-[var(--ink-dim)]">
-              {tripKindLabel(t)}
+              {tripKind(t).label}
               {t.when_text ? ` · ${t.when_text}` : ''}
             </span>
+            {tripKind(t).relocation && (
+              <span className="italic text-[var(--ink-dim)]/70">· {RELOCATION_READING}</span>
+            )}
             {t.is_draft && (
               <span
                 className="rounded-full border border-[var(--glass-border)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide"
