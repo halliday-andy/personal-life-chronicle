@@ -1682,8 +1682,11 @@ export default function GlobeView() {
                   {/* The two rose pin marks. Listed because a mark nobody can
                       look up is decoration. Both swatches read the SAME custom
                       properties the globe does, so the legend cannot drift
-                      from what it is explaining — the distinction is ring
-                      alone (on a journey) vs ring + glow (where it ended). */}
+                      from what it is explaining, and both are drawn at the
+                      SAME diameter on purpose: pin size encodes the place's
+                      TYPE, never its trip role, so a stop is often bigger or
+                      smaller than a destination. The distinction is ring
+                      THICKNESS — thick = where the journey ended. */}
                   <div className="flex items-center gap-2.5">
                     <span className="inline-flex w-6 justify-center">
                       <span

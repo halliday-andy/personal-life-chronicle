@@ -52,14 +52,26 @@ body {
      property entirely: the mark means "on a journey".
 
      Ring = on a journey. Ring + glow = where the journey ended. */
+  /* THICKNESS is the difference, not brightness. Both rings sat at the
+     same 1.5px and relied on the destination's glow alone to tell them
+     apart — which does not read at legend size and washes out on the
+     daylight basemap, so the distinction depended on the zoom you were at
+     and the map you were on (Andy, 2026-08-04; rule 31 again, in the mark
+     that rule produced).
+
+     Note what does NOT encode trip role: pin DIAMETER. That is the pin's
+     type — Short-term stay is 10px, a Primary residence 14px — so a stop
+     can easily be smaller or larger than a destination depending on what
+     kind of places they are. Reading size as role is a trap the legend
+     must not set, which is why both swatches are drawn the same size. */
   --pin-trip-stop-shadow:
     0 0 0 2px rgba(7, 11, 24, 0.85),
     0 0 0 3.5px rgba(224, 112, 155, 0.9),
     0 0 0 4.5px rgba(7, 11, 24, 0.9);
   --pin-trip-dest-shadow:
     0 0 0 2px rgba(7, 11, 24, 0.85),
-    0 0 0 3.5px rgba(224, 112, 155, 0.85),
-    0 0 0 4.5px rgba(7, 11, 24, 0.9),
+    0 0 0 5px rgba(224, 112, 155, 0.9),
+    0 0 0 6px rgba(7, 11, 24, 0.9),
     0 0 14px 3px rgba(224, 112, 155, 0.5);
 
   /* Selection.
