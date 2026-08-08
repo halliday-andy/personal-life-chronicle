@@ -100,6 +100,11 @@ Then check what landed:
 
 ## 3. The trip-kind selector *(add-on)*
 
+**Re-walk this after `79ac2bd`.** Your first pass found the kind selector
+saving correctly and neither surface showing it: the derived "Relocation"
+label was returned *instead of* the subtype, so a relocation could never
+say what kind of journey it was. Fixed — the reading now rides alongside.
+
 - [ ] The framing panel has **"What kind of trip was it?"**, pre-selected
       to the trip's current kind.
 - [ ] Change one and save → the pin card and the Travel Journal both show
@@ -107,6 +112,16 @@ Then check what landed:
       existed, the caller didn't.)*
 - [ ] Re-open the panel → the change **stuck** and pre-selects. *(Rule 19:
       a form reused for CREATE and EDIT must load current values.)*
+- [ ] The Fiat 128 trip reads **"Road trip"** with *"reads as a
+      relocation"* beside it — italic, dimmer, unboxed — on **both** the pin
+      card and the Travel Journal. **The two must never look like peers**:
+      the kind is your claim, the relocation is the chronicle's reading of
+      it (rule 15, the same distinction as "● yours").
+- [ ] Set it to **Professional travel** and back → both words change
+      together and the relocation reading stays put. *This is the case that
+      exposed the eviction.*
+- [ ] A chronology of road trips would now find it: four trips read "Road
+      trip", the Fiat among them.
 
 ## 4. "Relocation" only where it is true *(add-on)*
 

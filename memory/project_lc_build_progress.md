@@ -22,7 +22,8 @@ proof, which missed its own commit).
    destination, but nothing ever said the word, so a one-way arrival at a
    home read "Road trip" and looked like a data error. Derived once in
    `lib/globe/trip-kind.ts`, used by the pin card, the Travel Journal and
-   the panel. `destination_type_code` is attached after `get_trips` by ONE
+   the panel. **Shipped WRONG and corrected the same day (`79ac2bd`) — see
+   rule 27 below.** `destination_type_code` is attached after `get_trips` by ONE
    shared helper (`lib/trips/destination-types.ts`) called from both of its
    callers — adding it to the RPC means DROP+CREATE, a gated migration.
    **Fold it into `get_trips` when a gated migration next goes to Andy.**
@@ -132,6 +133,31 @@ ness is not a veto: a pin that is both origin and stop opens. Extracted to
 trip touching this pin" is the tidier-looking version and IS the F21 bug.
 *Second time in this session that a feature's reach was found by asking
 what ELSE changes when a field becomes editable — see rule 26.*
+
+**CLASS-OF-BUG (rule 27): a DERIVED label must never replace an
+OWNER-ASSERTED one (`79ac2bd`).** The Relocation reading was returned
+*instead of* the trip's subtype, so a relocation could not say what kind of
+journey it was. Andy set the Fiat 128 to Professional travel to test the
+new kind selector and neither surface showed it — the write had worked, the
+label had eaten it. **His example for why it matters: a chronology of the
+major road trips of his life. That drive belongs in it and had stopped
+saying so.** This is **rule 15 one step further**: owner-asserted and
+machine-read must never render as peers — and here the machine-read had not
+become a peer, it had *evicted* the claim. They were also **orthogonal
+axes**: "road trip" is the journey's character, "relocation" is what it
+accomplished; a relocation can be driven or flown, and a road trip stays
+one whether or not you came home. *The tell: a derived value and a stored
+one competing for a single slot — whichever wins, the other is destroyed.*
+Now `tripKind()` returns both, rendered as claim + reading ("reads as a
+relocation", italic/dim/unboxed, one shared constant). Deleting
+`tripKindLabel` made the compiler find every call site. Proof 16 → 19,
+asserting EVERY subtype survives being a relocation.
+
+**Also settled (Andy asked directly): "Relocation" must NOT join the
+subtype dropdown.** It would force a false choice between two true things,
+duplicate a fact derivable from `return_to_origin` + destination type (rule
+24), and freeze a reading that should re-derive when either input changes
+(rule 22).
 
 **CLASS-OF-BUG (rule 26): making a field editable breaks whatever was
 keyed on its old value.** R22 turned `destination_relationship_id` into
