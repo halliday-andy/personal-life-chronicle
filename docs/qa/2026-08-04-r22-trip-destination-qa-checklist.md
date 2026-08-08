@@ -322,6 +322,17 @@ Both from your Wendy's screenshots.
 - [ ] **The legend still matches** — its two swatches should look like the
       pins in *both* states. *(If a state needs a legend row the legend
       hasn't got, the composition is wrong, not the legend.)*
+- [ ] **The two legend swatches are now tellable apart** (`89affd1`): the
+      destination's ring is twice as thick as the stop's. They were
+      separated only by a glow, which did not read at that size.
+- [ ] **Check both basemaps.** Zoom past the threshold into the light
+      daylight style — the thickness difference must still read there. The
+      glow does not, which is why it is no longer the carrier.
+- [ ] **Do NOT read pin size as trip role.** Diameter is the place's TYPE
+      (Short-term stay 10px … Workplace 15px). Wendy's is smaller than SSV
+      only because it is a Short-term stay and SSV a Primary residence.
+      *Sanity check: retype Wendy's to Vacation → both become 14px and the
+      ring thickness is still the thing telling you which is which.*
 - [ ] Deselect → both fall back to the plain marks. Nothing double-draws.
 - [ ] **Legend & filters** lists both marks now.
 - [ ] **My Mt. Snow Chalet** (the origin) still wears **neither** — it is a

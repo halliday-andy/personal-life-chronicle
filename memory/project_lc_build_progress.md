@@ -283,6 +283,26 @@ Library) is the real fix and is an open decision, not an oversight** — see
 the same-day discussion with Andy. Until then this class is guarded only by
 rule 19 and a QA step, which is weaker than everything around it.
 
+**CLASS-OF-BUG (rule 34): a distinction carried by BRIGHTNESS fails at small
+sizes and on light backgrounds; carry it in GEOMETRY (`89affd1`).** Stop and
+destination rings were both 1.5px, separated only by the destination's glow
+— which does not read at legend size and washes out on the daylight
+basemap, so the distinction depended on the zoom and the map. **Rule 31
+again, inside the mark rule 31 produced.** Destination ring is now 3px
+against the stop's 1.5px: thickness survives any pin size, any basemap, any
+legend scale, and adds no new mark, so rule 33 still holds.
+
+**AND A TRAP WORTH KEEPING: pin DIAMETER encodes the place's TYPE, never its
+trip role.** Short-term stay 10px, Log 11px, Professional travel / Future
+place 12px, Primary residence 14px, Workplace 15px. Andy inferred "a stop is
+smaller than a destination" from his own two pins — true only because his
+stop is a Short-term stay and his destination a Primary residence. Retype
+the stop to Vacation and both are 14px; make a Log a destination and it is
+*smaller* than a stop that is a home. **Both legend swatches are drawn the
+same size on purpose, so the legend never teaches that false rule** — noted
+in the CSS and the legend markup, because it is exactly the kind of
+coincidence a user will generalise from.
+
 **CLASS-OF-BUG (rule 33): stacking a second mark to preserve a meaning can
 cost more than the erasure it fixed (`e5bf60c`).** Rule 32's first repair
 put the rose ring OUTSIDE the selection ring — meaning restored, and the pin
