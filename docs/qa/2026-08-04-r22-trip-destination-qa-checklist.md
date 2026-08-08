@@ -308,6 +308,14 @@ Both from your Wendy's screenshots.
       globe does, so it cannot drift from what it explains.
 - [ ] Retype a stop pin (Log → Short-term stay → Vacation) → **the ring
       survives every time.** This is the check that failed before.
+- [ ] **Search for Wendy's shared apartment and arrive on it (`6c2d613`).
+      The rose ring is visible WHILE the pin is selected** — outside the
+      amber selection ring, concentric with it. It used to vanish on
+      selection, so the pin you had just navigated to was the one that
+      would not tell you it was on a trip.
+- [ ] Same for **SSV Day Lodge Room**: selected, it shows the selection
+      ring *and* its destination ring + glow.
+- [ ] Deselect → both fall back to the plain marks. Nothing double-draws.
 - [ ] **Legend & filters** lists both marks now.
 - [ ] **My Mt. Snow Chalet** (the origin) still wears **neither** — it is a
       home, and the spine already speaks for it (F21).

@@ -283,6 +283,26 @@ Library) is the real fix and is an open decision, not an oversight** — see
 the same-day discussion with Andy. Until then this class is guarded only by
 rule 19 and a QA step, which is weaker than everything around it.
 
+**CLASS-OF-BUG (rule 32): when several independent meanings share ONE CSS
+property, the last rule to write it erases the rest (`6c2d613`).** On a
+globe pin, `box-shadow` carries **five** meanings — type hue, trip role,
+selection, draft, bloom. `.globe-pin-selected` is declared last and writes
+the whole property, so **selecting a pin silently deleted its trip ring**:
+arriving by search or deep link, the one pin guaranteed not to show its
+trip role was the one just asked for. Andy's repro was exact — search →
+no ring; hover → lines but no ring; click then close the card → ring
+appears. The old comment even blessed it (*".globe-pin-selected stays below
+and still wins on selection"*), which is right that selection must be
+visible and wrong that it must be EXCLUSIVE. Fixed by composing —
+two-class rules (`.globe-pin-selected.globe-pin-trip-stop`) that win on
+**specificity rather than declaration order**, so the stop-vs-destination
+ordering rule and the selected-vs-not rule no longer have to agree about
+anything. *The tell: a state class that sets a whole shorthand property
+another class is already using to mean something else.* **Same root as the
+z-index finding (queued 4th): a shared channel with no allocation scheme.
+`box-shadow` on `.globe-pin` is the second such channel — worth folding
+into that pass.**
+
 **CLASS-OF-BUG (rule 31): a mark that means one thing must not depend on
 what it is drawn ON (`d149e94`).** Andy retyped Wendy's to Short-term stay
 and the stop collar vanished, while the Log stops kept theirs. **Not a
