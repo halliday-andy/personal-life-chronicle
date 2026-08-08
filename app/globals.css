@@ -39,6 +39,28 @@ body {
   --glass-border: rgba(214, 224, 255, 0.16);
   --ink: #eef2ff;
   --ink-dim: #aab4d4;
+
+  /* The two trip marks a pin can wear. Defined once, here, because the
+     legend draws its own swatches inline and any drift between the legend
+     and the globe teaches the wrong thing (2026-08-04).
+
+     Both are RINGS BOUNDED BY DARK on the outside, so they read against any
+     pin colour and any basemap. The first version of the stop mark was a
+     1px rose ring at 55% opacity with no outer edge — legible on the violet
+     Log pin, invisible on the amber Short-term-stay pin, so whether a stop
+     looked like a stop depended on what kind of PLACE it was. Wrong
+     property entirely: the mark means "on a journey".
+
+     Ring = on a journey. Ring + glow = where the journey ended. */
+  --pin-trip-stop-shadow:
+    0 0 0 2px rgba(7, 11, 24, 0.85),
+    0 0 0 3.5px rgba(224, 112, 155, 0.9),
+    0 0 0 4.5px rgba(7, 11, 24, 0.9);
+  --pin-trip-dest-shadow:
+    0 0 0 2px rgba(7, 11, 24, 0.85),
+    0 0 0 3.5px rgba(224, 112, 155, 0.85),
+    0 0 0 4.5px rgba(7, 11, 24, 0.9),
+    0 0 14px 3px rgba(224, 112, 155, 0.5);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
   color: var(--ink);
   background:
@@ -238,9 +260,7 @@ body {
    louder halo: both classes apply, equal specificity, last rule wins. Move
    this below the halo and every such pin quietly demotes itself. */
 .globe-pin-trip-stop {
-  box-shadow:
-    0 0 0 2px rgba(7, 11, 24, 0.85),
-    0 0 0 3px rgba(224, 112, 155, 0.55);
+  box-shadow: var(--pin-trip-stop-shadow);
 }
 
 /* Trip destination (Trips & Travel U4, R11) — the turnaround of a framed
@@ -249,10 +269,7 @@ body {
    Placed after the type modifiers so it wins; .globe-pin-selected stays
    below and still wins on selection. */
 .globe-pin-trip-dest {
-  box-shadow:
-    0 0 0 2px rgba(7, 11, 24, 0.85),
-    0 0 0 3.5px rgba(224, 112, 155, 0.85),
-    0 0 14px 3px rgba(224, 112, 155, 0.5);
+  box-shadow: var(--pin-trip-dest-shadow);
 }
 
 /* Destination-only trip draft (R6): a slowly turning dashed ring says

@@ -1680,14 +1680,15 @@ export default function GlobeView() {
                     <span>Trip route (out / ⌁ back)</span>
                   </div>
                   {/* The two rose pin marks. Listed because a mark nobody can
-                      look up is decoration — and because "went to" vs "passed
-                      through" is exactly the distinction the ring weights
-                      encode (2026-08-04). */}
+                      look up is decoration. Both swatches read the SAME custom
+                      properties the globe does, so the legend cannot drift
+                      from what it is explaining — the distinction is ring
+                      alone (on a journey) vs ring + glow (where it ended). */}
                   <div className="flex items-center gap-2.5">
                     <span className="inline-flex w-6 justify-center">
                       <span
                         className="inline-block h-2.5 w-2.5 rounded-full bg-[var(--ember)]"
-                        style={{ boxShadow: `0 0 0 2px rgba(7,11,24,0.85), 0 0 0 3.5px ${TRIP_ROUTE_COLOR}` }}
+                        style={{ boxShadow: 'var(--pin-trip-dest-shadow)' }}
                       />
                     </span>
                     <span>Trip destination</span>
@@ -1696,7 +1697,7 @@ export default function GlobeView() {
                     <span className="inline-flex w-6 justify-center">
                       <span
                         className="inline-block h-2.5 w-2.5 rounded-full bg-[var(--ember)]"
-                        style={{ boxShadow: '0 0 0 2px rgba(7,11,24,0.85), 0 0 0 3px rgba(224,112,155,0.55)' }}
+                        style={{ boxShadow: 'var(--pin-trip-stop-shadow)' }}
                       />
                     </span>
                     <span>Stop along a trip</span>
