@@ -258,6 +258,27 @@ Library) is the real fix and is an open decision, not an oversight** — see
 the same-day discussion with Andy. Until then this class is guarded only by
 rule 19 and a QA step, which is weaker than everything around it.
 
+**OPEN — long place-pickers are already unwieldy at 48 pins (Andy,
+2026-08-04).** Writing a stop for the Fiat 128 he hit "Associated with
+which place?" showing **every pin he owns, unsorted**, and had to hunt a
+list that ran off the screen. **Quick fix taken (`4c138a3`): a stop now
+defaults to the trip's DESTINATION** — his call, and the reasoning is
+durable ("a trip is about getting to that destination and leaving the
+origin behind"). The default had been `primaries[0]`, first on the spine
+and never right for any particular reason.
+
+**Deferred by Andy: how the app handles long dropdowns generally.** This is
+an *early-stage* spine — 48 places — and the residential-completion track
+(Spine & Share, Track A) is explicitly about making it much longer. Every
+`<select>` of places has this problem, not just this one; `PinSelect` (R22)
+is the other obvious one.
+
+**One CONTAINED piece worth doing first, not yet done:** `anchorCandidates`
+returns `logged_at`'s options as the raw `pins` array — **unsorted** —
+while every other type gets `homeRank → sort_order → name`. So the Log case
+is uniquely unordered, and Log is exactly what route mode mints for a stop.
+Sorting that branch is one line and independent of any list-UX redesign.
+
 **OPEN DESIGN QUESTION — the anchor family vs. the geographic
 neighbourhood (Andy, 2026-08-04, from his Queenstown screenshot).** Arrival
 framing gathers "the cluster" as **every pin within 30 km**, which is a

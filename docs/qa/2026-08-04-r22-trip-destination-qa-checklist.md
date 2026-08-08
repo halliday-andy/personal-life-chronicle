@@ -168,6 +168,10 @@ say what kind of journey it was. Fixed — the reading now rides alongside.
       route banner is covered while this is open, so the dialog has to
       carry the mode itself — the F4 lesson.)*
 - [ ] Its type defaults to **Log**. Changeable, like every default here.
+- [ ] **"Associated with which place?" is pre-set to the trip's
+      destination** (`4c138a3`), not to the first home on your spine. The
+      helper line reads *"Pre-set to where the trip was heading."* — worded
+      for this case because a destination need not be a home.
 - [ ] Save → the pin exists, it is **in the banner's outbound list**, the
       route redraws through it, and **route mode is still open** so the
       next click pins the next waypoint.
